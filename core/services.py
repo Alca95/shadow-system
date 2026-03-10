@@ -1,13 +1,6 @@
-"""
-services.py
-
-Contiene la lógica principal de validación del sistema:
-- comparación NR vs Reclamo
-- decisión APROBADO / RECHAZADO / EN_VERIFICACION
-"""
-
-from .models import NRMateriales, Plano
-from .validator import parse_csv, compare_text_fuzzy, compare_dates
+from .models import NRMateriales, Plano, Auditoria
+from .validator import parse_csv, compare_text_fuzzy, compare_dates, validar_plano_contra_bd
+from .ocr_extract import ocr_text_from_file, extract_nrs, extract_fecha_plano
 
 
 ESTADO_APROBADO = "APROBADO"
@@ -174,3 +167,67 @@ def validar_plano_completo(plano: Plano):
         "estado": estado_final,
         "motivos": motivo_lineas,
     }
+
+
+def procesar_plano_completo(plano: Plano, usuario: str = "sistema"):
+    """
+    Ejecuta todo el flujo del plano:
+    1. OCR
+    2. extracción de NR y fecha
+    3. validación contra BD
+    4. validación completa contra Reclamo
+    """
+    try:
+        file_path = plano.archivo.path
+        text = ocr_text_from_file(file_path)
+
+        nrs = extract_nrs(text)
+        fecha = extract_fecha_plano(text)
+
+        plano.texto_ocr = text
+        plano.nr_detectados = ",".join(nrs) if nrs else None
+        plano.fecha_plano = fecha
+        plano.save()
+
+        Auditoria.objects.create(
+            plano=plano,
+            usuario=usuario,
+            accion=f"OCR OK -> nr_detectados={plano.nr_detectados} fecha_plano={plano.fecha_plano}"
+        )
+
+        res_bd = validar_plano_contra_bd(plano)
+        Auditoria.objects.create(
+            plano=plano,
+            usuario=usuario,
+            accion=f"VALIDACIÓN NR -> estado={res_bd['estado']} validos={res_bd['validos']} desconocidos={res_bd['desconocidos']}"
+        )
+
+        res_final = validar_plano_completo(plano)
+        Auditoria.objects.create(
+            plano=plano,
+            usuario=usuario,
+            accion=f"VALIDACIÓN COMPLETA -> estado={res_final['estado']} motivos={res_final['motivos']}"
+        )
+
+        return {
+            "ok": True,
+            "estado": plano.estado,
+            "plano_id": plano.id,
+            "motivo": plano.motivo,
+        }
+
+    except Exception as e:
+        plano.estado = "EN_ESPERA"
+        plano.save()
+
+        Auditoria.objects.create(
+            plano=plano,
+            usuario=usuario,
+            accion=f"PROCESO COMPLETO ERROR: {e}"
+        )
+
+        return {
+            "ok": False,
+            "estado": plano.estado,
+            "error": str(e),
+        }

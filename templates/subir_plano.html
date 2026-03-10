@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ app_name }} - Subir plano</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f6f8;
+            color: #333;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .header .nav {
+            display: flex;
+            gap: 12px;
+        }
+
+        .header a {
+            color: white;
+            text-decoration: none;
+            background: rgba(255,255,255,0.15);
+            padding: 10px 16px;
+            border-radius: 6px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            background: #2c3e50;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background: #1f2d3a;
+        }
+
+        .error {
+            background: #fdecea;
+            color: #b42318;
+            border: 1px solid #f5c2c0;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .hint {
+            color: #666;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>{{ app_name }}</h1>
+        <div class="nav">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <a href="{% url 'logout' %}">Cerrar sesión</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Subir plano</h2>
+            <p>Cargue una imagen o PDF del plano para iniciar el procesamiento.</p>
+
+            {% if error %}
+                <div class="error">
+                    {{ error }}
+                </div>
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="carpeta">Carpeta</label>
+                    <select name="carpeta" id="carpeta" required>
+                        <option value="">Seleccione una carpeta</option>
+                        {% for carpeta in carpetas %}
+                            <option value="{{ carpeta.id }}">
+                                {{ carpeta.mes }}/{{ carpeta.anio }} - {{ carpeta.empresa }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_plano_deposito">ID plano depósito</label>
+                    <input type="text" name="id_plano_deposito" id="id_plano_deposito" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="archivo">Archivo</label>
+                    <input type="file" name="archivo" id="archivo" accept=".jpg,.jpeg,.png,.pdf" required>
+                    <div class="hint">Formatos permitidos: JPG, PNG, PDF.</div>
+                </div>
+
+                <button type="submit" class="btn">Subir plano</button>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

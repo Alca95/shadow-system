@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ app_name }} - Panel principal</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f6f8;
+            color: #333;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .header a {
+            color: white;
+            text-decoration: none;
+            background: rgba(255,255,255,0.15);
+            padding: 10px 16px;
+            border-radius: 6px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .welcome-box {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+
+        .welcome-box h2 {
+            margin-top: 0;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            text-decoration: none;
+            color: #333;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 22px rgba(0,0,0,0.12);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .card p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .disabled {
+            opacity: 0.7;
+            cursor: default;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>{{ app_name }}</h1>
+        <a href="{% url 'logout' %}">Cerrar sesión</a>
+    </div>
+
+    <div class="container">
+        <div class="welcome-box">
+            <h2>Bienvenido, {{ request.user.username }}</h2>
+            <p>Sistema de verificación de planos con OCR y validación automática.</p>
+        </div>
+
+        <div class="cards">
+            <a href="{% url 'subir_plano' %}" class="card">
+                <h3>Subir plano</h3>
+                <p>Cargar un nuevo archivo para procesamiento OCR.</p>
+            </a>
+
+            <a href="#" class="card disabled">
+                <h3>Ver planos</h3>
+                <p>Consultar planos procesados y estados de validación.</p>
+            </a>
+
+            <a href="#" class="card disabled">
+                <h3>Reclamos</h3>
+                <p>Visualizar reclamos registrados en el sistema.</p>
+            </a>
+
+            <a href="#" class="card disabled">
+                <h3>Auditoría</h3>
+                <p>Revisar acciones, validaciones y trazabilidad.</p>
+            </a>
+        </div>
+    </div>
+
+</body>
+</html>

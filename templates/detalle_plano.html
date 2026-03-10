@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ app_name }} - Detalle del plano</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f6f8;
+            color: #333;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .header .nav {
+            display: flex;
+            gap: 12px;
+        }
+
+        .header a {
+            color: white;
+            text-decoration: none;
+            background: rgba(255,255,255,0.15);
+            padding: 10px 16px;
+            border-radius: 6px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            gap: 24px;
+        }
+
+        .card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+        }
+
+        .card h2, .card h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        .preview-box {
+            width: 100%;
+            min-height: 400px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fafafa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .preview-box img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .preview-box iframe {
+            width: 100%;
+            height: 500px;
+            border: none;
+        }
+
+        .no-preview {
+            color: #777;
+            font-size: 14px;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .info-row {
+            margin-bottom: 14px;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #2c3e50;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .estado-aprobado {
+            background: #e8f7ee;
+            color: #18794e;
+        }
+
+        .estado-rechazado {
+            background: #fdecec;
+            color: #b42318;
+        }
+
+        .estado-verificacion,
+        .estado-revision,
+        .estado-espera {
+            background: #fff4e5;
+            color: #b26a00;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: #2c3e50;
+        }
+
+        .btn-primary:hover {
+            background: #1f2d3a;
+        }
+
+        .btn-danger {
+            background: #b42318;
+        }
+
+        .btn-danger:hover {
+            background: #8f1c13;
+        }
+
+        .text-box {
+            background: #fafafa;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 16px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-size: 14px;
+            line-height: 1.5;
+            max-height: 420px;
+            overflow-y: auto;
+        }
+
+        .muted {
+            color: #777;
+        }
+
+        @media (max-width: 900px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>{{ app_name }}</h1>
+        <div class="nav">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <a href="{% url 'subir_plano' %}">Subir otro plano</a>
+            <a href="{% url 'logout' %}">Cerrar sesión</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="grid">
+
+            <div>
+                <div class="card">
+                    <h2>Vista previa del archivo</h2>
+
+                    <div class="preview-box">
+                        {% if plano.archivo %}
+                            {% with plano.archivo.url|lower as archivo_url %}
+                                {% if ".jpg" in archivo_url or ".jpeg" in archivo_url or ".png" in archivo_url %}
+                                    <img src="{{ plano.archivo.url }}" alt="Vista previa del plano">
+                                {% elif ".pdf" in archivo_url %}
+                                    <iframe src="{{ plano.archivo.url }}"></iframe>
+                                {% else %}
+                                    <div class="no-preview">
+                                        No hay vista previa disponible para este formato.
+                                    </div>
+                                {% endif %}
+                            {% endwith %}
+                        {% else %}
+                            <div class="no-preview">
+                                No se cargó ningún archivo.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Acciones</h3>
+
+                    <div class="actions">
+                        <form method="post" action="{% url 'procesar_plano' plano.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary">Procesar OCR</button>
+                        </form>
+
+                        <form method="post" action="{% url 'cancelar_plano' plano.id %}" onsubmit="return confirm('¿Deseas cancelar y eliminar este plano?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Cancelar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="card">
+                    <h2>Datos del plano</h2>
+
+                    <div class="info-row">
+                        <span class="info-label">ID plano depósito</span>
+                        <span>{{ plano.id_plano_deposito }}</span>
+                    </div>
+
+                    <div class="info-row">
+                        <span class="info-label">Carpeta</span>
+                        <span>{{ plano.carpeta }}</span>
+                    </div>
+
+                    <div class="info-row">
+                        <span class="info-label">Estado</span>
+                        {% if plano.estado == "APROBADO" %}
+                            <span class="status estado-aprobado">{{ plano.estado }}</span>
+                        {% elif plano.estado == "RECHAZADO" %}
+                            <span class="status estado-rechazado">{{ plano.estado }}</span>
+                        {% elif plano.estado == "EN_VERIFICACION" %}
+                            <span class="status estado-verificacion">{{ plano.estado }}</span>
+                        {% elif plano.estado == "EN_REVISION" %}
+                            <span class="status estado-revision">{{ plano.estado }}</span>
+                        {% else %}
+                            <span class="status estado-espera">{{ plano.estado }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="info-row">
+                        <span class="info-label">Fecha del plano</span>
+                        <span>{{ plano.fecha_plano|default:"-" }}</span>
+                    </div>
+
+                    <div class="info-row">
+                        <span class="info-label">NR detectados</span>
+                        <span>{{ plano.nr_detectados|default:"-" }}</span>
+                    </div>
+
+                    <div class="info-row">
+                        <span class="info-label">NR válidos</span>
+                        <span>{{ plano.nr_validos|default:"-" }}</span>
+                    </div>
+
+                    <div class="info-row">
+                        <span class="info-label">NR desconocidos</span>
+                        <span>{{ plano.nr_desconocidos|default:"-" }}</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Motivo / diagnóstico</h3>
+                    <div class="text-box">{{ plano.motivo|default:"Aún no se procesó el plano." }}</div>
+                </div>
+
+                <div class="card">
+                    <h3>Texto OCR</h3>
+                    <div class="text-box">{{ plano.texto_ocr|default:"Aún no se ejecutó el OCR." }}</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>
