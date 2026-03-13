@@ -1,12 +1,18 @@
+from django.utils import timezone
+
 from .models import NRMateriales, Plano, Auditoria
-from .validator import parse_csv, compare_text_fuzzy, compare_dates, validar_plano_contra_bd
+from .validator import (
+    parse_csv,
+    compare_text_fuzzy,
+    compare_dates,
+    validar_plano_contra_bd,
+)
 from .ocr_extract import ocr_text_from_file, extract_nrs, extract_fecha_plano
 
 
 ESTADO_APROBADO = "APROBADO"
 ESTADO_RECHAZADO = "RECHAZADO"
 ESTADO_EN_VERIFICACION = "EN_VERIFICACION"
-
 
 def validar_nr_contra_reclamo(nr_obj):
     """
@@ -16,7 +22,11 @@ def validar_nr_contra_reclamo(nr_obj):
     {
         "nr": str,
         "estado": "APROBADO" | "RECHAZADO" | "EN_VERIFICACION",
-        "detalles": [str, ...]
+        "detalles": [str, ...],
+        "ciudad_ok": bool,
+        "zona_ok": bool,
+        "fecha_ok": bool,
+        "motivo_resultado": str,
     }
     """
     detalles = []
@@ -26,58 +36,54 @@ def validar_nr_contra_reclamo(nr_obj):
         return {
             "nr": nr_obj.numero_nr,
             "estado": ESTADO_EN_VERIFICACION,
-            "detalles": ["NR sin reclamo asociado."],
+            "detalles": ["Sin reclamo asociado"],
+            "ciudad_ok": False,
+            "zona_ok": False,
+            "fecha_ok": False,
+            "motivo_resultado": "Sin reclamo asociado",
         }
 
     resultado_ciudad = compare_text_fuzzy(nr_obj.ciudad, reclamo.ciudad)
+    resultado_zona = compare_text_fuzzy(nr_obj.zona, reclamo.zona)
+    resultado_fecha = compare_dates(nr_obj.fecha_trabajo, reclamo.fecha_reclamo)
+
+    # Ciudad
     if resultado_ciudad["comparable"]:
         if resultado_ciudad["matched"]:
-            detalles.append(
-                f"Ciudad OK: '{nr_obj.ciudad}' ~ '{reclamo.ciudad}' (score={resultado_ciudad['score']})"
-            )
+            detalles.append("Ciudad correcta")
         else:
-            detalles.append(
-                f"Ciudad NO coincide: '{nr_obj.ciudad}' vs '{reclamo.ciudad}' (score={resultado_ciudad['score']})"
-            )
+            detalles.append("Ciudad no coincide")
     else:
-        detalles.append("Ciudad pendiente: falta dato en NR o Reclamo.")
+        detalles.append("Ciudad pendiente")
 
-    resultado_zona = compare_text_fuzzy(nr_obj.zona, reclamo.zona)
+    # Zona
     if resultado_zona["comparable"]:
         if resultado_zona["matched"]:
-            detalles.append(
-                f"Zona OK: '{nr_obj.zona}' ~ '{reclamo.zona}' (score={resultado_zona['score']})"
-            )
+            detalles.append("Zona correcta")
         else:
-            detalles.append(
-                f"Zona NO coincide: '{nr_obj.zona}' vs '{reclamo.zona}' (score={resultado_zona['score']})"
-            )
+            detalles.append("Zona no coincide")
     else:
-        detalles.append("Zona pendiente: falta dato en NR o Reclamo.")
+        detalles.append("Zona pendiente")
 
-    resultado_fecha = compare_dates(nr_obj.fecha_trabajo, reclamo.fecha_reclamo)
+    # Fecha
     if resultado_fecha["comparable"]:
         if resultado_fecha["matched"]:
-            detalles.append(
-                f"Fecha OK: {nr_obj.fecha_trabajo} >= {reclamo.fecha_reclamo}"
-            )
+            detalles.append("Fecha correcta")
         else:
-            detalles.append(
-                f"Fecha NO válida: {nr_obj.fecha_trabajo} < {reclamo.fecha_reclamo}"
-            )
+            detalles.append("Fecha no válida")
     else:
-        detalles.append("Fecha pendiente: falta fecha_trabajo o fecha_reclamo.")
+        detalles.append("Fecha pendiente")
 
     hay_contradiccion = (
-        (resultado_ciudad["comparable"] and resultado_ciudad["matched"] is False) or
-        (resultado_zona["comparable"] and resultado_zona["matched"] is False) or
-        (resultado_fecha["comparable"] and resultado_fecha["matched"] is False)
+        (resultado_ciudad["comparable"] and resultado_ciudad["matched"] is False)
+        or (resultado_zona["comparable"] and resultado_zona["matched"] is False)
+        or (resultado_fecha["comparable"] and resultado_fecha["matched"] is False)
     )
 
     hay_pendientes = (
-        not resultado_ciudad["comparable"] or
-        not resultado_zona["comparable"] or
-        not resultado_fecha["comparable"]
+        not resultado_ciudad["comparable"]
+        or not resultado_zona["comparable"]
+        or not resultado_fecha["comparable"]
     )
 
     if hay_contradiccion:
@@ -91,6 +97,10 @@ def validar_nr_contra_reclamo(nr_obj):
         "nr": nr_obj.numero_nr,
         "estado": estado,
         "detalles": detalles,
+        "ciudad_ok": bool(resultado_ciudad["comparable"] and resultado_ciudad["matched"]),
+        "zona_ok": bool(resultado_zona["comparable"] and resultado_zona["matched"]),
+        "fecha_ok": bool(resultado_fecha["comparable"] and resultado_fecha["matched"]),
+        "motivo_resultado": " | ".join(detalles),
     }
 
 
@@ -104,6 +114,10 @@ def validar_plano_completo(plano: Plano):
     - Si algún NR da RECHAZADO -> plano RECHAZADO
     - Si todos los NR válidos pasan y no hay desconocidos -> APROBADO
     - Si faltan datos -> EN_VERIFICACION
+
+    Además:
+    - actualiza ResultadoValidacionPlano
+    - construye motivo detallado del plano
     """
     nr_validos = parse_csv(plano.nr_validos)
     nr_desconocidos = parse_csv(plano.nr_desconocidos)
@@ -126,6 +140,21 @@ def validar_plano_completo(plano: Plano):
             detalles_nr.append(f"NR {resultado['nr']} -> {resultado['estado']}")
             for detalle in resultado["detalles"]:
                 detalles_nr.append(f" - {detalle}")
+
+            # Actualiza el resultado individual del NR dentro del plano
+            resultado_plano = plano.resultados_validacion.filter(
+                nr_detectado=resultado["nr"]
+            ).first()
+
+            if resultado_plano:
+                resultado_plano.estado_resultado = resultado["estado"]
+                resultado_plano.ciudad_ok = resultado["ciudad_ok"]
+                resultado_plano.zona_ok = resultado["zona_ok"]
+                resultado_plano.fecha_ok = resultado["fecha_ok"]
+                resultado_plano.motivo_resultado = resultado["motivo_resultado"]
+                resultado_plano.reclamo_encontrado = nr_obj.reclamo
+                resultado_plano.nr_materiales_encontrado = nr_obj
+                resultado_plano.save()
 
             if resultado["estado"] == ESTADO_RECHAZADO:
                 estado_final = ESTADO_RECHAZADO
@@ -187,26 +216,41 @@ def procesar_plano_completo(plano: Plano, usuario: str = "sistema"):
         plano.texto_ocr = text
         plano.nr_detectados = ",".join(nrs) if nrs else None
         plano.fecha_plano = fecha
+        plano.procesado = True
+        plano.procesado_por = usuario
+        plano.fecha_procesamiento = timezone.now()
         plano.save()
 
         Auditoria.objects.create(
             plano=plano,
+            carpeta=plano.carpeta,
             usuario=usuario,
-            accion=f"OCR OK -> nr_detectados={plano.nr_detectados} fecha_plano={plano.fecha_plano}"
+            accion="PROCESAR_OCR",
+            descripcion=f"OCR OK -> nr_detectados={plano.nr_detectados} fecha_plano={plano.fecha_plano}",
+            entidad="Plano",
+            entidad_id=str(plano.id),
         )
 
         res_bd = validar_plano_contra_bd(plano)
         Auditoria.objects.create(
             plano=plano,
+            carpeta=plano.carpeta,
             usuario=usuario,
-            accion=f"VALIDACIÓN NR -> estado={res_bd['estado']} validos={res_bd['validos']} desconocidos={res_bd['desconocidos']}"
+            accion="VALIDAR_NR_BD",
+            descripcion=f"VALIDACIÓN NR -> estado={res_bd['estado']} validos={res_bd['validos']} desconocidos={res_bd['desconocidos']}",
+            entidad="Plano",
+            entidad_id=str(plano.id),
         )
 
         res_final = validar_plano_completo(plano)
         Auditoria.objects.create(
             plano=plano,
+            carpeta=plano.carpeta,
             usuario=usuario,
-            accion=f"VALIDACIÓN COMPLETA -> estado={res_final['estado']} motivos={res_final['motivos']}"
+            accion="VALIDAR_PLANO_COMPLETO",
+            descripcion=f"VALIDACIÓN COMPLETA -> estado={res_final['estado']} motivos={res_final['motivos']}",
+            entidad="Plano",
+            entidad_id=str(plano.id),
         )
 
         return {
@@ -222,8 +266,12 @@ def procesar_plano_completo(plano: Plano, usuario: str = "sistema"):
 
         Auditoria.objects.create(
             plano=plano,
+            carpeta=plano.carpeta,
             usuario=usuario,
-            accion=f"PROCESO COMPLETO ERROR: {e}"
+            accion="PROCESO_COMPLETO_ERROR",
+            descripcion=str(e),
+            entidad="Plano",
+            entidad_id=str(plano.id),
         )
 
         return {

@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Carpetas{% endblock %}
+
+{% block page_title %}
+Carpetas
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-4">
+
+    <div class="col-12">
+        <div class="card shadow-card p-4">
+
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+                <div>
+                    <h5 class="mb-1">Gestión de carpetas</h5>
+                    <p class="text-muted mb-0">Busca, filtra y accede a las carpetas registradas en el sistema.</p>
+                </div>
+
+                <div>
+                    <a href="{% url 'crear_carpeta' %}" class="btn btn-primary">
+                        <i class="bi bi-folder-plus me-2"></i>
+                        Crear carpeta
+                    </a>
+                </div>
+            </div>
+
+            <form method="get" class="row g-3">
+
+                <div class="col-md-6 col-lg-3">
+                    <label for="q" class="form-label">Código de carpeta</label>
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="q"
+                        name="q"
+                        value="{{ filtros.q }}"
+                        placeholder="Ej: CARP001"
+                    >
+                </div>
+
+                <div class="col-md-6 col-lg-2">
+                    <label for="estado" class="form-label">Estado</label>
+                    <select id="estado" name="estado" class="form-select">
+                        <option value="">Todos</option>
+                        {% for value, label in estado_choices %}
+                            <option value="{{ value }}" {% if filtros.estado == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <label for="empresa" class="form-label">Empresa</label>
+                    <select id="empresa" name="empresa" class="form-select">
+                        <option value="">Todas</option>
+                        {% for empresa in empresas %}
+                            <option value="{{ empresa.id }}" {% if filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
+                                {{ empresa.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3 col-lg-2">
+                    <label for="mes" class="form-label">Mes</label>
+                    <input
+                        type="number"
+                        class="form-control"
+                        id="mes"
+                        name="mes"
+                        min="1"
+                        max="12"
+                        value="{{ filtros.mes }}"
+                        placeholder="3"
+                    >
+                </div>
+
+                <div class="col-md-3 col-lg-2">
+                    <label for="anio" class="form-label">Año</label>
+                    <input
+                        type="number"
+                        class="form-control"
+                        id="anio"
+                        name="anio"
+                        value="{{ filtros.anio }}"
+                        placeholder="2026"
+                    >
+                </div>
+
+                <div class="col-12 d-flex gap-2 flex-wrap">
+                    <button type="submit" class="btn btn-shadow">
+                        <i class="bi bi-search me-2"></i>
+                        Aplicar filtros
+                    </button>
+
+                    <a href="{% url 'carpetas' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise me-2"></i>
+                        Limpiar
+                    </a>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+
+    <div class="col-12">
+        <div class="card shadow-card p-4">
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0">Listado de carpetas</h5>
+                <span class="text-muted">Total: {{ carpetas|length }}</span>
+            </div>
+
+            {% if carpetas %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+
+                        <thead class="table-light">
+                            <tr>
+                                <th>Código</th>
+                                <th>Empresa</th>
+                                <th>Período</th>
+                                <th>Fecha de creación</th>
+                                <th>Estado</th>
+                                <th>Planos</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for carpeta in carpetas %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ carpeta.codigo_carpeta }}</strong>
+                                    </td>
+
+                                    <td>
+                                        {% if carpeta.empresa %}
+                                            {{ carpeta.empresa.nombre }}
+                                        {% else %}
+                                            <span class="text-muted">Sin empresa</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td>{{ carpeta.mes }}/{{ carpeta.anio }}</td>
+
+                                    <td>{{ carpeta.fecha_creacion|date:"d/m/Y H:i" }}</td>
+
+                                    <td>
+                                        {% if carpeta.estado == "ABIERTA" %}
+                                            <span class="badge bg-primary">Abierta</span>
+                                        {% elif carpeta.estado == "EN_REVISION" %}
+                                            <span class="badge bg-warning text-dark">En revisión</span>
+                                        {% elif carpeta.estado == "CERRADA" %}
+                                            <span class="badge bg-success">Cerrada</span>
+                                        {% elif carpeta.estado == "OBSERVADA" %}
+                                            <span class="badge bg-danger">Observada</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ carpeta.estado }}</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td>{{ carpeta.planos.count }}</td>
+
+                                    <td class="text-end">
+                                        <div class="d-flex justify-content-end gap-2 flex-wrap">
+                                            <a href="{% url 'detalle_carpeta' carpeta.id %}" class="btn btn-sm btn-shadow">
+                                                <i class="bi bi-folder2-open me-1"></i>
+                                                Abrir
+                                            </a>
+
+                                            <form
+                                                method="post"
+                                                action="{% url 'eliminar_carpeta' carpeta.id %}"
+                                                onsubmit="return confirm('¿Seguro que deseas eliminar lógicamente esta carpeta?');"
+                                                class="d-inline"
+                                            >
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                    <i class="bi bi-trash me-1"></i>
+                                                    Eliminar
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-secondary mb-0">
+                    No se encontraron carpetas con los filtros actuales.
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

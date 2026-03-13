@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Crear carpeta{% endblock %}
+
+{% block show_page_header %}{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <!-- TÍTULO ALINEADO -->
+        <div class="page-title-wrap mb-4">
+            <div class="page-title-icon">
+                <i class="bi bi-folder-plus"></i>
+            </div>
+
+            <h3 class="page-title mb-0">
+                Crear carpeta
+            </h3>
+        </div>
+
+        <div class="card shadow-card">
+
+            <div class="card-header shadow-section-header">
+                <h5 class="mb-0">Datos de la carpeta</h5>
+            </div>
+
+            <div class="card-body shadow-section-body">
+
+                {% if error %}
+                    <div class="alert alert-danger">
+                        {{ error }}
+                    </div>
+                {% endif %}
+
+                <form method="post" class="row g-3">
+
+                    {% csrf_token %}
+
+                    <div class="col-12">
+                        <label class="form-label">Empresa contratista</label>
+
+                        <select name="empresa" class="form-select" required>
+
+                            <option value="">Seleccionar empresa</option>
+
+                            {% for empresa in empresas %}
+                                <option value="{{ empresa.id }}">
+                                    {{ empresa.nombre }}
+                                </option>
+                            {% endfor %}
+
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">Mes</label>
+
+                        <input
+                            type="number"
+                            name="mes"
+                            class="form-control"
+                            min="1"
+                            max="12"
+                            placeholder="Ej: 3"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">Año</label>
+
+                        <input
+                            type="number"
+                            name="anio"
+                            class="form-control"
+                            placeholder="Ej: 2026"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="col-12">
+
+                        <label class="form-label">Observación (opcional)</label>
+
+                        <textarea
+                            name="observacion_general"
+                            class="form-control"
+                            rows="3"
+                            placeholder="Agregar alguna observación general sobre la carpeta..."
+                        ></textarea>
+
+                    </div>
+
+                    <div class="col-12 d-flex justify-content-between flex-wrap gap-2 mt-3">
+
+                        <a href="{% url 'carpetas' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>
+                            Volver
+                        </a>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-folder-plus me-2"></i>
+                            Crear carpeta
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

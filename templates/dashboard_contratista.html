@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio contratista{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+<div class="col-xl-11">
+
+<!-- TITULO -->
+<div class="page-title-wrap mb-4">
+    <div class="page-title-icon">
+        <i class="bi bi-person-workspace"></i>
+    </div>
+
+    <h3 class="page-title">
+        Panel de contratista
+    </h3>
+</div>
+
+
+<!-- BIENVENIDA -->
+<div class="card shadow-card mb-4">
+<div class="card-body">
+
+<div class="row align-items-center">
+
+<div class="col-md-8">
+
+<h4 class="mb-2">
+Bienvenido {{ request.user.username }}
+</h4>
+
+<p class="text-soft mb-0">
+Desde aquí puedes consultar las carpetas asociadas a tu empresa y revisar el estado de los planos.
+</p>
+
+</div>
+
+<div class="col-md-4 text-md-end">
+
+<div class="shadow-info-box d-inline-block">
+
+<div style="font-size:0.8rem;color:#64748b">
+ROL
+</div>
+
+<div style="font-weight:600">
+{{ request.user.perfil.get_rol_display }}
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+
+<!-- ACCESOS RAPIDOS -->
+
+<div class="row g-4 mb-4">
+
+<div class="col-md-6 col-xl-4">
+
+<a href="{% url 'carpetas' %}" class="card shadow-card text-decoration-none">
+
+<div class="card-body text-center">
+
+<div style="font-size:2rem;margin-bottom:10px;color:#2c3e50">
+<i class="bi bi-folder2-open"></i>
+</div>
+
+<h5>Mis carpetas</h5>
+
+<p class="text-soft mb-0">
+Ver carpetas asociadas a tu empresa
+</p>
+
+</div>
+
+</a>
+
+</div>
+
+
+<div class="col-md-6 col-xl-4">
+
+<div class="card shadow-card">
+
+<div class="card-body text-center">
+
+<div style="font-size:2rem;margin-bottom:10px;color:#2c3e50">
+<i class="bi bi-bar-chart-line"></i>
+</div>
+
+<h5>Mis estadísticas</h5>
+
+<p class="text-soft mb-0">
+Disponible próximamente
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+
+<div class="col-md-6 col-xl-4">
+
+<a href="{% url 'logout' %}" class="card shadow-card text-decoration-none">
+
+<div class="card-body text-center">
+
+<div style="font-size:2rem;margin-bottom:10px;color:#2c3e50">
+<i class="bi bi-box-arrow-right"></i>
+</div>
+
+<h5>Salir</h5>
+
+<p class="text-soft mb-0">
+Cerrar sesión
+</p>
+
+</div>
+
+</a>
+
+</div>
+
+</div>
+
+
+<!-- CARPETAS RECIENTES -->
+
+<div class="card shadow-card">
+
+<div class="shadow-section-header">
+<i class="bi bi-folder"></i> Carpetas recientes
+</div>
+
+<div class="shadow-section-body">
+
+{% if carpetas_recientes %}
+
+<table class="table">
+
+<thead>
+<tr>
+<th>Código</th>
+<th>Empresa</th>
+<th>Mes/Año</th>
+<th>Estado</th>
+<th></th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for carpeta in carpetas_recientes %}
+
+<tr>
+
+<td>
+<strong>{{ carpeta.codigo_carpeta }}</strong>
+</td>
+
+<td>
+{{ carpeta.empresa.nombre }}
+</td>
+
+<td>
+{{ carpeta.mes }}/{{ carpeta.anio }}
+</td>
+
+<td>
+
+{% if carpeta.estado == "ABIERTA" %}
+<span class="badge bg-primary">Abierta</span>
+
+{% elif carpeta.estado == "EN_REVISION" %}
+<span class="badge bg-warning text-dark">En revisión</span>
+
+{% elif carpeta.estado == "CERRADA" %}
+<span class="badge bg-success">Cerrada</span>
+
+{% elif carpeta.estado == "OBSERVADA" %}
+<span class="badge bg-danger">Observada</span>
+
+{% else %}
+<span class="badge bg-secondary">{{ carpeta.estado }}</span>
+{% endif %}
+
+</td>
+
+<td class="text-end">
+
+<a href="{% url 'detalle_carpeta' carpeta.id %}" class="btn btn-sm btn-shadow">
+Ver
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+</table>
+
+{% else %}
+
+<div class="text-center py-4 text-soft">
+No hay carpetas disponibles aún.
+</div>
+
+{% endif %}
+
+</div>
+</div>
+
+</div>
+</div>
+
+{% endblock %}

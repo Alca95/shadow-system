@@ -1,132 +1,570 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ app_name }} - Panel principal</title>
+{% extends "base.html" %}
 
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f4f6f8;
-            color: #333;
-        }
+{% block title %}Inicio{% endblock %}
 
-        .header {
-            background: #2c3e50;
-            color: white;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+{% block show_page_header %}{% endblock %}
 
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-        }
+{% block content %}
 
-        .header a {
-            color: white;
-            text-decoration: none;
-            background: rgba(255,255,255,0.15);
-            padding: 10px 16px;
-            border-radius: 6px;
-        }
+<div class="row justify-content-center">
+    <div class="col-xl-11">
 
-        .container {
-            max-width: 1100px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-
-        .welcome-box {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-            margin-bottom: 30px;
-        }
-
-        .welcome-box h2 {
-            margin-top: 0;
-        }
-
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-        }
-
-        .card {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-            text-decoration: none;
-            color: #333;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 22px rgba(0,0,0,0.12);
-        }
-
-        .card h3 {
-            margin-top: 0;
-            margin-bottom: 10px;
-            color: #2c3e50;
-        }
-
-        .card p {
-            margin: 0;
-            color: #666;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .disabled {
-            opacity: 0.7;
-            cursor: default;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="header">
-        <h1>{{ app_name }}</h1>
-        <a href="{% url 'logout' %}">Cerrar sesión</a>
-    </div>
-
-    <div class="container">
-        <div class="welcome-box">
-            <h2>Bienvenido, {{ request.user.username }}</h2>
-            <p>Sistema de verificación de planos con OCR y validación automática.</p>
+        <!-- TÍTULO -->
+        <div class="page-title-wrap mb-4">
+            <div class="page-title-icon floating-icon">
+                <i class="bi bi-grid-1x2"></i>
+            </div>
+            <div>
+                <h3 class="page-title mb-1">Inicio</h3>
+                <div class="dashboard-subtitle">
+                    Bienvenido a Shadow, centro de navegación del sistema.
+                </div>
+            </div>
         </div>
 
-        <div class="cards">
-            <a href="{% url 'subir_plano' %}" class="card">
-                <h3>Subir plano</h3>
-                <p>Cargar un nuevo archivo para procesamiento OCR.</p>
-            </a>
+        <!-- BIENVENIDA -->
+        <div class="card shadow-card dashboard-hero mb-4">
+            <div class="card-body hero-body">
+                <div class="row align-items-center g-4">
+                    <div class="col-lg-8">
+                        <div class="hero-badge mb-3">
+                            <i class="bi bi-stars me-2"></i>
+                            Sistema Shadow
+                        </div>
 
-            <a href="#" class="card disabled">
-                <h3>Ver planos</h3>
-                <p>Consultar planos procesados y estados de validación.</p>
-            </a>
+                        <h2 class="hero-title mb-2">
+                            Hola, {{ request.user.username }}
+                        </h2>
 
-            <a href="#" class="card disabled">
-                <h3>Reclamos</h3>
-                <p>Visualizar reclamos registrados en el sistema.</p>
-            </a>
+                        <p class="hero-text mb-0">
+                            Gestiona carpetas, controla planos y navega rápidamente por las funciones principales del sistema.
+                        </p>
+                    </div>
 
-            <a href="#" class="card disabled">
-                <h3>Auditoría</h3>
-                <p>Revisar acciones, validaciones y trazabilidad.</p>
-            </a>
+                    <div class="col-lg-4">
+                        <div class="hero-side-card">
+                            <div class="hero-side-label">Acceso actual</div>
+                            <div class="hero-side-value">
+                                {% if request.user.perfil %}
+                                    {{ request.user.perfil.get_rol_display }}
+                                {% else %}
+                                    Usuario
+                                {% endif %}
+                            </div>
+                            <div class="hero-side-soft">
+                                {{ app_name|default:"Shadow" }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
 
-</body>
-</html>
+        <!-- ACCESOS RÁPIDOS -->
+        <div class="row g-4 mb-4">
+
+            <div class="col-md-6 col-xl-3">
+                <a href="{% url 'crear_carpeta' %}" class="quick-link-card quick-link-primary">
+                    <div class="quick-link-top">
+                        <div class="quick-link-icon">
+                            <i class="bi bi-folder-plus"></i>
+                        </div>
+                        <div class="quick-link-arrow">
+                            <i class="bi bi-arrow-up-right"></i>
+                        </div>
+                    </div>
+                    <div class="quick-link-title">Crear carpeta</div>
+                    <div class="quick-link-text">Registrar una nueva carpeta de trabajo.</div>
+                </a>
+            </div>
+
+            <div class="col-md-6 col-xl-3">
+                <a href="{% url 'carpetas' %}" class="quick-link-card quick-link-secondary">
+                    <div class="quick-link-top">
+                        <div class="quick-link-icon">
+                            <i class="bi bi-folder2-open"></i>
+                        </div>
+                        <div class="quick-link-arrow">
+                            <i class="bi bi-arrow-up-right"></i>
+                        </div>
+                    </div>
+                    <div class="quick-link-title">Abrir carpetas</div>
+                    <div class="quick-link-text">Consultar y acceder a carpetas existentes.</div>
+                </a>
+            </div>
+
+            <div class="col-md-6 col-xl-3">
+                <a href="{% url 'carpetas' %}" class="quick-link-card quick-link-dark">
+                    <div class="quick-link-top">
+                        <div class="quick-link-icon">
+                            <i class="bi bi-search"></i>
+                        </div>
+                        <div class="quick-link-arrow">
+                            <i class="bi bi-arrow-up-right"></i>
+                        </div>
+                    </div>
+                    <div class="quick-link-title">Buscar carpeta</div>
+                    <div class="quick-link-text">Filtrar carpetas por código, empresa o estado.</div>
+                </a>
+            </div>
+
+            <div class="col-md-6 col-xl-3">
+                <div class="quick-link-card quick-link-muted quick-link-disabled">
+                    <div class="quick-link-top">
+                        <div class="quick-link-icon">
+                            <i class="bi bi-bar-chart-line"></i>
+                        </div>
+                    </div>
+                    <div class="quick-link-title">Estadísticas</div>
+                    <div class="quick-link-text">Disponible en la siguiente etapa del sistema.</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- BLOQUE PRINCIPAL -->
+        <div class="row g-4">
+
+            <!-- CARPETAS RECIENTES -->
+            <div class="col-xl-8">
+                <div class="card shadow-card h-100">
+                    <div class="card-header shadow-section-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-clock-history"></i>
+                            <span>Carpetas recientes</span>
+                        </div>
+
+                        <a href="{% url 'carpetas' %}" class="btn btn-sm btn-light recent-header-btn">
+                            Ver todas
+                        </a>
+                    </div>
+
+                    <div class="card-body shadow-section-body">
+                        {% if carpetas_recientes %}
+                            <div class="row g-3">
+                                {% for carpeta in carpetas_recientes %}
+                                    <div class="col-md-6">
+                                        <div class="recent-folder-card">
+                                            <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                                                <div>
+                                                    <div class="recent-folder-code">{{ carpeta.codigo_carpeta }}</div>
+                                                    <div class="recent-folder-company">
+                                                        {% if carpeta.empresa %}
+                                                            {{ carpeta.empresa.nombre }}
+                                                        {% else %}
+                                                            Sin empresa
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+
+                                                {% if carpeta.estado == "ABIERTA" %}
+                                                    <span class="badge bg-primary recent-badge">Abierta</span>
+                                                {% elif carpeta.estado == "EN_REVISION" %}
+                                                    <span class="badge bg-warning text-dark recent-badge">En revisión</span>
+                                                {% elif carpeta.estado == "CERRADA" %}
+                                                    <span class="badge bg-success recent-badge">Cerrada</span>
+                                                {% elif carpeta.estado == "OBSERVADA" %}
+                                                    <span class="badge bg-danger recent-badge">Observada</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary recent-badge">{{ carpeta.estado }}</span>
+                                                {% endif %}
+                                            </div>
+
+                                            <div class="recent-folder-meta mb-3">
+                                                <div>
+                                                    <i class="bi bi-calendar3 me-2"></i>
+                                                    {{ carpeta.mes }}/{{ carpeta.anio }}
+                                                </div>
+                                                <div>
+                                                    <i class="bi bi-clock me-2"></i>
+                                                    {{ carpeta.fecha_creacion|date:"d/m/Y H:i" }}
+                                                </div>
+                                            </div>
+
+                                            <a href="{% url 'detalle_carpeta' carpeta.id %}" class="btn btn-shadow recent-folder-btn">
+                                                <i class="bi bi-eye me-2"></i>
+                                                Abrir carpeta
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-dashboard-state">
+                                <div class="empty-dashboard-icon">
+                                    <i class="bi bi-folder-x"></i>
+                                </div>
+                                <div class="empty-dashboard-title">Aún no hay carpetas registradas</div>
+                                <div class="empty-dashboard-text">
+                                    Puedes comenzar creando una carpeta nueva para organizar tus planos.
+                                </div>
+                                <a href="{% url 'crear_carpeta' %}" class="btn btn-shadow mt-3">
+                                    <i class="bi bi-folder-plus me-2"></i>
+                                    Crear carpeta
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEL LATERAL -->
+            <div class="col-xl-4">
+                <div class="row g-4">
+
+                    <div class="col-12">
+                        <div class="card shadow-card">
+                            <div class="card-header shadow-section-header d-flex align-items-center gap-2">
+                                <i class="bi bi-person-badge"></i>
+                                <span>Tu sesión</span>
+                            </div>
+                            <div class="card-body shadow-section-body">
+                                <div class="session-box">
+                                    <div class="session-item">
+                                        <div class="session-label">Usuario</div>
+                                        <div class="session-value">{{ request.user.username }}</div>
+                                    </div>
+                                    <div class="session-item">
+                                        <div class="session-label">Rol</div>
+                                        <div class="session-value">
+                                            {% if request.user.perfil %}
+                                                {{ request.user.perfil.get_rol_display }}
+                                            {% else %}
+                                                Usuario
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="session-item">
+                                        <div class="session-label">Sistema</div>
+                                        <div class="session-value">{{ app_name|default:"Shadow" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="card shadow-card">
+                            <div class="card-header shadow-section-header d-flex align-items-center gap-2">
+                                <i class="bi bi-lightning-charge"></i>
+                                <span>Acciones rápidas</span>
+                            </div>
+                            <div class="card-body shadow-section-body">
+                                <div class="side-actions-grid">
+                                    <a href="{% url 'crear_carpeta' %}" class="side-action-btn">
+                                        <i class="bi bi-folder-plus"></i>
+                                        <span>Nueva carpeta</span>
+                                    </a>
+
+                                    <a href="{% url 'carpetas' %}" class="side-action-btn">
+                                        <i class="bi bi-folder2-open"></i>
+                                        <span>Ver carpetas</span>
+                                    </a>
+
+                                    <a href="{% url 'logout' %}" class="side-action-btn side-action-danger">
+                                        <i class="bi bi-box-arrow-right"></i>
+                                        <span>Salir</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .floating-icon {
+        animation: floatIcon 3.2s ease-in-out infinite;
+    }
+
+    @keyframes floatIcon {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-4px); }
+    }
+
+    .dashboard-subtitle {
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 0.98rem;
+        font-weight: 300;
+    }
+
+    .dashboard-hero {
+        overflow: hidden;
+    }
+
+    .hero-body {
+        background: linear-gradient(135deg, rgba(248, 250, 252, 0.97) 0%, rgba(238, 242, 247, 0.97) 100%);
+        padding: 2rem;
+    }
+
+    .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.45rem 0.85rem;
+        border-radius: 999px;
+        background: rgba(79, 70, 229, 0.08);
+        color: #4f46e5;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .hero-title {
+        color: #223247;
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1.1;
+    }
+
+    .hero-text {
+        color: #64748b;
+        font-size: 1rem;
+        max-width: 680px;
+    }
+
+    .hero-side-card {
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(44, 62, 80, 0.08);
+        border-radius: 16px;
+        padding: 1.25rem 1.15rem;
+        text-align: left;
+    }
+
+    .hero-side-label {
+        color: #64748b;
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.35rem;
+    }
+
+    .hero-side-value {
+        color: #223247;
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+
+    .hero-side-soft {
+        color: #64748b;
+        font-size: 0.92rem;
+    }
+
+    .quick-link-card {
+        display: block;
+        height: 100%;
+        padding: 1.3rem 1.2rem;
+        border-radius: 16px;
+        text-decoration: none;
+        border: 1px solid rgba(44, 62, 80, 0.08);
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+        transition: transform 0.22s ease, box-shadow 0.22s ease;
+    }
+
+    .quick-link-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 30px rgba(0, 0, 0, 0.10);
+    }
+
+    .quick-link-disabled:hover {
+        transform: none;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+    }
+
+    .quick-link-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .quick-link-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+    }
+
+    .quick-link-arrow {
+        color: #64748b;
+        font-size: 1.05rem;
+    }
+
+    .quick-link-title {
+        color: #223247;
+        font-size: 1.08rem;
+        font-weight: 700;
+        margin-bottom: 0.35rem;
+    }
+
+    .quick-link-text {
+        color: #64748b;
+        font-size: 0.92rem;
+        line-height: 1.5;
+    }
+
+    .quick-link-primary .quick-link-icon {
+        background: rgba(79, 70, 229, 0.10);
+        color: #4f46e5;
+    }
+
+    .quick-link-secondary .quick-link-icon {
+        background: rgba(37, 99, 235, 0.10);
+        color: #2563eb;
+    }
+
+    .quick-link-dark .quick-link-icon {
+        background: rgba(44, 62, 80, 0.10);
+        color: #2c3e50;
+    }
+
+    .quick-link-muted .quick-link-icon {
+        background: rgba(100, 116, 139, 0.10);
+        color: #64748b;
+    }
+
+    .recent-header-btn {
+        font-weight: 600;
+        border-radius: 10px;
+    }
+
+    .recent-folder-card {
+        background: #eef2f7;
+        border: 1px solid #d9e1ea;
+        border-radius: 14px;
+        padding: 1rem;
+        height: 100%;
+    }
+
+    .recent-folder-code {
+        color: #223247;
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-bottom: 0.2rem;
+    }
+
+    .recent-folder-company {
+        color: #64748b;
+        font-size: 0.92rem;
+    }
+
+    .recent-folder-meta {
+        display: grid;
+        gap: 0.45rem;
+        color: #475569;
+        font-size: 0.9rem;
+    }
+
+    .recent-folder-btn {
+        width: 100%;
+        border-radius: 10px;
+    }
+
+    .recent-badge {
+        border-radius: 999px;
+        font-weight: 600;
+        padding: 0.45rem 0.8rem;
+    }
+
+    .session-box {
+        display: grid;
+        gap: 0.9rem;
+    }
+
+    .session-item {
+        background: #eef2f7;
+        border: 1px solid #d9e1ea;
+        border-radius: 12px;
+        padding: 0.9rem 1rem;
+    }
+
+    .session-label {
+        color: #64748b;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.2rem;
+    }
+
+    .session-value {
+        color: #223247;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .side-actions-grid {
+        display: grid;
+        gap: 0.85rem;
+    }
+
+    .side-action-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        text-decoration: none;
+        color: #223247;
+        background: #eef2f7;
+        border: 1px solid #d9e1ea;
+        border-radius: 12px;
+        padding: 0.9rem 1rem;
+        font-weight: 600;
+        transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+    }
+
+    .side-action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+        background: #e7edf5;
+        color: #223247;
+    }
+
+    .side-action-btn i {
+        font-size: 1.05rem;
+    }
+
+    .side-action-danger {
+        color: #b42318;
+    }
+
+    .side-action-danger:hover {
+        color: #b42318;
+        background: #fef2f2;
+    }
+
+    .empty-dashboard-state {
+        text-align: center;
+        padding: 2.2rem 1rem;
+    }
+
+    .empty-dashboard-icon {
+        font-size: 2.2rem;
+        color: #94a3b8;
+        margin-bottom: 0.8rem;
+    }
+
+    .empty-dashboard-title {
+        color: #223247;
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin-bottom: 0.35rem;
+    }
+
+    .empty-dashboard-text {
+        color: #64748b;
+        max-width: 420px;
+        margin: 0 auto;
+    }
+</style>
+
+{% endblock %}

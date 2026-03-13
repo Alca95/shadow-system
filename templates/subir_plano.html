@@ -1,164 +1,126 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ app_name }} - Subir plano</title>
+{% extends "base.html" %}
 
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f4f6f8;
-            color: #333;
-        }
+{% block title %}Subir plano{% endblock %}
 
-        .header {
-            background: #2c3e50;
-            color: white;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+{% block show_page_header %}{% endblock %}
 
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-        }
+{% block content %}
 
-        .header .nav {
-            display: flex;
-            gap: 12px;
-        }
+<div class="row justify-content-center">
+    <div class="col-lg-8">
 
-        .header a {
-            color: white;
-            text-decoration: none;
-            background: rgba(255,255,255,0.15);
-            padding: 10px 16px;
-            border-radius: 6px;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-
-        .card {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        }
-
-        h2 {
-            margin-top: 0;
-            color: #2c3e50;
-        }
-
-        .form-group {
-            margin-bottom: 18px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 14px;
-            box-sizing: border-box;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 12px 18px;
-            border: none;
-            border-radius: 8px;
-            background: #2c3e50;
-            color: white;
-            font-size: 14px;
-            cursor: pointer;
-            text-decoration: none;
-        }
-
-        .btn:hover {
-            background: #1f2d3a;
-        }
-
-        .error {
-            background: #fdecea;
-            color: #b42318;
-            border: 1px solid #f5c2c0;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .hint {
-            color: #666;
-            font-size: 14px;
-            margin-top: 8px;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="header">
-        <h1>{{ app_name }}</h1>
-        <div class="nav">
-            <a href="{% url 'dashboard' %}">Dashboard</a>
-            <a href="{% url 'logout' %}">Cerrar sesión</a>
+        <!-- TÍTULO ALINEADO CON LA TARJETA -->
+        <div class="page-title-wrap mb-4">
+            <div class="page-title-icon">
+                <i class="bi bi-file-earmark-text"></i>
+            </div>
+            <h3 class="page-title mb-0">Subir plano</h3>
         </div>
-    </div>
 
-    <div class="container">
-        <div class="card">
-            <h2>Subir plano</h2>
-            <p>Cargue una imagen o PDF del plano para iniciar el procesamiento.</p>
+        <div class="card shadow-card">
+            <div class="card-header shadow-section-header">
+                <h5 class="mb-0">Datos del plano</h5>
+            </div>
 
-            {% if error %}
-                <div class="error">
-                    {{ error }}
-                </div>
-            {% endif %}
+            <div class="card-body shadow-section-body">
 
-            <form method="post" enctype="multipart/form-data">
-                {% csrf_token %}
+                {% if error %}
+                    <div class="alert alert-danger">
+                        {{ error }}
+                    </div>
+                {% endif %}
 
-                <div class="form-group">
-                    <label for="carpeta">Carpeta</label>
-                    <select name="carpeta" id="carpeta" required>
-                        <option value="">Seleccione una carpeta</option>
-                        {% for carpeta in carpetas %}
-                            <option value="{{ carpeta.id }}">
-                                {{ carpeta.mes }}/{{ carpeta.anio }} - {{ carpeta.empresa }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
+                {% if carpeta_actual %}
+                    <div class="shadow-info-box mb-4">
+                        <div><strong>Carpeta actual:</strong> {{ carpeta_actual.codigo_carpeta }}</div>
+                        <div>
+                            <strong>Empresa:</strong>
+                            {% if carpeta_actual.empresa %}
+                                {{ carpeta_actual.empresa.nombre }}
+                            {% else %}
+                                Sin empresa
+                            {% endif %}
+                        </div>
+                        <div><strong>Período:</strong> {{ carpeta_actual.mes }}/{{ carpeta_actual.anio }}</div>
+                    </div>
+                {% endif %}
 
-                <div class="form-group">
-                    <label for="id_plano_deposito">ID plano depósito</label>
-                    <input type="text" name="id_plano_deposito" id="id_plano_deposito" required>
-                </div>
+                <form method="post" enctype="multipart/form-data" class="row g-3">
+                    {% csrf_token %}
 
-                <div class="form-group">
-                    <label for="archivo">Archivo</label>
-                    <input type="file" name="archivo" id="archivo" accept=".jpg,.jpeg,.png,.pdf" required>
-                    <div class="hint">Formatos permitidos: JPG, PNG, PDF.</div>
-                </div>
+                    {% if carpeta_actual %}
+                        <input type="hidden" name="carpeta" value="{{ carpeta_actual.id }}">
+                    {% else %}
+                        <div class="col-12">
+                            <label for="carpeta" class="form-label">Carpeta</label>
+                            <select name="carpeta" id="carpeta" class="form-select" required>
+                                <option value="">Seleccione una carpeta</option>
+                                {% for carpeta in carpetas %}
+                                    <option value="{{ carpeta.id }}">
+                                        {{ carpeta.codigo_carpeta }} -
+                                        {% if carpeta.empresa %}
+                                            {{ carpeta.empresa.nombre }}
+                                        {% else %}
+                                            Sin empresa
+                                        {% endif %}
+                                        ({{ carpeta.mes }}/{{ carpeta.anio }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    {% endif %}
 
-                <button type="submit" class="btn">Subir plano</button>
-            </form>
+                    <div class="col-12">
+                        <label for="id_plano_deposito" class="form-label">ID plano depósito</label>
+                        <input
+                            type="text"
+                            name="id_plano_deposito"
+                            id="id_plano_deposito"
+                            class="form-control"
+                            placeholder="Ej: PLANO-001"
+                            required
+                        >
+                    </div>
+
+                    <div class="col-12">
+                        <label for="archivo" class="form-label">Archivo</label>
+                        <input
+                            type="file"
+                            name="archivo"
+                            id="archivo"
+                            class="form-control"
+                            accept=".jpg,.jpeg,.png,.pdf"
+                            required
+                        >
+                        <div class="form-text">
+                            Formatos permitidos: JPG, JPEG, PNG y PDF.
+                        </div>
+                    </div>
+
+                    <div class="col-12 d-flex justify-content-between flex-wrap gap-2 mt-3">
+                        {% if carpeta_actual %}
+                            <a href="{% url 'detalle_carpeta' carpeta_actual.id %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>
+                                Volver a carpeta
+                            </a>
+                        {% else %}
+                            <a href="{% url 'carpetas' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>
+                                Volver
+                            </a>
+                        {% endif %}
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-upload me-2"></i>
+                            Subir plano
+                        </button>
+                    </div>
+                </form>
+
+            </div>
         </div>
-    </div>
 
-</body>
-</html>
+    </div>
+</div>
+
+{% endblock %}
