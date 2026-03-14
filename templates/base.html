@@ -3,12 +3,13 @@
 {% load static %}
 <head>
     <meta charset="UTF-8">
-    <title>{{ app_name }} - {% block title %}Sistema{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ app_name|default:"Shadow" }} - {% block title %}Sistema{% endblock %}</title>
 
     <!-- Google Fonts: Poppins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -17,11 +18,39 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
     <style>
+        :root {
+            --shadow-primary: #0f172a;
+            --shadow-primary-soft: #1e293b;
+            --shadow-secondary: #334155;
+            --shadow-accent: #38bdf8;
+            --shadow-accent-soft: rgba(56, 189, 248, 0.18);
+            --shadow-surface: rgba(255, 255, 255, 0.94);
+            --shadow-surface-strong: rgba(255, 255, 255, 0.98);
+            --shadow-border: rgba(255, 255, 255, 0.10);
+            --shadow-text: #1e293b;
+            --shadow-text-soft: #64748b;
+            --shadow-success: #16a34a;
+            --shadow-warning: #d97706;
+            --shadow-danger: #dc2626;
+            --shadow-radius: 18px;
+            --shadow-radius-sm: 12px;
+            --shadow-transition: all 0.25s ease;
+            --shadow-navbar-bg: rgba(6, 28, 50, 0.72);
+            --shadow-navbar-border: rgba(255, 255, 255, 0.08);
+            --shadow-navbar-link: rgba(255, 255, 255, 0.88);
+            --shadow-navbar-link-hover: #ffffff;
+        }
+
+        html, body {
+            min-height: 100vh;
+        }
+
         body {
             font-family: 'Poppins', sans-serif;
             font-weight: 400;
-            color: #2c3e50;
-            min-height: 100vh;
+            color: var(--shadow-text);
+            position: relative;
+            margin: 0;
 
             background-image: url("{% static 'img/fondo_shadow.png' %}");
             background-size: cover;
@@ -30,92 +59,267 @@
             background-attachment: fixed;
         }
 
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                linear-gradient(135deg, rgba(4, 15, 29, 0.78) 0%, rgba(9, 25, 48, 0.62) 45%, rgba(15, 23, 42, 0.74) 100%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* CAPAS */
+        .navbar,
+        .container,
+        .main-container {
+            position: relative;
+            z-index: 1;
+        }
+
         /* NAVBAR */
-        /*.navbar-shadow {
-            background: #061c32;
-        }*/
+        .navbar-shadow {
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+            padding-bottom: 6px;
+            padding-bottom: 6px;
+        }
+
+        .navbar-shadow .container {
+            min-height: 74px;
+        }
 
         .navbar-shadow .navbar-brand {
-            color: white;
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 1.08rem;
+            letter-spacing: 0.4px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: var(--shadow-transition);
+            text-decoration: none;
+        }
+
+        .navbar-shadow .navbar-brand:hover {
+            color: #ffffff;
+            opacity: 0.95;
+        }
+
+        .brand-mark {
+            width: 95px;
+            height: 42px;
+            border-radius: 2px;
+            background: transparent;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .brand-mark img {
+            height: 34px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.05;
+        }
+
+        .brand-title {
+            font-size: 1rem;
             font-weight: 700;
-            background-image: image(s);
-            font-size: 1.1rem;
+            color: #ffffff;
+        }
+
+        .brand-subtitle {
+            font-size: 0.73rem;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.68);
+            letter-spacing: 0.3px;
+        }
+
+        .navbar-shadow .navbar-toggler {
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 12px;
+            padding: 0.45rem 0.7rem;
+            box-shadow: none;
+        }
+
+        .navbar-shadow .navbar-toggler:focus {
+            box-shadow: 0 0 0 0.18rem rgba(255, 255, 255, 0.15);
+        }
+
+        .navbar-shadow .navbar-toggler-icon {
+            filter: none;
         }
 
         .navbar-shadow .nav-link {
-            color: rgba(255, 255, 255, 0.85);
-            font-weight: 400;
+            color: #1e293b;
+            font-weight: 600;
+            border-radius: 12px;
+            padding: 0.4rem 0.6rem;
+            transition: var(--shadow-transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .navbar-shadow .nav-link:hover {
-            color: white;
+        .navbar-shadow .nav-link:hover,
+        .navbar-shadow .nav-link:focus {
+            color: #0f172a;
+            background: rgba(15,23,42,0.06);
+        }
+
+        .navbar-shadow .nav-link.active {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(255, 255, 255, 0.10));
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .user-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0.55rem 1rem;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: #1e293b;
+            font-size: 0.92rem;
+            font-weight: 600;
+            border: 1px solid rgba(15,23,42,0.08);
+        }
+
+        .role-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.52rem 1rem;
+            border-radius: 999px;
+            background: #e8f1ff;
+            color: #1d4ed8;
+            font-size: 0.84rem;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            border: 1px solid rgba(29,78,216,0.15);
         }
 
         /* CONTENEDOR GENERAL */
         .main-container {
             max-width: 1180px;
             margin: 0 auto;
+            padding-top: 1.2rem;
         }
 
         /* TÍTULO DE PÁGINA */
         .page-title-wrap {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
             margin-bottom: 24px;
+            padding: 1rem 1.15rem;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+            border: 1px solid rgba(255,255,255,0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.14);
         }
 
         .page-title-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            background: #e9eef4;
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(255, 255, 255, 0.92));
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #2c3e50;
-            font-size: 1.2rem;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+            color: var(--shadow-primary);
+            font-size: 1.25rem;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+            flex-shrink: 0;
         }
 
         .page-title {
-            font-weight: 700;
+            font-weight: 800;
             color: #ffffff;
             margin: 0;
             font-size: 2rem;
             line-height: 1.1;
+            letter-spacing: -0.3px;
+        }
+
+        .page-subtitle {
+            margin: 0.35rem 0 0 0;
+            color: rgba(255,255,255,0.78);
+            font-size: 0.98rem;
+            font-weight: 400;
         }
 
         /* CARDS */
         .shadow-card {
-            border: none;
-            border-radius: 14px;
-            box-shadow: 0 6px 24px rgba(0,0,0,0.15);
-         overflow: hidden;
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.24);
+            border-radius: var(--shadow-radius);
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+            overflow: hidden;
+            background: var(--shadow-surface);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
         }
-        
+
+        .shadow-card-soft {
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: var(--shadow-radius);
+            background: rgba(255,255,255,0.88);
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+        }
+
         /* BOTONES */
         .btn-shadow {
-            background: #2c3e50;
+            background: linear-gradient(135deg, var(--shadow-primary), var(--shadow-primary-soft));
             color: white;
-            font-weight: 500;
+            font-weight: 600;
             border: none;
+            border-radius: 12px;
+            padding: 0.7rem 1.1rem;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.18);
+            transition: var(--shadow-transition);
         }
 
         .btn-shadow:hover {
-            background: #1f2f3d;
+            background: linear-gradient(135deg, #0b1220, #1a2438);
             color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 14px 26px rgba(15, 23, 42, 0.22);
+        }
+
+        .btn-soft-light {
+            background: rgba(255,255,255,0.88);
+            color: var(--shadow-primary);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .btn-soft-light:hover {
+            background: #ffffff;
+            color: var(--shadow-primary);
         }
 
         /* CABECERAS DE SECCIÓN */
         .shadow-section-header {
-            background: #2c3e50;
+            background: linear-gradient(135deg, var(--shadow-primary), var(--shadow-primary-soft));
             color: white;
             padding: 16px 20px;
-            font-weight: 600;
-            font-size: 1.05rem;
+            font-weight: 700;
+            font-size: 1.02rem;
+            letter-spacing: 0.2px;
         }
 
         .shadow-section-body {
@@ -125,47 +329,148 @@
 
         /* CAJAS INFORMATIVAS */
         .shadow-info-box {
-            background: #eef2f7;
-            border: 1px solid #d9e1ea;
-            border-radius: 12px;
+            background: linear-gradient(135deg, #f8fbff, #eef5fb);
+            border: 1px solid #dbe7f3;
+            border-radius: 14px;
             padding: 18px;
-            color: #2c3e50;
+            color: var(--shadow-text);
             font-weight: 400;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
         }
 
         /* TABLAS */
+        .table {
+            --bs-table-bg: transparent;
+        }
+
         .table thead th {
             background: #e9eef4 !important;
-            color: #2c3e50;
-            font-weight: 600;
+            color: var(--shadow-text);
+            font-weight: 700;
             border-bottom: none;
+            padding-top: 0.9rem;
+            padding-bottom: 0.9rem;
+        }
+
+        .table tbody td {
+            vertical-align: middle;
         }
 
         /* FORMULARIOS */
         .form-label {
-            color: #2c3e50;
+            color: var(--shadow-text);
             font-weight: 600;
+            margin-bottom: 0.45rem;
         }
 
         .form-control,
         .form-select {
-            border-radius: 10px;
-            padding: 10px 12px;
+            border-radius: 12px;
+            padding: 0.78rem 0.95rem;
             font-weight: 400;
+            border: 1px solid #d9e2ec;
+            background: rgba(255,255,255,0.96);
+            transition: var(--shadow-transition);
         }
 
         .form-control:focus,
         .form-select:focus {
-            border-color: #4f46e5;
-            box-shadow: 0 0 0 0.15rem rgba(79, 70, 229, 0.15);
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 0.15rem rgba(56, 189, 248, 0.16);
+        }
+
+        /* ALERTAS DJANGO */
+        .alert {
+            border: none;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.10);
         }
 
         /* TEXTO SUAVE */
         .text-soft {
-            color: #64748b;
-            font-weight: 300;
+            color: var(--shadow-text-soft) !important;
+            font-weight: 400;
+        }
+
+        .text-white-soft {
+            color: rgba(255,255,255,0.78);
+        }
+
+        /* UTILIDADES */
+        .glass-panel {
+            background: rgba(255,255,255,0.10);
+            border: 1px solid rgba(255,255,255,0.10);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 18px;
+        }
+
+        .content-block {
+            padding: 1.25rem;
+            border-radius: 18px;
+        }
+
+        /* MENSAJES */
+        .messages-wrap {
+            margin-bottom: 1.4rem;
+        }
+
+        /* FOOT SPACING */
+        .page-bottom-space {
+            height: 20px;
+        }
+
+        @media (max-width: 991.98px) {
+            .navbar-shadow .navbar-collapse {
+                margin-top: 1rem;
+                padding: 1rem;
+                border-radius: 18px;
+                background: rgba(8, 22, 41, 0.74);
+                border: 1px solid rgba(255,255,255,0.08);
+            }
+
+            .navbar-shadow .nav-link {
+                width: 100%;
+            }
+
+            .user-pill,
+            .role-pill {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .page-title-wrap {
+                padding: 0.95rem 1rem;
+                gap: 12px;
+            }
+
+            .page-title {
+                font-size: 1.55rem;
+            }
+
+            .page-title-icon {
+                width: 46px;
+                height: 46px;
+                font-size: 1.1rem;
+            }
+
+            .main-container {
+                padding-top: 0.4rem;
+            }
+
+            .logout-link {
+                color: #334155;
+            }
+
+            .logout-link:hover {
+                color: #0f172a;
+            }
         }
     </style>
+
+    {% block extra_css %}{% endblock %}
 </head>
 
 <body>
@@ -174,26 +479,28 @@
     <nav class="navbar navbar-expand-lg navbar-shadow mb-4">
         <div class="container">
 
-            <a class="navbar-brand" href="{% url 'dashboard' %}">
-                {{ app_name|default:"Shadow" }}
+            <a class="navbar-brand navbar-logo-only" href="{% url 'dashboard' %}">
+                <span class="brand-mark">
+                    <img src="{% static 'img/logo_shadow3.png' %}" alt="Logo Shadow">
+                </span>
             </a>
 
-            <button class="navbar-toggler bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#menu">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu" aria-controls="menu" aria-expanded="false" aria-label="Abrir menú de navegación">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
             <div class="collapse navbar-collapse" id="menu">
 
-                <ul class="navbar-nav me-auto">
+                <ul class="navbar-nav me-auto gap-lg-1">
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'dashboard' %}">
-                            <i class="bi bi-house"></i> Inicio
+                            <i class="bi bi-house-door"></i> Inicio
                         </a>
                     </li>
 
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'carpetas' %}">
-                            <i class="bi bi-folder"></i> Carpetas
+                            <i class="bi bi-folder2-open"></i> Carpetas
                         </a>
                     </li>
 
@@ -204,17 +511,21 @@
                     </li>
                 </ul>
 
-                <ul class="navbar-nav">
-                    <li class="nav-item me-3">
-                        <span class="nav-link">
-                            <i class="bi bi-person"></i>
-                            {{ request.user.username }}
+                <ul class="navbar-nav align-items-lg-center gap-lg-2">
+                    <li class="nav-item">
+                        <span class="nav-link p-0">
+                            <span class="user-pill">
+                                <i class="bi bi-person-circle"></i>
+                                {{ request.user.username }}
+                            </span>
                         </span>
                     </li>
 
-                    <li class="nav-item me-3">
-                        <span class="nav-link text-soft">
-                            {{ request.user.perfil.get_rol_display }}
+                    <li class="nav-item">
+                        <span class="nav-link p-0">
+                            <span class="role-pill">
+                                {{ request.user.perfil.get_rol_display }}
+                            </span>
                         </span>
                     </li>
 
@@ -232,26 +543,42 @@
     <!-- CONTENIDO -->
     <div class="container main-container mb-5">
 
+        {% if messages %}
+            <div class="messages-wrap">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} mb-3" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
         {% block show_page_header %}
         <div class="page-title-wrap">
+            {% block page_icon %}
+            {% endblock %}
+
             <div>
-                {% block page_icon %}
+                <h3 class="page-title">
+                    {% block page_title %}
+                    {% endblock %}
+                </h3>
+
+                {% block page_subtitle %}
                 {% endblock %}
             </div>
-
-            <h3 class="page-title">
-                {% block page_title %}
-                {% endblock %}
-            </h3>
         </div>
         {% endblock %}
 
         {% block content %}
         {% endblock %}
+
+        <div class="page-bottom-space"></div>
     </div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

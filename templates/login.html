@@ -16,26 +16,32 @@
             box-sizing: border-box;
         }
 
+        html,
+        body {
+            min-height: 100%;
+        }
+
         body {
             margin: 0;
             min-height: 100vh;
             font-family: 'Poppins', sans-serif;
             background:
-                linear-gradient(rgba(3, 10, 28, 0.42), rgba(3, 10, 28, 0.42)),
+                linear-gradient(rgba(3, 10, 28, 0.38), rgba(3, 10, 28, 0.38)),
                 url("{% static 'img/fondo_shadow.png' %}") center center / cover no-repeat;
             color: #111827;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 32px;
+            padding: 24px;
             position: relative;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
         }
 
         .login-shell {
             width: 100%;
             max-width: 1280px;
-            min-height: 720px;
+            min-height: calc(100vh - 48px);
             display: flex;
             align-items: center;
             justify-content: flex-end;
@@ -44,21 +50,22 @@
 
         .login-card {
             width: 100%;
-            max-width: 460px;
-            background: rgba(5, 21, 50, 0.96);
+            max-width: 450px;
+            background: rgba(255, 255, 255, 0.97);
             border-radius: 28px;
-            padding: 34px 34px 30px;
-            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.20);
-            backdrop-filter: blur(6px);
+            padding: 28px 30px 26px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.55);
         }
 
         .logo-wrap {
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 4px;
         }
 
         .logo-wrap img {
-            width: 170px;
+            width: 160px;
             max-width: 100%;
             height: auto;
             display: inline-block;
@@ -66,21 +73,22 @@
 
         .login-title {
             text-align: center;
-            font-size: 22px;
-            font-weight: 500;
-            color: #ffffff;
-            margin: 18px 0 24px;
+            font-size: 19px;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 10px 0 22px;
+            letter-spacing: -0.02em;
         }
 
         .form-group {
-            margin-bottom: 18px;
+            margin-bottom: 16px;
         }
 
         .form-label {
             display: block;
-            font-size: 15px;
-            font-weight: 500;
-            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
             margin-bottom: 8px;
         }
 
@@ -90,25 +98,25 @@
 
         .form-control {
             width: 100%;
-            height: 54px;
-            border: 1px solid #b7beca;
-            border-radius: 10px;
-            background: #f7f8fa;
+            height: 52px;
+            border: 1px solid #d5dce6;
+            border-radius: 12px;
+            background: #f8fafc;
             padding: 0 16px;
             font-size: 15px;
             font-family: 'Poppins', sans-serif;
-            color: #1f2937;
+            color: #0f172a;
             outline: none;
             transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
         }
 
         .form-control::placeholder {
-            color: #9aa3b2;
+            color: #94a3b8;
         }
 
         .form-control:focus {
-            border-color: #6b8cff;
-            box-shadow: 0 0 0 4px rgba(107, 140, 255, 0.14);
+            border-color: #5b6dff;
+            box-shadow: 0 0 0 4px rgba(91, 109, 255, 0.12);
             background: #ffffff;
         }
 
@@ -123,7 +131,7 @@
             transform: translateY(-50%);
             border: 0;
             background: transparent;
-            color: #98a1b2;
+            color: #94a3b8;
             font-size: 20px;
             cursor: pointer;
             padding: 0;
@@ -133,13 +141,13 @@
         }
 
         .toggle-password:hover {
-            color: #5d6b82;
+            color: #475569;
         }
 
         .forgot-link {
             display: inline-block;
             margin-top: 2px;
-            color: #6b8cff;
+            color: #4f46e5;
             text-decoration: none;
             font-size: 14px;
             font-weight: 600;
@@ -151,18 +159,18 @@
 
         .submit-btn {
             width: 100%;
-            height: 54px;
+            height: 52px;
             border: 0;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #4f6fff 0%, #3551db 100%);
+            border-radius: 14px;
+            background: linear-gradient(135deg, #5b6dff 0%, #4056d8 100%);
             color: #ffffff;
             font-family: 'Poppins', sans-serif;
             font-size: 15px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             margin-top: 18px;
             transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
-            box-shadow: 0 14px 28px rgba(53, 81, 219, 0.28);
+            box-shadow: 0 16px 30px rgba(64, 86, 216, 0.24);
         }
 
         .submit-btn:hover {
@@ -211,12 +219,18 @@
 
             .login-card {
                 max-width: 100%;
-                padding: 28px 22px 24px;
+                padding: 24px 22px 22px;
                 border-radius: 22px;
             }
 
             .logo-wrap img {
-                width: 150px;
+                width: 145px;
+            }
+
+            .login-title {
+                font-size: 18px;
+                margin-top: 8px;
+                margin-bottom: 20px;
             }
 
             .ande-logo {
@@ -228,16 +242,36 @@
                 width: 58px;
             }
         }
+
+        @media (max-width: 575.98px) {
+            body {
+                padding: 16px;
+            }
+
+            .login-card {
+                padding: 22px 18px 20px;
+                border-radius: 20px;
+            }
+
+            .form-control,
+            .submit-btn {
+                height: 50px;
+            }
+
+            .logo-wrap img {
+                width: 132px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="login-shell">
         <div class="login-card">
             <div class="logo-wrap">
-                <img src="{% static 'img/logo_shadow.png' %}" alt="Logo Shadow">
+                <img src="{% static 'img/logo_shadow3.png' %}" alt="Logo Shadow">
             </div>
 
-            <h1 class="login-title">Iniciar Sesion</h1>
+            <h1 class="login-title">Iniciar sesión</h1>
 
             {% if error %}
                 <div class="error-box">
@@ -249,14 +283,14 @@
                 {% csrf_token %}
 
                 <div class="form-group">
-                    <label for="id_username" class="form-label">Correo Electronico</label>
+                    <label for="id_username" class="form-label">Correo electrónico</label>
                     <div class="input-wrap">
                         <input
                             type="text"
                             id="id_username"
                             name="username"
                             class="form-control"
-                            placeholder="Ingresa tu correo electronico"
+                            placeholder="Ingresa tu correo electrónico"
                             required
                             autofocus
                         >
