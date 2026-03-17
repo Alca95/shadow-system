@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
 
@@ -7,12 +8,49 @@ from .models import Carpeta, EmpresaContratista, Plano, Auditoria, PerfilUsuario
 from .services import procesar_plano_completo
 
 
+def get_or_create_perfil(user):
+    if user.is_superuser:
+        return None
+    perfil, _ = PerfilUsuario.objects.get_or_create(user=user)
+    return perfil
+
+
+def user_is_admin(user):
+    return user.is_superuser
+
+
+def user_is_funcionario(user):
+    if user.is_superuser:
+        return False
+    perfil = get_or_create_perfil(user)
+    return bool(perfil and perfil.rol == "FUNCIONARIO" and perfil.activo)
+
+
+def user_is_contratista(user):
+    if user.is_superuser:
+        return False
+    perfil = get_or_create_perfil(user)
+    return bool(perfil and perfil.rol == "CONTRATISTA" and perfil.activo)
+
+
+def require_admin_or_funcionario(request):
+    if request.user.is_superuser:
+        return
+    if user_is_funcionario(request.user):
+        return
+    raise PermissionDenied("No tienes permisos para realizar esta acción.")
+
+
 def login_view(request):
     if request.user.is_authenticated:
+        if request.user.is_superuser:
+            return redirect("dashboard")
+
         perfil, _ = PerfilUsuario.objects.get_or_create(user=request.user)
 
         if perfil.rol == "CONTRATISTA":
             return redirect("dashboard_contratista")
+
         return redirect("dashboard")
 
     error = None
@@ -24,6 +62,10 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
+            if user.is_superuser:
+                login(request, user)
+                return redirect("dashboard")
+
             perfil, _ = PerfilUsuario.objects.get_or_create(user=user)
 
             if not perfil.activo:
@@ -52,6 +94,22 @@ def dashboard_view(request):
         .order_by("-fecha_creacion")[:5]
     )
 
+    if request.user.is_superuser:
+        return render(request, "dashboard.html", {
+            "app_name": "Shadow",
+            "titulo_pantalla": "Inicio administrador",
+            "carpetas_recientes": carpetas_recientes,
+        })
+
+    perfil, _ = PerfilUsuario.objects.get_or_create(user=request.user)
+
+    if perfil.rol == "FUNCIONARIO":
+        return render(request, "dashboard_funcionario.html", {
+            "app_name": "Shadow",
+            "titulo_pantalla": "Inicio funcionario",
+            "carpetas_recientes": carpetas_recientes,
+        })
+
     return render(request, "dashboard.html", {
         "app_name": "Shadow",
         "titulo_pantalla": "Inicio",
@@ -61,8 +119,10 @@ def dashboard_view(request):
 
 @login_required
 def dashboard_contratista_view(request):
+    perfil, _ = PerfilUsuario.objects.get_or_create(user=request.user)
 
-    perfil = request.user.perfil
+    if perfil.rol != "CONTRATISTA":
+        return redirect("dashboard")
 
     carpetas_recientes = (
         Carpeta.objects
@@ -97,13 +157,17 @@ def carpetas_view(request):
 
     carpetas = Carpeta.objects.filter(eliminada=False).select_related("empresa")
 
+    if user_is_contratista(request.user):
+        perfil = get_or_create_perfil(request.user)
+        carpetas = carpetas.filter(empresa=perfil.empresa)
+
     if query:
         carpetas = carpetas.filter(codigo_carpeta__icontains=query)
 
     if estado:
         carpetas = carpetas.filter(estado=estado)
 
-    if empresa_id:
+    if empresa_id and not user_is_contratista(request.user):
         carpetas = carpetas.filter(empresa_id=empresa_id)
 
     if mes:
@@ -115,7 +179,7 @@ def carpetas_view(request):
     carpetas = carpetas.order_by("-anio", "-mes", "-fecha_creacion")
     empresas = EmpresaContratista.objects.filter(activo=True).order_by("nombre")
 
-    return render(request, "carpetas.html", {
+    contexto = {
         "app_name": "Shadow",
         "titulo_pantalla": "Carpetas",
         "carpetas": carpetas,
@@ -123,16 +187,23 @@ def carpetas_view(request):
         "filtros": {
             "q": query,
             "estado": estado,
-            "empresa": empresa_id,
+            "empresa": "" if user_is_contratista(request.user) else empresa_id,
             "mes": mes,
             "anio": anio,
         },
         "estado_choices": Carpeta.ESTADO_CHOICES,
-    })
+    }
+
+    if user_is_contratista(request.user):
+        return render(request, "carpetas_contratista.html", contexto)
+
+    return render(request, "carpetas.html", contexto)
 
 
 @login_required
 def crear_carpeta_view(request):
+    require_admin_or_funcionario(request)
+
     empresas = EmpresaContratista.objects.filter(activo=True).order_by("nombre")
     error = None
 
@@ -194,6 +265,11 @@ def detalle_carpeta_view(request, carpeta_id):
         eliminada=False,
     )
 
+    if user_is_contratista(request.user):
+        perfil = get_or_create_perfil(request.user)
+        if carpeta.empresa_id != perfil.empresa_id:
+            raise PermissionDenied("No puedes acceder a esta carpeta.")
+
     estado_plano = request.GET.get("estado", "").strip()
 
     planos_base = carpeta.planos.filter(eliminado=False)
@@ -210,7 +286,7 @@ def detalle_carpeta_view(request, carpeta_id):
 
     planos = planos.order_by("-fecha_carga")
 
-    return render(request, "detalle_carpeta.html", {
+    contexto = {
         "app_name": "Shadow",
         "titulo_pantalla": "Detalle de carpeta",
         "carpeta": carpeta,
@@ -222,11 +298,18 @@ def detalle_carpeta_view(request, carpeta_id):
         "planos_en_revision": planos_en_revision,
         "planos_en_verificacion": planos_en_verificacion,
         "planos_rechazados": planos_rechazados,
-    })
+    }
+
+    if user_is_contratista(request.user):
+        return render(request, "detalle_carpeta_contratista.html", contexto)
+
+    return render(request, "detalle_carpeta.html", contexto)
 
 
 @login_required
 def eliminar_carpeta_view(request, carpeta_id):
+    require_admin_or_funcionario(request)
+
     carpeta = get_object_or_404(Carpeta, id=carpeta_id, eliminada=False)
 
     if request.method == "POST":
@@ -250,6 +333,8 @@ def eliminar_carpeta_view(request, carpeta_id):
 
 @login_required
 def subir_plano_view(request, carpeta_id=None):
+    require_admin_or_funcionario(request)
+
     error = None
     carpeta = None
 
@@ -319,25 +404,62 @@ def detalle_plano_view(request, plano_id):
         eliminado=False,
     )
 
-    resultados = (
+    if user_is_contratista(request.user):
+        perfil = get_or_create_perfil(request.user)
+        if plano.carpeta.empresa_id != perfil.empresa_id:
+            raise PermissionDenied("No puedes acceder a este plano.")
+
+    resultados = list(
         plano.resultados_validacion
         .select_related("nr_materiales_encontrado", "reclamo_encontrado")
         .all()
     )
 
-    return render(request, "detalle_plano.html", {
+    total_nr = len(resultados)
+    total_aprobados = sum(1 for r in resultados if r.estado_resultado == "APROBADO")
+    total_rechazados = sum(1 for r in resultados if r.estado_resultado == "RECHAZADO")
+    total_en_verificacion = sum(1 for r in resultados if r.estado_resultado == "EN_VERIFICACION")
+
+    contexto = {
         "app_name": "Shadow",
         "titulo_pantalla": "Detalle del plano",
         "plano": plano,
         "resultados": resultados,
-    })
+        "total_nr": total_nr,
+        "total_aprobados": total_aprobados,
+        "total_rechazados": total_rechazados,
+        "total_en_verificacion": total_en_verificacion,
+    }
+
+    if user_is_contratista(request.user):
+        return render(request, "detalle_plano_contratista.html", contexto)
+
+    return render(request, "detalle_plano.html", contexto)
 
 
 @login_required
 def procesar_plano_view(request, plano_id):
+    require_admin_or_funcionario(request)
+
     plano = get_object_or_404(Plano, id=plano_id, eliminado=False)
 
     if request.method == "POST":
+        es_reproceso = bool(plano.procesado)
+
+        Auditoria.objects.create(
+            plano=plano,
+            carpeta=plano.carpeta,
+            usuario=str(request.user),
+            accion="REPROCESAR_PLANO" if es_reproceso else "INICIAR_PROCESAMIENTO_PLANO",
+            descripcion=(
+                f"Se solicitó reprocesar el plano {plano.id_plano_deposito}"
+                if es_reproceso
+                else f"Se solicitó procesar el plano {plano.id_plano_deposito}"
+            ),
+            entidad="Plano",
+            entidad_id=str(plano.id),
+        )
+
         procesar_plano_completo(plano, usuario=str(request.user))
 
     return redirect("detalle_plano", plano_id=plano.id)
@@ -345,6 +467,8 @@ def procesar_plano_view(request, plano_id):
 
 @login_required
 def cancelar_plano_view(request, plano_id):
+    require_admin_or_funcionario(request)
+
     plano = get_object_or_404(Plano, id=plano_id, eliminado=False)
 
     if request.method == "POST":

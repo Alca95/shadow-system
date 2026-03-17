@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio funcionario{% endblock %}
+{% block show_page_header %}{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-xxl-11 col-xl-12">
+
+        <!-- HERO -->
+        <section class="mb-4">
+            <div class="func-hero">
+                <h1>Mesa de trabajo del funcionario</h1>
+                <p>
+                    Gestiona carpetas, carga planos y controla el flujo operativo desde un solo lugar.
+                </p>
+
+                <div class="func-hero-meta">
+                    <span><strong>Usuario:</strong> {{ request.user.username }}</span>
+                    <span><strong>Rol:</strong> Funcionario</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ACCIONES PRINCIPALES -->
+        <section class="mb-4">
+            <div class="row g-4">
+
+                <div class="col-md-6 col-xl-4">
+                    <a href="{% url 'crear_carpeta' %}" class="func-card">
+                        <div class="func-card-header">
+                            <i class="bi bi-folder-plus"></i>
+                            <span>Paso 1</span>
+                        </div>
+                        <h4>Crear carpeta</h4>
+                        <p>Inicia una nueva estructura de trabajo.</p>
+                    </a>
+                </div>
+
+                <div class="col-md-6 col-xl-4">
+                    <a href="{% url 'subir_plano' %}" class="func-card">
+                        <div class="func-card-header">
+                            <i class="bi bi-upload"></i>
+                            <span>Paso 2</span>
+                        </div>
+                        <h4>Subir plano</h4>
+                        <p>Carga archivos para procesamiento OCR.</p>
+                    </a>
+                </div>
+
+                <div class="col-md-6 col-xl-4">
+                    <a href="{% url 'carpetas' %}" class="func-card">
+                        <div class="func-card-header">
+                            <i class="bi bi-search"></i>
+                            <span>Paso 3</span>
+                        </div>
+                        <h4>Revisar y validar</h4>
+                        <p>Consulta y valida la información procesada.</p>
+                    </a>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- BLOQUE PRINCIPAL -->
+        <section>
+            <div class="row g-4">
+
+                <!-- CARPETAS -->
+                <div class="col-xl-8">
+                    <div class="module-dark">
+
+                        <div class="module-dark-header">
+                            <div>
+                                <div class="module-title">Carpetas recientes</div>
+                                <div class="module-subtitle">Últimos registros incorporados</div>
+                            </div>
+
+                            <a href="{% url 'carpetas' %}" class="module-link">
+                                Ver todas
+                            </a>
+                        </div>
+
+                        <div class="module-body">
+                            {% if carpetas_recientes %}
+                                {% for carpeta in carpetas_recientes %}
+                                    <div class="carpeta-item">
+                                        <div>
+                                            <div class="carpeta-codigo">{{ carpeta.codigo_carpeta }}</div>
+                                            <div class="carpeta-meta">
+                                                {{ carpeta.mes }}/{{ carpeta.anio }} |
+                                                {{ carpeta.fecha_creacion|date:"d/m/Y H:i" }}
+                                            </div>
+                                        </div>
+
+                                        <a href="{% url 'detalle_carpeta' carpeta.id %}" class="btn btn-shadow">
+                                            Abrir
+                                        </a>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-white-50 mb-0">No hay carpetas aún.</p>
+                            {% endif %}
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ACCIONES RAPIDAS -->
+                <div class="col-xl-4">
+                    <div class="module-dark">
+
+                        <div class="module-dark-header">
+                            <div>
+                                <div class="module-title">Acciones rápidas</div>
+                                <div class="module-subtitle">Accesos frecuentes</div>
+                            </div>
+                        </div>
+
+                        <div class="module-body">
+
+                            <a href="{% url 'crear_carpeta' %}" class="action-item">
+                                <i class="bi bi-folder-plus"></i>
+                                Nueva carpeta
+                            </a>
+
+                            <a href="{% url 'subir_plano' %}" class="action-item">
+                                <i class="bi bi-upload"></i>
+                                Cargar plano
+                            </a>
+
+                            <a href="{% url 'carpetas' %}" class="action-item">
+                                <i class="bi bi-folder2-open"></i>
+                                Ver carpetas
+                            </a>
+
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </div>
+</div>
+
+<style>
+
+    /* HERO */
+    .func-hero {
+        color: #ffffff;
+        margin-bottom: 1rem;
+    }
+
+    .func-hero h1 {
+        font-size: 2.6rem;
+        font-weight: 800;
+    }
+
+    .func-hero p {
+        color: rgba(255,255,255,0.85);
+        font-size: 1.05rem;
+    }
+
+    .func-hero-meta {
+        margin-top: 1rem;
+        display: flex;
+        gap: 1rem;
+        color: rgba(255,255,255,0.85);
+    }
+
+    /* CARDS */
+    .func-card {
+        display: block;
+        background: rgba(255,255,255,0.95);
+        border-radius: 18px;
+        padding: 1.5rem;
+        text-decoration: none;
+        color: #1e293b;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        transition: 0.2s;
+    }
+
+    .func-card:hover {
+        transform: translateY(-4px);
+    }
+
+    .func-card-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        font-weight: bold;
+    }
+
+    /* MODULE DARK (FIX PRINCIPAL) */
+    .module-dark {
+        background: rgba(15, 23, 42, 0.92);
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .module-dark-header {
+        padding: 1rem 1.2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .module-title {
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 1.1rem;
+    }
+
+    .module-subtitle {
+        color: rgba(255,255,255,0.7);
+        font-size: 0.9rem;
+    }
+
+    .module-link {
+        color: #38bdf8;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .module-body {
+        padding: 1.2rem;
+    }
+
+    /* LISTA */
+    .carpeta-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(255,255,255,0.95);
+        padding: 0.8rem;
+        border-radius: 12px;
+        margin-bottom: 0.6rem;
+    }
+
+    .carpeta-codigo {
+        font-weight: 800;
+    }
+
+    .carpeta-meta {
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+
+    /* ACCIONES */
+    .action-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255,255,255,0.95);
+        padding: 0.8rem;
+        border-radius: 12px;
+        margin-bottom: 0.6rem;
+        text-decoration: none;
+        color: #1e293b;
+        font-weight: 600;
+    }
+
+</style>
+
+{% endblock %}

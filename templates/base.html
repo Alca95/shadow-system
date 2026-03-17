@@ -6,15 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ app_name|default:"Shadow" }} - {% block title %}Sistema{% endblock %}</title>
 
-    <!-- Google Fonts: Poppins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
     <style>
@@ -35,10 +31,6 @@
             --shadow-radius: 18px;
             --shadow-radius-sm: 12px;
             --shadow-transition: all 0.25s ease;
-            --shadow-navbar-bg: rgba(6, 28, 50, 0.72);
-            --shadow-navbar-border: rgba(255, 255, 255, 0.08);
-            --shadow-navbar-link: rgba(255, 255, 255, 0.88);
-            --shadow-navbar-link-hover: #ffffff;
         }
 
         html, body {
@@ -51,7 +43,6 @@
             color: var(--shadow-text);
             position: relative;
             margin: 0;
-
             background-image: url("{% static 'img/fondo_shadow.png' %}");
             background-size: cover;
             background-position: center;
@@ -63,13 +54,16 @@
             content: "";
             position: fixed;
             inset: 0;
-            background:
-                linear-gradient(135deg, rgba(4, 15, 29, 0.78) 0%, rgba(9, 25, 48, 0.62) 45%, rgba(15, 23, 42, 0.74) 100%);
+            background: linear-gradient(
+                135deg,
+                rgba(4, 15, 29, 0.78) 0%,
+                rgba(9, 25, 48, 0.62) 45%,
+                rgba(15, 23, 42, 0.74) 100%
+            );
             z-index: 0;
             pointer-events: none;
         }
 
-        /* CAPAS */
         .navbar,
         .container,
         .main-container {
@@ -77,14 +71,12 @@
             z-index: 1;
         }
 
-        /* NAVBAR */
         .navbar-shadow {
             background: rgba(255, 255, 255, 0.96);
             backdrop-filter: blur(14px);
             -webkit-backdrop-filter: blur(14px);
             border-bottom: 1px solid rgba(15, 23, 42, 0.08);
             box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
-            padding-bottom: 6px;
             padding-bottom: 6px;
         }
 
@@ -93,20 +85,15 @@
         }
 
         .navbar-shadow .navbar-brand {
-            color: #ffffff;
-            font-weight: 800;
-            font-size: 1.08rem;
-            letter-spacing: 0.4px;
             display: flex;
             align-items: center;
             gap: 12px;
-            transition: var(--shadow-transition);
             text-decoration: none;
+            transition: var(--shadow-transition);
         }
 
         .navbar-shadow .navbar-brand:hover {
-            color: #ffffff;
-            opacity: 0.95;
+            opacity: 0.92;
         }
 
         .brand-mark {
@@ -127,34 +114,15 @@
             object-fit: contain;
         }
 
-        .brand-text {
-            display: flex;
-            flex-direction: column;
-            line-height: 1.05;
-        }
-
-        .brand-title {
-            font-size: 1rem;
-            font-weight: 700;
-            color: #ffffff;
-        }
-
-        .brand-subtitle {
-            font-size: 0.73rem;
-            font-weight: 400;
-            color: rgba(255, 255, 255, 0.68);
-            letter-spacing: 0.3px;
-        }
-
         .navbar-shadow .navbar-toggler {
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(15, 23, 42, 0.12);
             border-radius: 12px;
             padding: 0.45rem 0.7rem;
             box-shadow: none;
         }
 
         .navbar-shadow .navbar-toggler:focus {
-            box-shadow: 0 0 0 0.18rem rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 0.18rem rgba(15, 23, 42, 0.10);
         }
 
         .navbar-shadow .navbar-toggler-icon {
@@ -165,7 +133,7 @@
             color: #1e293b;
             font-weight: 600;
             border-radius: 12px;
-            padding: 0.4rem 0.6rem;
+            padding: 0.4rem 0.7rem;
             transition: var(--shadow-transition);
             display: inline-flex;
             align-items: center;
@@ -175,13 +143,35 @@
         .navbar-shadow .nav-link:hover,
         .navbar-shadow .nav-link:focus {
             color: #0f172a;
-            background: rgba(15,23,42,0.06);
+            background: rgba(15, 23, 42, 0.06);
         }
 
         .navbar-shadow .nav-link.active {
-            background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(255, 255, 255, 0.10));
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(15, 23, 42, 0.06);
+            color: #0f172a;
+        }
+
+        .nav-group-main,
+        .nav-group-user {
+            align-items: center;
+        }
+
+        .home-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            background: #f1f5f9;
+            color: #1e293b !important;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .home-pill:hover {
+            background: #e8eef6 !important;
         }
 
         .user-pill {
@@ -194,12 +184,13 @@
             color: #1e293b;
             font-size: 0.92rem;
             font-weight: 600;
-            border: 1px solid rgba(15,23,42,0.08);
+            border: 1px solid rgba(15, 23, 42, 0.08);
         }
 
         .role-pill {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             padding: 0.52rem 1rem;
             border-radius: 999px;
             background: #e8f1ff;
@@ -207,17 +198,24 @@
             font-size: 0.84rem;
             font-weight: 700;
             letter-spacing: 0.2px;
-            border: 1px solid rgba(29,78,216,0.15);
+            border: 1px solid rgba(29, 78, 216, 0.15);
+            min-width: 132px;
         }
 
-        /* CONTENEDOR GENERAL */
+        .logout-link {
+            color: #334155 !important;
+        }
+
+        .logout-link:hover {
+            color: #0f172a !important;
+        }
+
         .main-container {
             max-width: 1180px;
             margin: 0 auto;
             padding-top: 1.2rem;
         }
 
-        /* TÍTULO DE PÁGINA */
         .page-title-wrap {
             display: flex;
             align-items: center;
@@ -262,7 +260,6 @@
             font-weight: 400;
         }
 
-        /* CARDS */
         .shadow-card {
             border: 1px solid rgba(255,255,255,0.24);
             border-radius: var(--shadow-radius);
@@ -280,7 +277,6 @@
             box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
         }
 
-        /* BOTONES */
         .btn-shadow {
             background: linear-gradient(135deg, var(--shadow-primary), var(--shadow-primary-soft));
             color: white;
@@ -312,7 +308,6 @@
             color: var(--shadow-primary);
         }
 
-        /* CABECERAS DE SECCIÓN */
         .shadow-section-header {
             background: linear-gradient(135deg, var(--shadow-primary), var(--shadow-primary-soft));
             color: white;
@@ -327,7 +322,6 @@
             padding: 24px;
         }
 
-        /* CAJAS INFORMATIVAS */
         .shadow-info-box {
             background: linear-gradient(135deg, #f8fbff, #eef5fb);
             border: 1px solid #dbe7f3;
@@ -338,7 +332,6 @@
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
         }
 
-        /* TABLAS */
         .table {
             --bs-table-bg: transparent;
         }
@@ -356,7 +349,6 @@
             vertical-align: middle;
         }
 
-        /* FORMULARIOS */
         .form-label {
             color: var(--shadow-text);
             font-weight: 600;
@@ -379,14 +371,12 @@
             box-shadow: 0 0 0 0.15rem rgba(56, 189, 248, 0.16);
         }
 
-        /* ALERTAS DJANGO */
         .alert {
             border: none;
             border-radius: 14px;
             box-shadow: 0 10px 25px rgba(15, 23, 42, 0.10);
         }
 
-        /* TEXTO SUAVE */
         .text-soft {
             color: var(--shadow-text-soft) !important;
             font-weight: 400;
@@ -396,7 +386,6 @@
             color: rgba(255,255,255,0.78);
         }
 
-        /* UTILIDADES */
         .glass-panel {
             background: rgba(255,255,255,0.10);
             border: 1px solid rgba(255,255,255,0.10);
@@ -410,12 +399,10 @@
             border-radius: 18px;
         }
 
-        /* MENSAJES */
         .messages-wrap {
             margin-bottom: 1.4rem;
         }
 
-        /* FOOT SPACING */
         .page-bottom-space {
             height: 20px;
         }
@@ -425,17 +412,29 @@
                 margin-top: 1rem;
                 padding: 1rem;
                 border-radius: 18px;
-                background: rgba(8, 22, 41, 0.74);
-                border: 1px solid rgba(255,255,255,0.08);
+                background: rgba(255, 255, 255, 0.98);
+                border: 1px solid rgba(15, 23, 42, 0.08);
+                box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
             }
 
             .navbar-shadow .nav-link {
                 width: 100%;
             }
 
+            .nav-group-main,
+            .nav-group-user {
+                width: 100%;
+            }
+
             .user-pill,
             .role-pill {
                 width: 100%;
+                justify-content: center;
+            }
+
+            .home-pill {
+                width: 100%;
+                height: 46px;
                 justify-content: center;
             }
         }
@@ -460,13 +459,27 @@
                 padding-top: 0.4rem;
             }
 
-            .logout-link {
-                color: #334155;
-            }
+        .home-pill-nav {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: #f1f5f9;
+            color: #1e293b;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            font-size: 1rem;
+            transition: 0.2s;
+        }
 
-            .logout-link:hover {
-                color: #0f172a;
-            }
+        .home-pill-nav:hover {
+            background: #e2e8f0;
+            transform: translateY(-1px);
+        }
+
+
+
         }
     </style>
 
@@ -475,15 +488,39 @@
 
 <body>
 
-    <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg navbar-shadow mb-4">
         <div class="container">
 
-            <a class="navbar-brand navbar-logo-only" href="{% url 'dashboard' %}">
-                <span class="brand-mark">
-                    <img src="{% static 'img/logo_shadow3.png' %}" alt="Logo Shadow">
-                </span>
-            </a>
+            <div class="d-flex align-items-center gap-2">
+
+                {% if request.user.is_authenticated and not request.user.is_superuser and request.user.perfil.rol == "CONTRATISTA" %}
+                    
+                    <!-- LOGO CONTRATISTA -->
+                    <a class="navbar-brand navbar-logo-only mb-0" href="{% url 'dashboard_contratista' %}">
+                        <span class="brand-mark">
+                            <img src="{% static 'img/logo_shadow3.png' %}" alt="Logo Shadow">
+                        </span>
+                    </a>
+
+                {% else %}
+
+                    <!-- LOGO GENERAL -->
+                    <a class="navbar-brand navbar-logo-only mb-0" href="{% url 'dashboard' %}">
+                        <span class="brand-mark">
+                            <img src="{% static 'img/logo_shadow3.png' %}" alt="Logo Shadow">
+                        </span>
+                    </a>
+
+                    <!-- BOTÓN HOME SOLO FUNCIONARIO -->
+                    {% if request.user.is_authenticated and not request.user.is_superuser and request.user.perfil.rol == "FUNCIONARIO" %}
+                        <a href="{% url 'dashboard' %}" class="home-pill-nav" title="Inicio">
+                            <i class="bi bi-house-door"></i>
+                        </a>
+                    {% endif %}
+
+                {% endif %}
+
+            </div>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu" aria-controls="menu" aria-expanded="false" aria-label="Abrir menú de navegación">
                 <span class="navbar-toggler-icon"></span>
@@ -491,27 +528,75 @@
 
             <div class="collapse navbar-collapse" id="menu">
 
-                <ul class="navbar-nav me-auto gap-lg-1">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'dashboard' %}">
-                            <i class="bi bi-house-door"></i> Inicio
-                        </a>
-                    </li>
+                <ul class="navbar-nav ms-auto nav-group-main">
+                    {% if request.user.is_authenticated %}
 
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'carpetas' %}">
-                            <i class="bi bi-folder2-open"></i> Carpetas
-                        </a>
-                    </li>
+                        {% if request.user.is_superuser %}
 
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'crear_carpeta' %}">
-                            <i class="bi bi-folder-plus"></i> Crear carpeta
-                        </a>
-                    </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'dashboard' %}">
+                                    <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'carpetas' %}">
+                                    <i class="bi bi-folder2-open me-1"></i> Carpetas
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'crear_carpeta' %}">
+                                    <i class="bi bi-folder-plus me-1"></i> Crear carpeta
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'subir_plano' %}">
+                                    <i class="bi bi-upload me-1"></i> Subir plano
+                                </a>
+                            </li>
+
+                        {% else %}
+                            {% with perfil=request.user.perfil %}
+
+                                {% if perfil.rol == "FUNCIONARIO" %}
+
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="{% url 'carpetas' %}">
+                                            <i class="bi bi-folder2-open me-1"></i> Carpetas
+                                        </a>
+                                    </li>
+
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="{% url 'crear_carpeta' %}">
+                                            <i class="bi bi-folder-plus me-1"></i> Crear carpeta
+                                        </a>
+                                    </li>
+
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="{% url 'subir_plano' %}">
+                                            <i class="bi bi-upload me-1"></i> Subir plano
+                                        </a>
+                                    </li>
+
+                                {% elif perfil.rol == "CONTRATISTA" %}
+
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="{% url 'carpetas' %}">
+                                            <i class="bi bi-folder2-open me-1"></i> Carpetas
+                                        </a>
+                                    </li>
+
+                                {% endif %}
+
+                            {% endwith %}
+                        {% endif %}
+                    {% endif %}
                 </ul>
 
-                <ul class="navbar-nav align-items-lg-center gap-lg-2">
+                {% if request.user.is_authenticated %}
+                <ul class="navbar-nav align-items-lg-center gap-lg-2 ms-lg-3 nav-group-user">
                     <li class="nav-item">
                         <span class="nav-link p-0">
                             <span class="user-pill">
@@ -524,23 +609,27 @@
                     <li class="nav-item">
                         <span class="nav-link p-0">
                             <span class="role-pill">
-                                {{ request.user.perfil.get_rol_display }}
+                                {% if request.user.is_superuser %}
+                                    Administrador
+                                {% else %}
+                                    {{ request.user.perfil.get_rol_display }}
+                                {% endif %}
                             </span>
                         </span>
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'logout' %}">
+                        <a class="nav-link logout-link" href="{% url 'logout' %}">
                             <i class="bi bi-box-arrow-right"></i> Salir
                         </a>
                     </li>
                 </ul>
+                {% endif %}
 
             </div>
         </div>
     </nav>
 
-    <!-- CONTENIDO -->
     <div class="container main-container mb-5">
 
         {% if messages %}
@@ -576,7 +665,6 @@
         <div class="page-bottom-space"></div>
     </div>
 
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     {% block extra_js %}{% endblock %}

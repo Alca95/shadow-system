@@ -13,6 +13,63 @@ from .ocr_extract import ocr_text_from_file, extract_nrs, extract_fecha_plano
 ESTADO_APROBADO = "APROBADO"
 ESTADO_RECHAZADO = "RECHAZADO"
 ESTADO_EN_VERIFICACION = "EN_VERIFICACION"
+ESTADO_EN_ESPERA = "EN_ESPERA"
+
+
+def deduplicate_keep_order(values):
+    resultado = []
+    vistos = set()
+
+    for value in values:
+        if value and value not in vistos:
+            resultado.append(value)
+            vistos.add(value)
+
+    return resultado
+
+
+def normalize_nr_list(values):
+    """
+    Limpieza defensiva de lista de NR.
+    No altera el formato si ya viene normalizado desde extract_nrs,
+    solo elimina vacíos, espacios extra y duplicados.
+    """
+    limpios = []
+
+    for value in values or []:
+        if not value:
+            continue
+
+        value = str(value).strip()
+        if not value:
+            continue
+
+        limpios.append(value)
+
+    return deduplicate_keep_order(limpios)
+
+
+def build_estado_from_checks(resultado_ciudad, resultado_zona, resultado_fecha):
+    hay_contradiccion = (
+        (resultado_ciudad["comparable"] and resultado_ciudad["matched"] is False)
+        or (resultado_zona["comparable"] and resultado_zona["matched"] is False)
+        or (resultado_fecha["comparable"] and resultado_fecha["matched"] is False)
+    )
+
+    hay_pendientes = (
+        not resultado_ciudad["comparable"]
+        or not resultado_zona["comparable"]
+        or not resultado_fecha["comparable"]
+    )
+
+    if hay_contradiccion:
+        return ESTADO_RECHAZADO
+
+    if hay_pendientes:
+        return ESTADO_EN_VERIFICACION
+
+    return ESTADO_APROBADO
+
 
 def validar_nr_contra_reclamo(nr_obj):
     """
@@ -74,24 +131,11 @@ def validar_nr_contra_reclamo(nr_obj):
     else:
         detalles.append("Fecha pendiente")
 
-    hay_contradiccion = (
-        (resultado_ciudad["comparable"] and resultado_ciudad["matched"] is False)
-        or (resultado_zona["comparable"] and resultado_zona["matched"] is False)
-        or (resultado_fecha["comparable"] and resultado_fecha["matched"] is False)
+    estado = build_estado_from_checks(
+        resultado_ciudad,
+        resultado_zona,
+        resultado_fecha,
     )
-
-    hay_pendientes = (
-        not resultado_ciudad["comparable"]
-        or not resultado_zona["comparable"]
-        or not resultado_fecha["comparable"]
-    )
-
-    if hay_contradiccion:
-        estado = ESTADO_RECHAZADO
-    elif hay_pendientes:
-        estado = ESTADO_EN_VERIFICACION
-    else:
-        estado = ESTADO_APROBADO
 
     return {
         "nr": nr_obj.numero_nr,
@@ -119,8 +163,8 @@ def validar_plano_completo(plano: Plano):
     - actualiza ResultadoValidacionPlano
     - construye motivo detallado del plano
     """
-    nr_validos = parse_csv(plano.nr_validos)
-    nr_desconocidos = parse_csv(plano.nr_desconocidos)
+    nr_validos = normalize_nr_list(parse_csv(plano.nr_validos))
+    nr_desconocidos = normalize_nr_list(parse_csv(plano.nr_desconocidos))
 
     detalles_nr = []
     resumen_general = []
@@ -130,11 +174,42 @@ def validar_plano_completo(plano: Plano):
         estado_final = ESTADO_EN_VERIFICACION
         resumen_general.append("No hay NR válidos para validar contra Reclamo.")
     else:
-        nr_objs = NRMateriales.objects.select_related("reclamo").filter(
-            numero_nr__in=nr_validos
+        nr_objs = list(
+            NRMateriales.objects.select_related("reclamo").filter(
+                numero_nr__in=nr_validos
+            )
         )
 
-        for nr_obj in nr_objs:
+        encontrados_map = {obj.numero_nr: obj for obj in nr_objs}
+
+        # Si por alguna razón falta un NR que venía como válido, lo marcamos como pendiente
+        faltantes = [nr for nr in nr_validos if nr not in encontrados_map]
+        for nr_faltante in faltantes:
+            detalles_nr.append(f"NR {nr_faltante} -> {ESTADO_EN_VERIFICACION}")
+            detalles_nr.append(" - NR válido detectado, pero no localizado al validar en base.")
+
+            resultado_plano = plano.resultados_validacion.filter(
+                nr_detectado=nr_faltante
+            ).first()
+
+            if resultado_plano:
+                resultado_plano.estado_resultado = ESTADO_EN_VERIFICACION
+                resultado_plano.ciudad_ok = False
+                resultado_plano.zona_ok = False
+                resultado_plano.fecha_ok = False
+                resultado_plano.motivo_resultado = (
+                    "NR válido detectado, pero no localizado al validar en base."
+                )
+                resultado_plano.save()
+
+            if estado_final != ESTADO_RECHAZADO:
+                estado_final = ESTADO_EN_VERIFICACION
+
+        for nr in nr_validos:
+            nr_obj = encontrados_map.get(nr)
+            if not nr_obj:
+                continue
+
             resultado = validar_nr_contra_reclamo(nr_obj)
 
             detalles_nr.append(f"NR {resultado['nr']} -> {resultado['estado']}")
@@ -169,9 +244,10 @@ def validar_plano_completo(plano: Plano):
         if estado_final == ESTADO_APROBADO:
             estado_final = ESTADO_EN_VERIFICACION
 
-    motivo_lineas = []
-    motivo_lineas.append(f"RESULTADO FINAL DEL PLANO: {estado_final}")
-    motivo_lineas.append("")
+    motivo_lineas = [
+        f"RESULTADO FINAL DEL PLANO: {estado_final}",
+        "",
+    ]
 
     if resumen_general:
         motivo_lineas.append("Motivo general:")
@@ -189,8 +265,8 @@ def validar_plano_completo(plano: Plano):
             motivo_lineas.append(f" - {nr}")
 
     plano.estado = estado_final
-    plano.motivo = "\n".join(motivo_lineas)
-    plano.save()
+    plano.motivo = "\n".join(motivo_lineas).strip()
+    plano.save(update_fields=["estado", "motivo"])
 
     return {
         "estado": estado_final,
@@ -210,7 +286,7 @@ def procesar_plano_completo(plano: Plano, usuario: str = "sistema"):
         file_path = plano.archivo.path
         text = ocr_text_from_file(file_path)
 
-        nrs = extract_nrs(text)
+        nrs = normalize_nr_list(extract_nrs(text))
         fecha = extract_fecha_plano(text)
 
         plano.texto_ocr = text
@@ -237,7 +313,11 @@ def procesar_plano_completo(plano: Plano, usuario: str = "sistema"):
             carpeta=plano.carpeta,
             usuario=usuario,
             accion="VALIDAR_NR_BD",
-            descripcion=f"VALIDACIÓN NR -> estado={res_bd['estado']} validos={res_bd['validos']} desconocidos={res_bd['desconocidos']}",
+            descripcion=(
+                f"VALIDACIÓN NR -> estado={res_bd['estado']} "
+                f"validos={res_bd['validos']} "
+                f"desconocidos={res_bd['desconocidos']}"
+            ),
             entidad="Plano",
             entidad_id=str(plano.id),
         )
@@ -261,8 +341,8 @@ def procesar_plano_completo(plano: Plano, usuario: str = "sistema"):
         }
 
     except Exception as e:
-        plano.estado = "EN_ESPERA"
-        plano.save()
+        plano.estado = ESTADO_EN_ESPERA
+        plano.save(update_fields=["estado"])
 
         Auditoria.objects.create(
             plano=plano,

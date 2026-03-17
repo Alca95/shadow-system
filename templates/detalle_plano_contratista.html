@@ -1,36 +1,22 @@
 {% extends "base.html" %}
 
 {% block title %}Detalle del plano{% endblock %}
-
 {% block show_page_header %}{% endblock %}
 
 {% block content %}
 
 <div class="row justify-content-center">
-    <div class="col-xl-11">
+    <div class="col-xl-10">
 
-        <!-- TÍTULO + ACCESOS -->
+        <!-- TÍTULO -->
         <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <div class="page-title-wrap mb-0">
-                    <div class="page-title-icon floating-icon">
-                        <i class="bi bi-file-earmark-text"></i>
-                    </div>
-                    <div>
-                        <h3 class="page-title mb-0">Detalle del plano</h3>
-                    </div>
+            <div class="page-title-wrap mb-0">
+                <div class="page-title-icon floating-icon">
+                    <i class="bi bi-file-earmark-text"></i>
                 </div>
-
-                <form method="post" action="{% url 'procesar_plano' plano.id %}" class="m-0">
-                    {% csrf_token %}
-                    <button
-                        type="submit"
-                        class="btn reprocess-icon-btn"
-                        title="Volver a procesar OCR"
-                        aria-label="Volver a procesar OCR">
-                        <i class="bi bi-arrow-repeat"></i>
-                    </button>
-                </form>
+                <div>
+                    <h3 class="page-title mb-0">Detalle del plano</h3>
+                </div>
             </div>
 
             <div class="d-flex flex-wrap gap-2 top-action-group">
@@ -38,18 +24,10 @@
                     <i class="bi bi-list-check me-2"></i>
                     Resultados por NR
                 </a>
-                <a href="#motivo-diagnostico" class="btn btn-outline-light shadow-action-btn top-nav-btn">
-                    <i class="bi bi-clipboard-pulse me-2"></i>
-                    Motivo / Diagnóstico
-                </a>
-                <a href="#texto-ocr" class="btn btn-outline-light shadow-action-btn top-nav-btn">
-                    <i class="bi bi-filetype-txt me-2"></i>
-                    Texto OCR
-                </a>
             </div>
         </div>
 
-        <!-- FILA SUPERIOR COMPACTA -->
+        <!-- FILA SUPERIOR -->
         <div class="row g-3 mb-3 align-items-stretch">
 
             <!-- DETALLE DEL PLANO -->
@@ -160,57 +138,22 @@
                 </div>
             </div>
 
-            <!-- VISUALIZACIÓN -->
+            <!-- ACCIÓN SIMPLE -->
             <div class="col-lg-4">
                 <div class="card shadow-card shadow-lift card-clean compact-top-card h-100">
                     <div class="card-header shadow-section-header compact-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Visualización</h5>
-                        <button class="btn btn-sm btn-outline-dark section-toggle-btn compact-toggle-btn" type="button" data-bs-toggle="collapse" data-bs-target="#collapseVisualizacion" aria-expanded="false" aria-controls="collapseVisualizacion">
-                            <i class="bi bi-arrows-angle-expand me-1"></i>
-                            Expandir
-                        </button>
+                        <h5 class="mb-0">Navegación</h5>
+                        <span class="section-chip">
+                            <i class="bi bi-compass me-1"></i> Consulta
+                        </span>
                     </div>
 
                     <div class="card-body shadow-section-body compact-top-body">
                         <div class="visual-action-stack">
-                            <form method="post" action="{% url 'cancelar_plano' plano.id %}" onsubmit="return confirm('¿Deseas eliminar lógicamente este plano?');" class="w-100">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-danger shadow-action-btn-main w-100">
-                                    <i class="bi bi-trash me-2"></i>
-                                    Eliminar
-                                </button>
-                            </form>
-
                             <a href="{% url 'detalle_carpeta' plano.carpeta.id %}" class="btn btn-outline-secondary shadow-action-btn-main w-100">
                                 <i class="bi bi-arrow-left me-2"></i>
                                 Volver a carpeta
                             </a>
-                        </div>
-                    </div>
-
-                    <div class="collapse" id="collapseVisualizacion">
-                        <div class="card-body shadow-section-body pt-0">
-                            <div class="border p-3 bg-light text-center preview-panel preview-glow preview-box compact-preview-box">
-                                {% if plano.archivo %}
-                                    {% with plano.archivo.url|lower as archivo_url %}
-                                        {% if ".jpg" in archivo_url or ".jpeg" in archivo_url or ".png" in archivo_url or ".webp" in archivo_url %}
-                                            <img src="{{ plano.archivo.url }}" alt="Vista previa del plano" class="img-fluid shadow-sm preview-image">
-                                        {% elif ".pdf" in archivo_url %}
-                                            <iframe src="{{ plano.archivo.url }}" class="w-100 border bg-white preview-frame"></iframe>
-                                        {% else %}
-                                            <div class="py-4 text-muted">
-                                                <i class="bi bi-file-earmark-x fs-1 d-block mb-3"></i>
-                                                No hay vista previa disponible para este formato.
-                                            </div>
-                                        {% endif %}
-                                    {% endwith %}
-                                {% else %}
-                                    <div class="py-4 text-muted">
-                                        <i class="bi bi-image-alt fs-1 d-block mb-3"></i>
-                                        No se cargó ningún archivo.
-                                    </div>
-                                {% endif %}
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -259,7 +202,7 @@
                                     <div class="accordion-body bg-white">
                                         <div class="row g-3">
                                             <div class="col-md-3">
-                                                <div class="shadow-info-box text-center h-100 info-hover info-box-clean">
+                                                <div class="shadow-info-box text-center h-100 info-box-clean">
                                                     <div class="small text-soft mb-2">Ciudad</div>
                                                     {% if r.ciudad_ok %}
                                                         <div class="fw-semibold text-success">
@@ -272,7 +215,7 @@
                                             </div>
 
                                             <div class="col-md-3">
-                                                <div class="shadow-info-box text-center h-100 info-hover info-box-clean">
+                                                <div class="shadow-info-box text-center h-100 info-box-clean">
                                                     <div class="small text-soft mb-2">Zona</div>
                                                     {% if r.zona_ok %}
                                                         <div class="fw-semibold text-success">
@@ -285,7 +228,7 @@
                                             </div>
 
                                             <div class="col-md-3">
-                                                <div class="shadow-info-box text-center h-100 info-hover info-box-clean">
+                                                <div class="shadow-info-box text-center h-100 info-box-clean">
                                                     <div class="small text-soft mb-2">Fecha</div>
                                                     {% if r.fecha_ok %}
                                                         <div class="fw-semibold text-success">
@@ -298,7 +241,7 @@
                                             </div>
 
                                             <div class="col-md-3">
-                                                <div class="shadow-info-box text-center h-100 info-hover info-box-clean">
+                                                <div class="shadow-info-box text-center h-100 info-box-clean">
                                                     <div class="small text-soft mb-2">Resultado</div>
                                                     {% if r.estado_resultado == "APROBADO" %}
                                                         <div class="fw-semibold text-success">Aprobado</div>
@@ -330,59 +273,6 @@
             </div>
         </div>
 
-        <!-- BLOQUE INFERIOR -->
-        <div class="row g-4">
-
-            <!-- MOTIVO -->
-            <div class="col-lg-6" id="motivo-diagnostico">
-                <div class="card shadow-card h-100 shadow-lift card-clean">
-                    <div class="card-header shadow-section-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Motivo / diagnóstico</h5>
-                        <button class="btn btn-sm btn-outline-dark section-toggle-btn" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDiagnostico" aria-expanded="true" aria-controls="collapseDiagnostico">
-                            <i class="bi bi-arrows-angle-expand me-1"></i>
-                            Expandir / contraer
-                        </button>
-                    </div>
-
-                    <div class="collapse show" id="collapseDiagnostico">
-                        <div class="card-body shadow-section-body">
-                            {% if plano.motivo %}
-                                <div class="shadow-info-box diagnostic-box info-box-clean">
-                                    {{ plano.motivo }}
-                                </div>
-                            {% else %}
-                                <div class="alert alert-secondary mb-0">
-                                    Aún no se procesó el plano.
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TEXTO OCR -->
-            <div class="col-lg-6" id="texto-ocr">
-                <div class="card shadow-card h-100 shadow-lift card-clean">
-                    <div class="card-header shadow-section-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Texto OCR</h5>
-                        <button class="btn btn-sm btn-outline-dark section-toggle-btn" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOCR" aria-expanded="true" aria-controls="collapseOCR">
-                            <i class="bi bi-arrows-angle-expand me-1"></i>
-                            Expandir / contraer
-                        </button>
-                    </div>
-
-                    <div class="collapse show" id="collapseOCR">
-                        <div class="card-body shadow-section-body">
-                            <div class="shadow-info-box ocr-box info-box-clean">
-                                {{ plano.texto_ocr|default:"Aún no se ejecutó el OCR." }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
     </div>
 </div>
 
@@ -411,9 +301,7 @@
 
     .card-clean,
     .info-box-clean,
-    .preview-box,
     .result-item-clean,
-    .section-toggle-btn,
     .top-nav-btn,
     .badge,
     .alert {
@@ -468,15 +356,6 @@
         background: rgba(255, 255, 255, 0.18);
         border-color: rgba(255, 255, 255, 1) !important;
         box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.18);
-    }
-
-    .info-hover {
-        transition: all 0.25s ease;
-    }
-
-    .info-hover:hover {
-        transform: translateY(-3px) scale(1.01);
-        box-shadow: 0 .75rem 1.5rem rgba(0, 0, 0, 0.06);
     }
 
     .section-chip {
@@ -640,67 +519,6 @@
         gap: 0.7rem;
     }
 
-    .compact-toggle-btn {
-        white-space: nowrap;
-        color: #cbd5e1 !important;
-        border-color: rgba(255,255,255,0.25) !important;
-        background: rgba(255,255,255,0.05);
-    }
-
-    .compact-toggle-btn i {
-        color: #cbd5e1 !important;
-    }
-
-    .compact-toggle-btn:hover {
-        color: #ffffff !important;
-        border-color: rgba(255,255,255,0.6) !important;
-        background: rgba(255,255,255,0.12);
-    }
-
-    .compact-preview-box {
-        margin-top: 0.15rem;
-    }
-
-    .preview-panel {
-        min-height: 220px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s ease;
-    }
-
-    .preview-glow:hover {
-        box-shadow: inset 0 0 0 1px rgba(0,0,0,.04), 0 0 25px rgba(0,0,0,.05);
-    }
-
-    .preview-image {
-        max-height: 320px;
-        object-fit: contain;
-        transition: transform 0.35s ease;
-    }
-
-    .preview-image:hover {
-        transform: scale(1.015);
-    }
-
-    .preview-frame {
-        height: 320px;
-    }
-
-    .diagnostic-box {
-        white-space: pre-wrap;
-        line-height: 1.8;
-        min-height: 320px;
-    }
-
-    .ocr-box {
-        white-space: pre-wrap;
-        min-height: 320px;
-        max-height: 320px;
-        overflow-y: auto;
-        line-height: 1.8;
-    }
-
     .detail-box {
         white-space: pre-wrap;
         line-height: 1.7;
@@ -730,40 +548,6 @@
         box-shadow: 0 0 0.75rem rgba(0, 0, 0, 0.08);
     }
 
-    .section-toggle-btn {
-        border-color: rgba(255,255,255,0.3);
-    }
-
-    .reprocess-icon-btn {
-        width: 56px;
-        height: 56px;
-        border-radius: 16px !important;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, #16a34a, #15803d);
-        color: #ffffff !important;
-        border: none;
-        box-shadow: 0 14px 28px rgba(22, 163, 74, 0.24);
-        transition: all 0.25s ease;
-        flex-shrink: 0;
-    }
-
-    .reprocess-icon-btn i {
-        font-size: 1.25rem;
-        color: #ffffff !important;
-    }
-
-    .reprocess-icon-btn:hover {
-        transform: translateY(-2px) rotate(-20deg);
-        box-shadow: 0 18px 30px rgba(22, 163, 74, 0.30);
-        filter: brightness(1.03);
-    }
-
-    .reprocess-icon-btn:focus {
-        box-shadow: 0 0 0 0.18rem rgba(22, 163, 74, 0.18);
-    }
-
     .text-soft {
         color: #6c757d;
     }
@@ -780,18 +564,6 @@
         .summary-tight-grid {
             grid-template-columns: 1fr;
         }
-
-        .preview-frame {
-            height: 300px;
-        }
-    }
-
-    @media (max-width: 767.98px) {
-        .reprocess-icon-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 14px !important;
-        }
     }
 
     @media (max-width: 575.98px) {
@@ -801,10 +573,6 @@
 
         .summary-tight-value {
             font-size: 1.15rem;
-        }
-
-        .preview-frame {
-            height: 250px;
         }
     }
 </style>

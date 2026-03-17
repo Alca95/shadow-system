@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}Carpetas{% endblock %}
+{% block show_page_header %}{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-xl-10">
+
+        <!-- TÍTULO -->
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+            <div class="page-title-wrap mb-0">
+                <div class="page-title-icon floating-icon">
+                    <i class="bi bi-folder2-open"></i>
+                </div>
+                <div>
+                    <h3 class="page-title mb-0">Carpetas</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILTROS -->
+        <div class="card shadow-card shadow-lift card-clean mb-4">
+            <div class="card-header shadow-section-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Filtros</h5>
+                <span class="section-chip">
+                    <i class="bi bi-funnel me-1"></i> Consulta
+                </span>
+            </div>
+
+            <div class="card-body shadow-section-body">
+                <form method="get">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="q" class="form-label">Buscar carpeta</label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="q"
+                                name="q"
+                                value="{{ filtros.q }}"
+                                placeholder="Código de carpeta">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="estado" class="form-label">Estado</label>
+                            <select class="form-select" id="estado" name="estado">
+                                <option value="">Todos</option>
+                                {% for value, label in estado_choices %}
+                                    <option value="{{ value }}" {% if filtros.estado == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label for="mes" class="form-label">Mes</label>
+                            <input
+                                type="number"
+                                min="1"
+                                max="12"
+                                class="form-control"
+                                id="mes"
+                                name="mes"
+                                value="{{ filtros.mes }}"
+                                placeholder="Mes">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label for="anio" class="form-label">Año</label>
+                            <input
+                                type="number"
+                                min="2000"
+                                max="2100"
+                                class="form-control"
+                                id="anio"
+                                name="anio"
+                                value="{{ filtros.anio }}"
+                                placeholder="Año">
+                        </div>
+
+                        <div class="col-12 d-flex flex-wrap gap-2 justify-content-end">
+                            <a href="{% url 'carpetas' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-counterclockwise me-2"></i>
+                                Limpiar
+                            </a>
+
+                            <button type="submit" class="btn btn-shadow">
+                                <i class="bi bi-search me-2"></i>
+                                Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- LISTA DE CARPETAS -->
+        <div class="card shadow-card shadow-lift card-clean">
+            <div class="card-header shadow-section-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Lista de carpetas</h5>
+                <span class="section-chip">
+                    <i class="bi bi-collection me-1"></i> {{ carpetas|length }} registro{{ carpetas|length|pluralize }}
+                </span>
+            </div>
+
+            <div class="card-body shadow-section-body">
+                {% if carpetas %}
+                    <div class="table-responsive">
+                        <table class="table contract-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Empresa</th>
+                                    <th>Mes / Año</th>
+                                    <th>Estado</th>
+                                    <th>Creación</th>
+                                    <th class="text-end">Ver</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for carpeta in carpetas %}
+                                    <tr>
+                                        <td>
+                                            <div class="contract-code">{{ carpeta.codigo_carpeta }}</div>
+                                        </td>
+                                        <td>{{ carpeta.empresa.nombre }}</td>
+                                        <td>{{ carpeta.mes }}/{{ carpeta.anio }}</td>
+                                        <td>
+                                            {% if carpeta.estado == "ABIERTA" %}
+                                                <span class="contract-badge contract-badge-primary">Abierta</span>
+                                            {% elif carpeta.estado == "EN_REVISION" %}
+                                                <span class="contract-badge contract-badge-warning">En revisión</span>
+                                            {% elif carpeta.estado == "CERRADA" %}
+                                                <span class="contract-badge contract-badge-success">Cerrada</span>
+                                            {% elif carpeta.estado == "OBSERVADA" %}
+                                                <span class="contract-badge contract-badge-danger">Observada</span>
+                                            {% else %}
+                                                <span class="contract-badge contract-badge-neutral">{{ carpeta.estado }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ carpeta.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                                        <td class="text-end">
+                                            <a href="{% url 'detalle_carpeta' carpeta.id %}" class="btn btn-sm btn-shadow">
+                                                Ver
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state-panel">
+                        <div class="empty-state-icon">
+                            <i class="bi bi-folder-x"></i>
+                        </div>
+                        <div class="empty-state-title">No hay carpetas disponibles</div>
+                        <div class="empty-state-text">
+                            No se encontraron carpetas para los filtros aplicados.
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    html {
+        scroll-behavior: smooth;
+    }
+
+    .floating-icon {
+        animation: floatIcon 3.2s ease-in-out infinite;
+    }
+
+    @keyframes floatIcon {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-4px); }
+    }
+
+    .shadow-lift {
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .shadow-lift:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.08);
+    }
+
+    .card-clean,
+    .badge,
+    .alert {
+        border-radius: 0.75rem !important;
+    }
+
+    .section-chip {
+        font-size: 0.82rem;
+        padding: 0.42rem 0.78rem;
+        border-radius: 0.75rem;
+        background: rgba(255,255,255,0.14);
+        color: #ffffff;
+        border: 1px solid rgba(255,255,255,0.18);
+        display: inline-flex;
+        align-items: center;
+        font-weight: 500;
+    }
+
+    .contract-table thead th {
+        background: #edf2f7 !important;
+        color: #475569;
+        font-size: 0.84rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 800;
+        border-bottom: none;
+    }
+
+    .contract-table tbody td {
+        color: #1e293b;
+        font-weight: 500;
+        border-color: rgba(148, 163, 184, 0.18);
+    }
+
+    .contract-code {
+        color: #24324a;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+    }
+
+    .contract-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0.46rem 0.86rem;
+        font-weight: 700;
+        font-size: 0.83rem;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.32);
+    }
+
+    .contract-badge-primary {
+        background: rgba(79, 70, 229, 0.12);
+        color: #4338ca;
+    }
+
+    .contract-badge-warning {
+        background: rgba(245, 158, 11, 0.16);
+        color: #a16207;
+    }
+
+    .contract-badge-success {
+        background: rgba(34, 197, 94, 0.14);
+        color: #15803d;
+    }
+
+    .contract-badge-danger {
+        background: rgba(239, 68, 68, 0.14);
+        color: #b91c1c;
+    }
+
+    .contract-badge-neutral {
+        background: rgba(100, 116, 139, 0.14);
+        color: #475569;
+    }
+
+    @media (max-width: 767.98px) {
+        .section-chip {
+            font-size: 0.76rem;
+        }
+    }
+</style>
+
+{% endblock %}
