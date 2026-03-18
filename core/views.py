@@ -1,9 +1,12 @@
+from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
 
+from .forms import UsuarioCrearForm, UsuarioEditarForm
 from .models import Carpeta, EmpresaContratista, Plano, Auditoria, PerfilUsuario
 from .services import procesar_plano_completo
 
@@ -16,7 +19,7 @@ def get_or_create_perfil(user):
 
 
 def user_is_admin(user):
-    return user.is_superuser
+    return user.is_authenticated and user.is_superuser
 
 
 def user_is_funcionario(user):
@@ -50,6 +53,8 @@ def login_view(request):
 
         if perfil.rol == "CONTRATISTA":
             return redirect("dashboard_contratista")
+        if perfil.rol == "FUNCIONARIO":
+            return redirect("dashboard_funcionario")
 
         return redirect("dashboard")
 
@@ -75,6 +80,8 @@ def login_view(request):
 
                 if perfil.rol == "CONTRATISTA":
                     return redirect("dashboard_contratista")
+                if perfil.rol == "FUNCIONARIO":
+                    return redirect("dashboard_funcionario")
 
                 return redirect("dashboard")
         else:
@@ -113,6 +120,30 @@ def dashboard_view(request):
     return render(request, "dashboard.html", {
         "app_name": "Shadow",
         "titulo_pantalla": "Inicio",
+        "carpetas_recientes": carpetas_recientes,
+    })
+
+
+@login_required
+def dashboard_funcionario_view(request):
+    if request.user.is_superuser:
+        return redirect("dashboard")
+
+    perfil, _ = PerfilUsuario.objects.get_or_create(user=request.user)
+
+    if perfil.rol != "FUNCIONARIO" or not perfil.activo:
+        return redirect("dashboard")
+
+    carpetas_recientes = (
+        Carpeta.objects
+        .filter(eliminada=False)
+        .select_related("empresa")
+        .order_by("-fecha_creacion")[:5]
+    )
+
+    return render(request, "dashboard_funcionario.html", {
+        "app_name": "Shadow",
+        "titulo_pantalla": "Inicio funcionario",
         "carpetas_recientes": carpetas_recientes,
     })
 
@@ -489,3 +520,80 @@ def cancelar_plano_view(request, plano_id):
         return redirect("detalle_carpeta", carpeta_id=plano.carpeta.id)
 
     return redirect("detalle_plano", plano_id=plano.id)
+
+
+@login_required
+@user_passes_test(user_is_admin)
+def gestion_usuarios_view(request):
+    usuarios = User.objects.select_related("perfil").all().order_by("username")
+
+    return render(request, "gestion_usuarios/listado.html", {
+        "app_name": "Shadow",
+        "titulo_pantalla": "Gestión de usuarios",
+        "usuarios": usuarios,
+    })
+
+
+@login_required
+@user_passes_test(user_is_admin)
+def crear_usuario_view(request):
+    if request.method == "POST":
+        form = UsuarioCrearForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Usuario creado correctamente.")
+            return redirect("gestion_usuarios")
+    else:
+        form = UsuarioCrearForm()
+
+    return render(request, "gestion_usuarios/form.html", {
+        "app_name": "Shadow",
+        "titulo_pantalla": "Crear usuario",
+        "form": form,
+        "modo": "crear",
+    })
+
+
+@login_required
+@user_passes_test(user_is_admin)
+def editar_usuario_view(request, user_id):
+    usuario = get_object_or_404(User, pk=user_id)
+
+    if request.method == "POST":
+        form = UsuarioEditarForm(request.POST, user_instance=usuario)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Usuario actualizado correctamente.")
+            return redirect("gestion_usuarios")
+    else:
+        form = UsuarioEditarForm(user_instance=usuario)
+
+    return render(request, "gestion_usuarios/form.html", {
+        "app_name": "Shadow",
+        "titulo_pantalla": "Editar usuario",
+        "form": form,
+        "modo": "editar",
+        "usuario_obj": usuario,
+    })
+
+
+@login_required
+@user_passes_test(user_is_admin)
+def toggle_usuario_activo_view(request, user_id):
+    usuario = get_object_or_404(User, pk=user_id)
+
+    if usuario == request.user:
+        messages.warning(request, "No puedes desactivar tu propio usuario.")
+        return redirect("gestion_usuarios")
+
+    usuario.is_active = not usuario.is_active
+    usuario.save()
+
+    perfil, _ = PerfilUsuario.objects.get_or_create(user=usuario)
+    perfil.activo = usuario.is_active
+    perfil.save()
+
+    estado = "activado" if usuario.is_active else "desactivado"
+    messages.success(request, f"Usuario {estado} correctamente.")
+
+    return redirect("gestion_usuarios")

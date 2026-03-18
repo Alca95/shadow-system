@@ -72,33 +72,37 @@
         }
 
         .navbar-shadow {
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
-            padding-bottom: 6px;
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
+            padding: 0.35rem 0;
         }
 
         .navbar-shadow .container {
-            min-height: 74px;
+            min-height: 62px;
+            max-width: 1220px;
         }
 
         .navbar-shadow .navbar-brand {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             text-decoration: none;
             transition: var(--shadow-transition);
+            margin-right: 0;
+            padding-left: 0;
         }
 
         .navbar-shadow .navbar-brand:hover {
-            opacity: 0.92;
+            opacity: 0.94;
+            transform: translateY(-0.5px);
         }
 
         .brand-mark {
-            width: 95px;
-            height: 42px;
+            width: 92px;
+            height: 36px;
             border-radius: 2px;
             background: transparent;
             border: none;
@@ -109,41 +113,48 @@
         }
 
         .brand-mark img {
-            height: 34px;
+            height: 30px;
             width: auto;
             object-fit: contain;
         }
 
+        .navbar-left-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            margin-left: 0;
+            padding-left: 0;
+        }
+
         .navbar-shadow .navbar-toggler {
-            border: 1px solid rgba(15, 23, 42, 0.12);
-            border-radius: 12px;
-            padding: 0.45rem 0.7rem;
+            border: 1px solid rgba(15, 23, 42, 0.10);
+            border-radius: 14px;
+            padding: 0.42rem 0.68rem;
+            background: rgba(255, 255, 255, 0.78);
             box-shadow: none;
         }
 
         .navbar-shadow .navbar-toggler:focus {
-            box-shadow: 0 0 0 0.18rem rgba(15, 23, 42, 0.10);
-        }
-
-        .navbar-shadow .navbar-toggler-icon {
-            filter: none;
+            box-shadow: 0 0 0 0.16rem rgba(15, 23, 42, 0.10);
         }
 
         .navbar-shadow .nav-link {
-            color: #1e293b;
+            color: #334155;
             font-weight: 600;
             border-radius: 12px;
-            padding: 0.4rem 0.7rem;
+            padding: 0.52rem 0.85rem;
             transition: var(--shadow-transition);
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            font-size: 0.94rem;
+            letter-spacing: 0.1px;
         }
 
         .navbar-shadow .nav-link:hover,
         .navbar-shadow .nav-link:focus {
             color: #0f172a;
-            background: rgba(15, 23, 42, 0.06);
+            background: rgba(15, 23, 42, 0.05);
         }
 
         .navbar-shadow .nav-link.active {
@@ -156,54 +167,77 @@
             align-items: center;
         }
 
-        .home-pill {
+        .nav-group-main {
+            gap: 0.15rem;
+        }
+
+        .home-pill-nav {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 46px;
-            height: 46px;
-            border-radius: 14px;
-            background: #f1f5f9;
-            color: #1e293b !important;
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            font-size: 1rem;
-            font-weight: 700;
+            width: 40px;
+            height: 40px;
+            border-radius: 13px;
+            background: rgba(241, 245, 249, 0.92);
+            color: #1e293b;
+            border: 1px solid rgba(15, 23, 42, 0.07);
+            font-size: 0.95rem;
+            transition: var(--shadow-transition);
+            text-decoration: none;
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
         }
 
-        .home-pill:hover {
-            background: #e8eef6 !important;
+        .home-pill-nav:hover {
+            background: #e8eef6;
+            color: #0f172a;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
+        }
+
+        .user-area {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+            padding: 0.28rem;
+            border-radius: 999px;
+            background: rgba(248, 250, 252, 0.88);
+            border: 1px solid rgba(15, 23, 42, 0.06);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
         }
 
         .user-pill {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            padding: 0.55rem 1rem;
+            gap: 9px;
+            padding: 0.5rem 0.9rem;
             border-radius: 999px;
-            background: #f1f5f9;
+            background: transparent;
             color: #1e293b;
-            font-size: 0.92rem;
+            font-size: 0.9rem;
             font-weight: 600;
-            border: 1px solid rgba(15, 23, 42, 0.08);
+            border: none;
+            line-height: 1;
         }
 
         .role-pill {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 0.52rem 1rem;
+            padding: 0.5rem 0.9rem;
             border-radius: 999px;
-            background: #e8f1ff;
+            background: linear-gradient(135deg, rgba(232, 241, 255, 0.96), rgba(240, 247, 255, 0.92));
             color: #1d4ed8;
-            font-size: 0.84rem;
+            font-size: 0.79rem;
             font-weight: 700;
             letter-spacing: 0.2px;
-            border: 1px solid rgba(29, 78, 216, 0.15);
-            min-width: 132px;
+            border: 1px solid rgba(29, 78, 216, 0.12);
+            min-width: 126px;
+            line-height: 1;
         }
 
         .logout-link {
             color: #334155 !important;
+            padding-right: 0.85rem !important;
         }
 
         .logout-link:hover {
@@ -211,17 +245,17 @@
         }
 
         .main-container {
-            max-width: 1180px;
+            max-width: 1220px;
             margin: 0 auto;
-            padding-top: 1.2rem;
+            padding-top: 0.85rem;
         }
 
         .page-title-wrap {
             display: flex;
             align-items: center;
-            gap: 16px;
-            margin-bottom: 24px;
-            padding: 1rem 1.15rem;
+            gap: 14px;
+            margin-bottom: 1.4rem;
+            padding: 0.95rem 1.05rem;
             border-radius: 20px;
             background: linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
             border: 1px solid rgba(255,255,255,0.08);
@@ -231,15 +265,15 @@
         }
 
         .page-title-icon {
-            width: 52px;
-            height: 52px;
-            border-radius: 16px;
+            width: 48px;
+            height: 48px;
+            border-radius: 15px;
             background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(255, 255, 255, 0.92));
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--shadow-primary);
-            font-size: 1.25rem;
+            font-size: 1.15rem;
             box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
             flex-shrink: 0;
         }
@@ -248,15 +282,15 @@
             font-weight: 800;
             color: #ffffff;
             margin: 0;
-            font-size: 2rem;
-            line-height: 1.1;
+            font-size: 1.8rem;
+            line-height: 1.08;
             letter-spacing: -0.3px;
         }
 
         .page-subtitle {
-            margin: 0.35rem 0 0 0;
+            margin: 0.3rem 0 0 0;
             color: rgba(255,255,255,0.78);
-            font-size: 0.98rem;
+            font-size: 0.94rem;
             font-weight: 400;
         }
 
@@ -283,7 +317,7 @@
             font-weight: 600;
             border: none;
             border-radius: 12px;
-            padding: 0.7rem 1.1rem;
+            padding: 0.68rem 1.05rem;
             box-shadow: 0 10px 22px rgba(15, 23, 42, 0.18);
             transition: var(--shadow-transition);
         }
@@ -311,15 +345,15 @@
         .shadow-section-header {
             background: linear-gradient(135deg, var(--shadow-primary), var(--shadow-primary-soft));
             color: white;
-            padding: 16px 20px;
+            padding: 15px 18px;
             font-weight: 700;
-            font-size: 1.02rem;
+            font-size: 1rem;
             letter-spacing: 0.2px;
         }
 
         .shadow-section-body {
             background: #f8fafc;
-            padding: 24px;
+            padding: 22px;
         }
 
         .shadow-info-box {
@@ -341,8 +375,8 @@
             color: var(--shadow-text);
             font-weight: 700;
             border-bottom: none;
-            padding-top: 0.9rem;
-            padding-bottom: 0.9rem;
+            padding-top: 0.85rem;
+            padding-bottom: 0.85rem;
         }
 
         .table tbody td {
@@ -358,7 +392,7 @@
         .form-control,
         .form-select {
             border-radius: 12px;
-            padding: 0.78rem 0.95rem;
+            padding: 0.74rem 0.92rem;
             font-weight: 400;
             border: 1px solid #d9e2ec;
             background: rgba(255,255,255,0.96);
@@ -395,22 +429,30 @@
         }
 
         .content-block {
-            padding: 1.25rem;
+            padding: 1.1rem;
             border-radius: 18px;
         }
 
         .messages-wrap {
-            margin-bottom: 1.4rem;
+            margin-bottom: 1.1rem;
         }
 
         .page-bottom-space {
-            height: 20px;
+            height: 18px;
         }
 
         @media (max-width: 991.98px) {
+            .navbar-shadow {
+                padding: 0.45rem 0;
+            }
+
+            .navbar-shadow .container {
+                max-width: 100%;
+            }
+
             .navbar-shadow .navbar-collapse {
-                margin-top: 1rem;
-                padding: 1rem;
+                margin-top: 0.85rem;
+                padding: 0.9rem;
                 border-radius: 18px;
                 background: rgba(255, 255, 255, 0.98);
                 border: 1px solid rgba(15, 23, 42, 0.08);
@@ -419,11 +461,22 @@
 
             .navbar-shadow .nav-link {
                 width: 100%;
+                justify-content: flex-start;
             }
 
             .nav-group-main,
             .nav-group-user {
                 width: 100%;
+            }
+
+            .user-area {
+                width: 100%;
+                border-radius: 20px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.35rem;
+                padding: 0.55rem;
+                background: #f8fafc;
             }
 
             .user-pill,
@@ -432,54 +485,47 @@
                 justify-content: center;
             }
 
-            .home-pill {
+            .logout-link {
                 width: 100%;
-                height: 46px;
-                justify-content: center;
+                justify-content: center !important;
+                padding-right: 0.85rem !important;
+            }
+
+            .home-pill-nav {
+                width: 40px;
+                height: 40px;
             }
         }
 
         @media (max-width: 767.98px) {
             .page-title-wrap {
-                padding: 0.95rem 1rem;
+                padding: 0.9rem 0.95rem;
                 gap: 12px;
+                margin-bottom: 1.15rem;
             }
 
             .page-title {
-                font-size: 1.55rem;
+                font-size: 1.5rem;
             }
 
             .page-title-icon {
-                width: 46px;
-                height: 46px;
-                font-size: 1.1rem;
+                width: 44px;
+                height: 44px;
+                font-size: 1.05rem;
             }
 
             .main-container {
-                padding-top: 0.4rem;
+                padding-top: 0.3rem;
             }
 
-        .home-pill-nav {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            background: #f1f5f9;
-            color: #1e293b;
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            font-size: 1rem;
-            transition: 0.2s;
-        }
+            .brand-mark {
+                width: 84px;
+                height: 34px;
+            }
 
-        .home-pill-nav:hover {
-            background: #e2e8f0;
-            transform: translateY(-1px);
-        }
-
-
-
+            .brand-mark img {
+                height: 27px;
+            }
         }
     </style>
 
@@ -491,11 +537,10 @@
     <nav class="navbar navbar-expand-lg navbar-shadow mb-4">
         <div class="container">
 
-            <div class="d-flex align-items-center gap-2">
+            <div class="navbar-left-wrap">
 
                 {% if request.user.is_authenticated and not request.user.is_superuser and request.user.perfil.rol == "CONTRATISTA" %}
-                    
-                    <!-- LOGO CONTRATISTA -->
+
                     <a class="navbar-brand navbar-logo-only mb-0" href="{% url 'dashboard_contratista' %}">
                         <span class="brand-mark">
                             <img src="{% static 'img/logo_shadow3.png' %}" alt="Logo Shadow">
@@ -504,14 +549,12 @@
 
                 {% else %}
 
-                    <!-- LOGO GENERAL -->
                     <a class="navbar-brand navbar-logo-only mb-0" href="{% url 'dashboard' %}">
                         <span class="brand-mark">
                             <img src="{% static 'img/logo_shadow3.png' %}" alt="Logo Shadow">
                         </span>
                     </a>
 
-                    <!-- BOTÓN HOME SOLO FUNCIONARIO -->
                     {% if request.user.is_authenticated and not request.user.is_superuser and request.user.perfil.rol == "FUNCIONARIO" %}
                         <a href="{% url 'dashboard' %}" class="home-pill-nav" title="Inicio">
                             <i class="bi bi-house-door"></i>
@@ -528,14 +571,14 @@
 
             <div class="collapse navbar-collapse" id="menu">
 
-                <ul class="navbar-nav ms-auto nav-group-main">
+                <ul class="navbar-nav ms-3 nav-group-main">
                     {% if request.user.is_authenticated %}
 
                         {% if request.user.is_superuser %}
 
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'dashboard' %}">
-                                    <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                                    <i class="bi bi-house-door me-1"></i> Inicio
                                 </a>
                             </li>
 
@@ -596,18 +639,14 @@
                 </ul>
 
                 {% if request.user.is_authenticated %}
-                <ul class="navbar-nav align-items-lg-center gap-lg-2 ms-lg-3 nav-group-user">
+                <ul class="navbar-nav align-items-lg-center gap-lg-2 ms-auto nav-group-user">
                     <li class="nav-item">
-                        <span class="nav-link p-0">
+                        <div class="user-area">
                             <span class="user-pill">
                                 <i class="bi bi-person-circle"></i>
                                 {{ request.user.username }}
                             </span>
-                        </span>
-                    </li>
 
-                    <li class="nav-item">
-                        <span class="nav-link p-0">
                             <span class="role-pill">
                                 {% if request.user.is_superuser %}
                                     Administrador
@@ -615,13 +654,11 @@
                                     {{ request.user.perfil.get_rol_display }}
                                 {% endif %}
                             </span>
-                        </span>
-                    </li>
 
-                    <li class="nav-item">
-                        <a class="nav-link logout-link" href="{% url 'logout' %}">
-                            <i class="bi bi-box-arrow-right"></i> Salir
-                        </a>
+                            <a class="nav-link logout-link" href="{% url 'logout' %}">
+                                <i class="bi bi-box-arrow-right"></i> Salir
+                            </a>
+                        </div>
                     </li>
                 </ul>
                 {% endif %}

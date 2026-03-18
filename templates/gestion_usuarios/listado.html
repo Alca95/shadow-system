@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <!-- Título + botón -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-semibold mb-0">Gestión de usuarios</h3>
+
+        <a href="{% url 'crear_usuario' %}" class="btn btn-dark px-4">
+            + Nuevo usuario
+        </a>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Usuario</th>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Rol</th>
+                            <th>Empresa</th>
+                            <th>Estado</th>
+                            <th class="text-end pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for u in usuarios %}
+                        <tr>
+
+                            <!-- Usuario -->
+                            <td class="ps-4 fw-semibold">
+                                {{ u.username }}
+                            </td>
+
+                            <!-- Nombre -->
+                            <td>
+                                {{ u.first_name }} {{ u.last_name }}
+                            </td>
+
+                            <!-- Email -->
+                            <td>
+                                {{ u.email|default:"-" }}
+                            </td>
+
+                            <!-- Rol -->
+                            <td>
+                                {% if u.perfil %}
+                                    <span class="badge bg-secondary">
+                                        {{ u.perfil.rol }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Empresa -->
+                            <td>
+                                {% if u.perfil and u.perfil.empresa %}
+                                    {{ u.perfil.empresa.nombre }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Estado -->
+                            <td>
+                                {% if u.is_active %}
+                                    <span class="badge bg-success">Activo</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactivo</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Acciones -->
+                            <td class="text-end pe-4">
+
+                                <a href="{% url 'editar_usuario' u.id %}" 
+                                   class="btn btn-sm btn-outline-dark me-2">
+                                    Editar
+                                </a>
+
+                                <a href="{% url 'toggle_usuario' u.id %}" 
+                                   class="btn btn-sm {% if u.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
+                                    {% if u.is_active %}
+                                        Desactivar
+                                    {% else %}
+                                        Activar
+                                    {% endif %}
+                                </a>
+
+                            </td>
+
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                No hay usuarios registrados
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
