@@ -1,77 +1,94 @@
 {% extends "base.html" %}
 
 {% block title %}Detalle de carpeta{% endblock %}
-
 {% block show_page_header %}{% endblock %}
 
 {% block content %}
 
-<div class="row justify-content-center">
+<div class="row justify-content-center shadow-animate-in">
     <div class="col-xl-11">
 
-        <!-- TÍTULO -->
-        <div class="page-title-wrap mb-4">
-            <div class="page-title-icon floating-icon">
-                <i class="bi bi-folder2-open"></i>
-            </div>
-            <h3 class="page-title mb-0">Detalle de carpeta</h3>
-        </div>
+        <div class="detalle-carpeta-hero shadow-surface-card shadow-glow-wrap mb-4">
+            <div class="detalle-carpeta-hero-inner">
+                <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="shadow-page-icon">
+                            <i class="bi bi-folder2-open"></i>
+                        </div>
 
-        <!-- FILA SUPERIOR -->
-        <div class="row g-4 mb-4">
+                        <div>
+                            <div class="shadow-header-badge mb-2">
+                                <i class="bi bi-stars"></i>
+                                Gestión documental
+                            </div>
 
-            <!-- INFORMACIÓN GENERAL + MÉTRICAS -->
-            <div class="col-xl-8">
-                <div class="card shadow-card dashboard-card">
-                    <div class="card-header shadow-section-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <h5 class="mb-0">
-                            <i class="bi bi-info-circle me-2"></i>
-                            Información general
-                        </h5>
+                            <h2 class="shadow-title detalle-carpeta-title mb-1">Detalle de carpeta</h2>
+                            <p class="shadow-subtitle mb-0">
+                                Consulta información general, métricas y el listado de planos asociados a esta carpeta.
+                            </p>
+                        </div>
+                    </div>
 
+                    <div class="detalle-carpeta-status-wrap">
                         {% if carpeta.estado == "ABIERTA" %}
-                            <span class="badge bg-primary status-badge-clean">
+                            <span class="badge detalle-status-chip detalle-status-primary">
                                 <i class="bi bi-folder2-open me-1"></i> Abierta
                             </span>
                         {% elif carpeta.estado == "EN_REVISION" %}
-                            <span class="badge bg-warning text-dark status-badge-clean">
+                            <span class="badge detalle-status-chip detalle-status-warning">
                                 <i class="bi bi-search me-1"></i> En revisión
                             </span>
                         {% elif carpeta.estado == "CERRADA" %}
-                            <span class="badge bg-success status-badge-clean">
+                            <span class="badge detalle-status-chip detalle-status-success">
                                 <i class="bi bi-check-circle me-1"></i> Cerrada
                             </span>
                         {% elif carpeta.estado == "OBSERVADA" %}
-                            <span class="badge bg-danger status-badge-clean">
+                            <span class="badge detalle-status-chip detalle-status-danger">
                                 <i class="bi bi-exclamation-triangle me-1"></i> Observada
                             </span>
                         {% else %}
-                            <span class="badge bg-secondary status-badge-clean">{{ carpeta.estado }}</span>
+                            <span class="badge detalle-status-chip detalle-status-secondary">{{ carpeta.estado }}</span>
                         {% endif %}
                     </div>
+                </div>
+            </div>
+        </div>
 
-                    <div class="card-body shadow-section-body">
+        <div class="row g-4 mb-4">
+
+            <div class="col-xl-8">
+                <div class="shadow-surface-card shadow-card-hover detalle-card h-100">
+                    <div class="detalle-card-header">
+                        <h5 class="shadow-title mb-1">Información general</h5>
+                        <p class="shadow-helper-text mb-0">
+                            Resumen principal de la carpeta y métricas operativas del flujo.
+                        </p>
+                    </div>
+
+                    <div class="shadow-section-divider"></div>
+
+                    <div class="detalle-card-body">
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <div class="info-tile h-100">
-                                    <div class="info-tile-icon">
+                                <div class="detalle-info-tile h-100">
+                                    <div class="detalle-info-icon">
                                         <i class="bi bi-hash"></i>
                                     </div>
                                     <div>
-                                        <div class="info-label">Código</div>
-                                        <div class="info-value">{{ carpeta.codigo_carpeta }}</div>
+                                        <div class="detalle-info-label">Código</div>
+                                        <div class="detalle-info-value">{{ carpeta.codigo_carpeta }}</div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="col-md-6">
-                                <div class="info-tile h-100">
-                                    <div class="info-tile-icon">
+                                <div class="detalle-info-tile h-100">
+                                    <div class="detalle-info-icon">
                                         <i class="bi bi-buildings"></i>
                                     </div>
                                     <div>
-                                        <div class="info-label">Empresa</div>
-                                        <div class="info-value">
+                                        <div class="detalle-info-label">Empresa</div>
+                                        <div class="detalle-info-value">
                                             {% if carpeta.empresa %}
                                                 {{ carpeta.empresa.nombre }}
                                             {% else %}
@@ -83,79 +100,77 @@
                             </div>
 
                             <div class="col-md-6">
-                                <div class="info-tile h-100">
-                                    <div class="info-tile-icon">
+                                <div class="detalle-info-tile h-100">
+                                    <div class="detalle-info-icon">
                                         <i class="bi bi-calendar3"></i>
                                     </div>
                                     <div>
-                                        <div class="info-label">Período</div>
-                                        <div class="info-value">{{ carpeta.mes }}/{{ carpeta.anio }}</div>
+                                        <div class="detalle-info-label">Período</div>
+                                        <div class="detalle-info-value">{{ carpeta.mes }}/{{ carpeta.anio }}</div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="col-md-6">
-                                <div class="info-tile h-100">
-                                    <div class="info-tile-icon">
+                                <div class="detalle-info-tile h-100">
+                                    <div class="detalle-info-icon">
                                         <i class="bi bi-clock-history"></i>
                                     </div>
                                     <div>
-                                        <div class="info-label">Fecha de creación</div>
-                                        <div class="info-value">{{ carpeta.fecha_creacion|date:"d/m/Y H:i" }}</div>
+                                        <div class="detalle-info-label">Fecha de creación</div>
+                                        <div class="detalle-info-value">{{ carpeta.fecha_creacion|date:"d/m/Y H:i" }}</div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="col-md-6">
-                                <div class="info-tile h-100">
-                                    <div class="info-tile-icon">
+                                <div class="detalle-info-tile h-100">
+                                    <div class="detalle-info-icon">
                                         <i class="bi bi-person-circle"></i>
                                     </div>
                                     <div>
-                                        <div class="info-label">Creada por</div>
-                                        <div class="info-value">{{ carpeta.creada_por|default:"-" }}</div>
+                                        <div class="detalle-info-label">Creada por</div>
+                                        <div class="detalle-info-value">{{ carpeta.creada_por|default:"-" }}</div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="col-md-6">
-                                <div class="info-tile h-100">
-                                    <div class="info-tile-icon">
+                                <div class="detalle-info-tile h-100">
+                                    <div class="detalle-info-icon">
                                         <i class="bi bi-collection"></i>
                                     </div>
                                     <div>
-                                        <div class="info-label">Total de planos</div>
-                                        <div class="info-value">{{ total_planos }}</div>
+                                        <div class="detalle-info-label">Total de planos</div>
+                                        <div class="detalle-info-value">{{ total_planos }}</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- MÉTRICAS -->
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <div class="metric-card metric-card-primary h-100">
-                                    <div class="metric-card-content">
+                                <div class="detalle-metric-card detalle-metric-primary h-100">
+                                    <div class="detalle-metric-content">
                                         <div>
-                                            <div class="metric-label">Total de planos</div>
-                                            <div class="metric-value">{{ total_planos }}</div>
+                                            <div class="detalle-metric-label">Total de planos</div>
+                                            <div class="detalle-metric-value">{{ total_planos }}</div>
                                         </div>
-                                        <div class="metric-icon">
+                                        <div class="detalle-metric-icon">
                                             <i class="bi bi-files"></i>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            
                             <div class="col-md-6">
-                                <div class="metric-card metric-card-success h-100">
-                                    <div class="metric-card-content">
+                                <div class="detalle-metric-card detalle-metric-success h-100">
+                                    <div class="detalle-metric-content">
                                         <div>
-                                            <div class="metric-label">Planos aprobados</div>
-                                            <div class="metric-value">{{ planos_aprobados|default:"-" }}</div>
+                                            <div class="detalle-metric-label">Planos aprobados</div>
+                                            <div class="detalle-metric-value">{{ planos_aprobados|default:"-" }}</div>
                                         </div>
-                                        <div class="metric-icon">
+                                        <div class="detalle-metric-icon">
                                             <i class="bi bi-check2-circle"></i>
                                         </div>
                                     </div>
@@ -163,78 +178,79 @@
                             </div>
 
                             <div class="col-md-4">
-                                <div class="mini-stat-card h-100">
-                                    <div class="mini-stat-icon text-warning">
+                                <div class="detalle-mini-stat h-100">
+                                    <div class="detalle-mini-icon text-warning">
                                         <i class="bi bi-hourglass-split"></i>
                                     </div>
-                                    <div class="mini-stat-label">En revisión</div>
-                                    <div class="mini-stat-value">{{ planos_en_revision|default:"-" }}</div>
+                                    <div class="detalle-mini-label">En revisión</div>
+                                    <div class="detalle-mini-value">{{ planos_en_revision|default:"-" }}</div>
                                 </div>
                             </div>
 
                             <div class="col-md-4">
-                                <div class="mini-stat-card h-100">
-                                    <div class="mini-stat-icon text-info">
+                                <div class="detalle-mini-stat h-100">
+                                    <div class="detalle-mini-icon text-info">
                                         <i class="bi bi-exclamation-circle"></i>
                                     </div>
-                                    <div class="mini-stat-label">En verificación</div>
-                                    <div class="mini-stat-value">{{ planos_en_verificacion|default:"-" }}</div>
+                                    <div class="detalle-mini-label">En verificación</div>
+                                    <div class="detalle-mini-value">{{ planos_en_verificacion|default:"-" }}</div>
                                 </div>
                             </div>
 
                             <div class="col-md-4">
-                                <div class="mini-stat-card h-100">
-                                    <div class="mini-stat-icon text-danger">
+                                <div class="detalle-mini-stat h-100">
+                                    <div class="detalle-mini-icon text-danger">
                                         <i class="bi bi-x-circle"></i>
                                     </div>
-                                    <div class="mini-stat-label">Rechazados</div>
-                                    <div class="mini-stat-value">{{ planos_rechazados|default:"-" }}</div>
+                                    <div class="detalle-mini-label">Rechazados</div>
+                                    <div class="detalle-mini-value">{{ planos_rechazados|default:"-" }}</div>
                                 </div>
                             </div>
                         </div>
 
                         {% if carpeta.observacion_general %}
-                            <div class="info-note-box mt-3">
+                            <div class="detalle-note-box mt-3">
                                 <div class="d-flex align-items-center gap-2 mb-2">
-                                    <i class="bi bi-chat-left-text note-icon"></i>
-                                    <div class="info-label mb-0">Observación general</div>
+                                    <i class="bi bi-chat-left-text detalle-note-icon"></i>
+                                    <div class="detalle-info-label mb-0">Observación general</div>
                                 </div>
-                                <div class="info-note-text">{{ carpeta.observacion_general }}</div>
+                                <div class="detalle-note-text">{{ carpeta.observacion_general }}</div>
                             </div>
                         {% endif %}
                     </div>
                 </div>
             </div>
 
-            <!-- ACCIONES RÁPIDAS -->
             <div class="col-xl-4">
-                <div class="card shadow-card dashboard-card actions-card-compact">
-                    <div class="card-header shadow-section-header">
-                        <h5 class="mb-0">
-                            <i class="bi bi-lightning-charge me-2"></i>
-                            Acciones rápidas
-                        </h5>
+                <div class="shadow-surface-card shadow-card-hover detalle-card h-100">
+                    <div class="detalle-card-header">
+                        <h5 class="shadow-title mb-1">Acciones rápidas</h5>
+                        <p class="shadow-helper-text mb-0">
+                            Accesos directos para continuar con el trabajo sobre esta carpeta.
+                        </p>
                     </div>
 
-                    <div class="card-body shadow-section-body">
-                        <div class="quick-actions-grid quick-actions-grid-single">
-                            <a href="{% url 'subir_plano_carpeta' carpeta.id %}" class="quick-action-box quick-action-primary">
-                                <div class="quick-action-icon">
+                    <div class="shadow-section-divider"></div>
+
+                    <div class="detalle-card-body">
+                        <div class="detalle-actions-grid">
+                            <a href="{% url 'subir_plano_carpeta' carpeta.id %}" class="detalle-action-box detalle-action-primary">
+                                <div class="detalle-action-icon">
                                     <i class="bi bi-upload"></i>
                                 </div>
                                 <div>
-                                    <div class="quick-action-title">Subir plano</div>
-                                    <div class="quick-action-text">Agregar un nuevo archivo a esta carpeta</div>
+                                    <div class="detalle-action-title">Subir plano</div>
+                                    <div class="detalle-action-text">Agregar un nuevo archivo a esta carpeta</div>
                                 </div>
                             </a>
 
-                            <a href="{% url 'carpetas' %}" class="quick-action-box quick-action-secondary">
-                                <div class="quick-action-icon">
+                            <a href="{% url 'carpetas' %}" class="detalle-action-box detalle-action-secondary">
+                                <div class="detalle-action-icon">
                                     <i class="bi bi-arrow-left"></i>
                                 </div>
                                 <div>
-                                    <div class="quick-action-title">Volver</div>
-                                    <div class="quick-action-text">Regresar al listado general de carpetas</div>
+                                    <div class="detalle-action-title">Volver</div>
+                                    <div class="detalle-action-text">Regresar al listado general de carpetas</div>
                                 </div>
                             </a>
                         </div>
@@ -244,143 +260,143 @@
 
         </div>
 
-        <!-- LISTADO + FILTRO -->
-        <div class="row">
-            <div class="col-12">
-                <div id="bloque-listado-planos">
-                    <div class="card shadow-card dashboard-card">
-                        <div class="card-header shadow-section-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                            <h5 class="mb-0">
-                                <i class="bi bi-table me-2"></i>
-                                Listado de planos
-                            </h5>
-                            <span class="table-total-chip">
-                                <i class="bi bi-collection me-1"></i>
-                                Total: {{ total_planos }}
-                            </span>
-                        </div>
-
-                        <div class="card-body shadow-section-body">
-                            <form method="get" id="formFiltroPlanos" class="integrated-filter-bar mb-4">
-                                <div class="row g-3 align-items-end">
-                                    <div class="col-md-4 col-lg-3">
-                                        <label for="estado" class="form-label filter-label">Estado</label>
-                                        <select id="estado" name="estado" class="form-select filter-select-clean">
-                                            <option value="">Todos</option>
-                                            {% for value, label in estado_choices_plano %}
-                                                <option value="{{ value }}" {% if estado_plano == value %}selected{% endif %}>
-                                                    {{ label }}
-                                                </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-
-                                    <div class="col-md-4 col-lg-3">
-                                        <button type="submit" class="btn btn-shadow filter-btn-clean w-100 action-animated">
-                                            <i class="bi bi-funnel me-2"></i>
-                                            Aplicar filtro
-                                        </button>
-                                    </div>
-
-                                    <div class="col-md-4 col-lg-3">
-                                        <a href="{% url 'detalle_carpeta' carpeta.id %}" id="btnLimpiarFiltro" class="btn btn-outline-secondary filter-btn-clean w-100 action-animated">
-                                            Limpiar filtro
-                                        </a>
-                                    </div>
-                                </div>
-                            </form>
-
-                            {% if planos %}
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle mb-0 shadow-table">
-                                        <thead>
-                                            <tr>
-                                                <th>ID plano</th>
-                                                <th>Fecha carga</th>
-                                                <th>Fecha plano</th>
-                                                <th>Estado</th>
-                                                <th>Observación</th>
-                                                <th class="text-end">Acciones</th>
-                                            </tr>
-                                        </thead>
-
-                                        <tbody>
-                                            {% for plano in planos %}
-                                                <tr>
-                                                    <td class="fw-semibold">{{ plano.id_plano_deposito }}</td>
-
-                                                    <td>{{ plano.fecha_carga|date:"d/m/Y H:i" }}</td>
-
-                                                    <td>
-                                                        {% if plano.fecha_plano %}
-                                                            {{ plano.fecha_plano|date:"d/m/Y" }}
-                                                        {% else %}
-                                                            <span class="text-muted">-</span>
-                                                        {% endif %}
-                                                    </td>
-
-                                                    <td>
-                                                        {% if plano.estado == "APROBADO" %}
-                                                            <span class="badge bg-success table-status-badge">Aprobado</span>
-                                                        {% elif plano.estado == "RECHAZADO" %}
-                                                            <span class="badge bg-danger table-status-badge">Rechazado</span>
-                                                        {% elif plano.estado == "EN_VERIFICACION" %}
-                                                            <span class="badge bg-warning text-dark table-status-badge">En verificación</span>
-                                                        {% elif plano.estado == "EN_REVISION" %}
-                                                            <span class="badge bg-primary table-status-badge">En revisión</span>
-                                                        {% elif plano.estado == "EN_ESPERA" %}
-                                                            <span class="badge bg-secondary table-status-badge">En espera</span>
-                                                        {% else %}
-                                                            <span class="badge bg-dark table-status-badge">{{ plano.estado }}</span>
-                                                        {% endif %}
-                                                    </td>
-
-                                                    <td>
-                                                        <div class="table-observation">
-                                                            {% if plano.observacion %}
-                                                                {{ plano.observacion|truncatechars:50 }}
-                                                            {% elif plano.motivo %}
-                                                                {{ plano.motivo|truncatechars:50 }}
-                                                            {% else %}
-                                                                <span class="text-muted">Sin observación</span>
-                                                            {% endif %}
-                                                        </div>
-                                                    </td>
-
-                                                    <td class="text-end">
-                                                        <div class="d-flex justify-content-end gap-2 flex-wrap">
-                                                            <a href="{% url 'detalle_plano' plano.id %}" class="btn btn-sm btn-shadow table-action-btn action-animated">
-                                                                <i class="bi bi-eye me-1"></i>
-                                                                Ver
-                                                            </a>
-
-                                                            <form
-                                                                method="post"
-                                                                action="{% url 'cancelar_plano' plano.id %}"
-                                                                onsubmit="return confirm('¿Seguro que deseas eliminar lógicamente este plano?');"
-                                                                class="d-inline"
-                                                            >
-                                                                {% csrf_token %}
-                                                                <button type="submit" class="btn btn-sm btn-danger table-action-btn action-animated">
-                                                                    <i class="bi bi-trash me-1"></i>
-                                                                    Eliminar
-                                                                </button>
-                                                            </form>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            {% else %}
-                                <div class="alert alert-secondary mb-0 empty-state-box">
-                                    <i class="bi bi-inbox me-2"></i>
-                                    No hay planos cargados en esta carpeta.
-                                </div>
-                            {% endif %}
-                        </div>
+        <div id="bloque-listado-planos">
+            <div class="shadow-surface-card shadow-card-hover detalle-card">
+                <div class="detalle-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h5 class="shadow-title mb-1">Listado de planos</h5>
+                        <p class="shadow-helper-text mb-0">
+                            Consulta y filtra los planos relacionados con esta carpeta.
+                        </p>
                     </div>
+
+                    <span class="detalle-total-chip">
+                        <i class="bi bi-collection me-1"></i>
+                        Total: {{ total_planos }}
+                    </span>
+                </div>
+
+                <div class="shadow-section-divider"></div>
+
+                <div class="detalle-card-body">
+                    <form method="get" id="formFiltroPlanos" class="detalle-filter-bar mb-4">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-4 col-lg-3">
+                                <label for="estado" class="shadow-form-label">Estado</label>
+                                <select id="estado" name="estado" class="shadow-select">
+                                    <option value="">Todos</option>
+                                    {% for value, label in estado_choices_plano %}
+                                        <option value="{{ value }}" {% if estado_plano == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 col-lg-3">
+                                <button type="submit" class="btn shadow-btn shadow-btn-primary w-100 detalle-btn-anim">
+                                    <i class="bi bi-funnel me-2"></i>
+                                    Aplicar filtro
+                                </button>
+                            </div>
+
+                            <div class="col-md-4 col-lg-3">
+                                <a href="{% url 'detalle_carpeta' carpeta.id %}" id="btnLimpiarFiltro" class="btn shadow-btn shadow-btn-soft w-100 detalle-btn-anim">
+                                    Limpiar filtro
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+
+                    {% if planos %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 detalle-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID plano</th>
+                                        <th>Fecha carga</th>
+                                        <th>Fecha plano</th>
+                                        <th>Estado</th>
+                                        <th>Observación</th>
+                                        <th class="text-end">Acciones</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    {% for plano in planos %}
+                                        <tr>
+                                            <td class="fw-semibold">{{ plano.id_plano_deposito }}</td>
+
+                                            <td>{{ plano.fecha_carga|date:"d/m/Y H:i" }}</td>
+
+                                            <td>
+                                                {% if plano.fecha_plano %}
+                                                    {{ plano.fecha_plano|date:"d/m/Y" }}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+
+                                            <td>
+                                                {% if plano.estado == "APROBADO" %}
+                                                    <span class="badge detalle-status-chip detalle-status-success">Aprobado</span>
+                                                {% elif plano.estado == "RECHAZADO" %}
+                                                    <span class="badge detalle-status-chip detalle-status-danger">Rechazado</span>
+                                                {% elif plano.estado == "EN_VERIFICACION" %}
+                                                    <span class="badge detalle-status-chip detalle-status-warning">En verificación</span>
+                                                {% elif plano.estado == "EN_REVISION" %}
+                                                    <span class="badge detalle-status-chip detalle-status-primary">En revisión</span>
+                                                {% elif plano.estado == "EN_ESPERA" %}
+                                                    <span class="badge detalle-status-chip detalle-status-secondary">En espera</span>
+                                                {% else %}
+                                                    <span class="badge detalle-status-chip detalle-status-secondary">{{ plano.estado }}</span>
+                                                {% endif %}
+                                            </td>
+
+                                            <td>
+                                                <div class="detalle-table-observation">
+                                                    {% if plano.observacion %}
+                                                        {{ plano.observacion|truncatechars:50 }}
+                                                    {% elif plano.motivo %}
+                                                        {{ plano.motivo|truncatechars:50 }}
+                                                    {% else %}
+                                                        <span class="text-muted">Sin observación</span>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+
+                                            <td class="text-end">
+                                                <div class="d-flex justify-content-end gap-2 flex-wrap">
+                                                    <a href="{% url 'detalle_plano' plano.id %}" class="btn btn-sm shadow-btn shadow-btn-primary detalle-table-btn detalle-btn-anim">
+                                                        <i class="bi bi-eye me-1"></i>
+                                                        Ver
+                                                    </a>
+
+                                                    <form
+                                                        method="post"
+                                                        action="{% url 'cancelar_plano' plano.id %}"
+                                                        onsubmit="return confirm('¿Seguro que deseas eliminar lógicamente este plano?');"
+                                                        class="d-inline"
+                                                    >
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-danger detalle-table-btn detalle-btn-anim">
+                                                            <i class="bi bi-trash me-1"></i>
+                                                            Eliminar
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-secondary mb-0 detalle-empty-state">
+                            <i class="bi bi-inbox me-2"></i>
+                            No hay planos cargados en esta carpeta.
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -389,116 +405,154 @@
 </div>
 
 <style>
-    .floating-icon {
-        animation: floatIcon 3.2s ease-in-out infinite;
+    .detalle-carpeta-hero {
+        border-radius: 30px;
     }
 
-    @keyframes floatIcon {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-4px); }
+    .detalle-carpeta-hero-inner {
+        position: relative;
+        z-index: 2;
+        padding: 1.45rem 1.5rem;
     }
 
-    .dashboard-card,
-    .status-badge-clean,
-    .table-total-chip,
-    .table-status-badge,
-    .table-action-btn,
-    .filter-btn-clean,
-    .filter-select-clean,
-    .empty-state-box {
-        border-radius: 0.65rem !important;
+    .detalle-carpeta-title {
+        font-size: clamp(1.65rem, 2.1vw, 2.35rem);
+        letter-spacing: -0.04em;
     }
 
-    /* SOLO ACCIONES CON ANIMACIÓN */
-    .action-animated,
-    .quick-action-box,
-    .filter-btn-clean {
-        transition: all 0.25s ease;
+    .detalle-carpeta-status-wrap {
+        display: flex;
+        align-items: center;
     }
 
-    .action-animated:hover,
-    .quick-action-box:hover,
-    .filter-btn-clean:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 .75rem 1.5rem rgba(0, 0, 0, 0.08);
+    .detalle-status-chip {
+        padding: 0.52rem 0.82rem;
+        border-radius: 999px !important;
+        font-size: 0.82rem;
+        font-weight: 700;
+        border: 1px solid transparent;
     }
 
-    /* BLOQUES ESTÁTICOS */
-    .info-tile {
+    .detalle-status-primary {
+        background: rgba(91, 82, 214, 0.12);
+        color: #4d46be;
+        border-color: rgba(91, 82, 214, 0.16);
+    }
+
+    .detalle-status-success {
+        background: rgba(16, 185, 129, 0.14);
+        color: #047857;
+        border-color: rgba(16, 185, 129, 0.18);
+    }
+
+    .detalle-status-warning {
+        background: rgba(245, 158, 11, 0.14);
+        color: #b45309;
+        border-color: rgba(245, 158, 11, 0.18);
+    }
+
+    .detalle-status-danger {
+        background: rgba(239, 68, 68, 0.12);
+        color: #b91c1c;
+        border-color: rgba(239, 68, 68, 0.18);
+    }
+
+    .detalle-status-secondary {
+        background: rgba(100, 116, 139, 0.14);
+        color: #475569;
+        border-color: rgba(100, 116, 139, 0.16);
+    }
+
+    .detalle-card {
+        border-radius: 30px;
+        overflow: hidden;
+    }
+
+    .detalle-card-header {
+        padding: 1.35rem 1.45rem 1.1rem;
+        background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(246,248,255,0.92));
+    }
+
+    .detalle-card-body {
+        padding: 1.4rem 1.45rem 1.55rem;
+        background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.95));
+    }
+
+    .detalle-info-tile {
         display: flex;
         align-items: flex-start;
         gap: 0.9rem;
         padding: 1rem 1.1rem;
-        background: #f8fafc;
-        border: 1px solid rgba(15, 23, 42, 0.05);
-        border-radius: 0.65rem;
+        background: linear-gradient(180deg, #f9faff, #f1f4ff);
+        border: 1px solid rgba(91,82,214,0.10);
+        border-radius: 18px;
         height: 100%;
     }
 
-    .info-tile-icon {
+    .detalle-info-icon {
         width: 42px;
         height: 42px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border-radius: 0.65rem;
-        background: rgba(59, 130, 246, 0.12);
-        color: #3c63f0;
-        font-size: 1.1rem;
+        border-radius: 14px;
+        background: rgba(91,82,214,0.12);
+        color: #5b52d6;
+        font-size: 1.05rem;
         flex-shrink: 0;
     }
 
-    .info-label {
-        font-size: 0.8rem;
+    .detalle-info-label {
+        font-size: 0.78rem;
         color: #6b7280;
         margin-bottom: 0.25rem;
-        font-weight: 600;
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.03em;
+        letter-spacing: 0.04em;
     }
 
-    .info-value {
+    .detalle-info-value {
         font-size: 1rem;
-        font-weight: 600;
+        font-weight: 700;
         color: #243247;
         line-height: 1.35;
     }
 
-    .info-note-box {
+    .detalle-note-box {
         padding: 1rem 1.1rem;
-        background: #f8fafc;
-        border: 1px solid rgba(15, 23, 42, 0.05);
-        border-radius: 0.65rem;
+        background: linear-gradient(180deg, #f9faff, #f1f4ff);
+        border: 1px solid rgba(91,82,214,0.10);
+        border-radius: 18px;
     }
 
-    .note-icon {
-        color: #2563eb;
+    .detalle-note-icon {
+        color: #5b52d6;
         font-size: 1rem;
     }
 
-    .info-note-text {
+    .detalle-note-text {
         color: #334155;
-        line-height: 1.6;
+        line-height: 1.65;
     }
 
-    .metric-card {
-        border-radius: 0.65rem;
+    .detalle-metric-card {
+        border-radius: 20px;
         padding: 1.1rem 1.2rem;
         background: #ffffff;
-        border: 1px solid rgba(15, 23, 42, 0.06);
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+        border: 1px solid rgba(91,82,214,0.08);
+        box-shadow: 0 10px 24px rgba(15,23,42,0.05);
         height: 100%;
     }
 
-    .metric-card-content {
+    .detalle-metric-content {
         display: flex;
         justify-content: space-between;
         align-items: center;
         gap: 1rem;
     }
 
-    .metric-label {
-        font-size: 0.82rem;
+    .detalle-metric-label {
+        font-size: 0.8rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
         color: #6b7280;
@@ -506,93 +560,86 @@
         margin-bottom: 0.35rem;
     }
 
-    .metric-value {
-        font-size: 2.1rem;
-        font-weight: 700;
+    .detalle-metric-value {
+        font-size: 2rem;
+        font-weight: 800;
         color: #243247;
         line-height: 1;
     }
 
-    .metric-icon {
-        font-size: 2rem;
+    .detalle-metric-icon {
+        font-size: 1.9rem;
         opacity: 0.9;
     }
 
-    .metric-card-primary .metric-icon {
-        color: #6482ff;
-    }
+    .detalle-metric-primary .detalle-metric-icon { color: #5b52d6; }
+    .detalle-metric-success .detalle-metric-icon { color: #10b981; }
 
-    .metric-card-success .metric-icon {
-        color: #69c38f;
-    }
-
-    .mini-stat-card {
-        border-radius: 0.65rem;
+    .detalle-mini-stat {
+        border-radius: 18px;
         padding: 1rem 1.05rem;
-        background: #f8fafc;
-        border: 1px solid rgba(15, 23, 42, 0.05);
+        background: linear-gradient(180deg, #f9faff, #f1f4ff);
+        border: 1px solid rgba(91,82,214,0.08);
         text-align: left;
     }
 
-    .mini-stat-icon {
+    .detalle-mini-icon {
         font-size: 1.35rem;
         margin-bottom: 0.4rem;
     }
 
-    .mini-stat-label {
+    .detalle-mini-label {
         color: #6b7280;
-        font-size: 0.82rem;
+        font-size: 0.8rem;
         text-transform: uppercase;
         letter-spacing: 0.04em;
         font-weight: 700;
         margin-bottom: 0.3rem;
     }
 
-    .mini-stat-value {
+    .detalle-mini-value {
         color: #243247;
-        font-size: 1.8rem;
-        font-weight: 700;
+        font-size: 1.7rem;
+        font-weight: 800;
         line-height: 1;
     }
 
-    .quick-actions-grid {
+    .detalle-actions-grid {
         display: grid;
         gap: 1rem;
     }
 
-    .quick-actions-grid-single {
-        grid-template-columns: 1fr;
-    }
-
-    .actions-card-compact .card-body {
-        padding-bottom: 1rem;
-    }
-
-    .quick-action-box {
+    .detalle-action-box {
         display: flex;
         align-items: flex-start;
         gap: 0.9rem;
         padding: 1.05rem 1.1rem;
         text-decoration: none;
-        border-radius: 0.65rem;
-        border: 1px solid rgba(15, 23, 42, 0.06);
-        height: auto;
+        border-radius: 18px;
+        border: 1px solid rgba(91,82,214,0.08);
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
     }
 
-    .quick-action-primary {
-        background: rgba(79, 101, 210, 0.16);
-        color: #263b8f;
+    .detalle-action-box:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 .75rem 1.5rem rgba(0, 0, 0, 0.08);
+        color: inherit;
     }
 
-    .quick-action-secondary {
-        background: rgba(86, 98, 122, 0.14);
-        color: #2f3a52;
+    .detalle-action-primary {
+        background: rgba(91, 82, 214, 0.10);
+        color: #4d46be;
     }
 
-    .quick-action-icon {
+    .detalle-action-secondary {
+        background: rgba(100, 116, 139, 0.10);
+        color: #334155;
+    }
+
+    .detalle-action-icon {
         width: 44px;
         height: 44px;
-        border-radius: 0.65rem;
+        border-radius: 14px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -601,51 +648,37 @@
         flex-shrink: 0;
     }
 
-    .quick-action-title {
+    .detalle-action-title {
         font-weight: 700;
         margin-bottom: 0.2rem;
     }
 
-    .quick-action-text {
+    .detalle-action-text {
         font-size: 0.9rem;
         line-height: 1.45;
         opacity: 0.96;
     }
 
-    .integrated-filter-bar {
+    .detalle-filter-bar {
         padding: 1rem 1rem 1.1rem;
-        background: #f8fafc;
-        border: 1px solid rgba(15, 23, 42, 0.05);
-        border-radius: 0.65rem;
+        background: linear-gradient(180deg, #f9faff, #f1f4ff);
+        border: 1px solid rgba(91,82,214,0.08);
+        border-radius: 18px;
     }
 
-    .filter-label {
-        color: #6b7280;
-        font-weight: 600;
-    }
-
-    .filter-select-clean {
-        min-height: 46px;
-        border: 1px solid rgba(15, 23, 42, 0.10);
-    }
-
-    .filter-btn-clean {
-        min-height: 46px;
-        font-weight: 500;
-    }
-
-    .table-total-chip {
+    .detalle-total-chip {
         display: inline-flex;
         align-items: center;
-        padding: 0.42rem 0.8rem;
-        background: rgba(255,255,255,0.14);
-        color: #ffffff;
-        border: 1px solid rgba(255,255,255,0.18);
+        padding: 0.45rem 0.8rem;
+        background: rgba(91,82,214,0.10);
+        color: #4d46be;
+        border: 1px solid rgba(91,82,214,0.14);
+        border-radius: 999px;
         font-size: 0.82rem;
-        font-weight: 600;
+        font-weight: 700;
     }
 
-    .shadow-table thead th {
+    .detalle-table thead th {
         font-size: 0.88rem;
         font-weight: 700;
         color: #4b5563;
@@ -655,32 +688,51 @@
         padding-bottom: 0.95rem;
     }
 
-    .shadow-table tbody td {
+    .detalle-table tbody td {
         vertical-align: middle;
         padding-top: 0.95rem;
         padding-bottom: 0.95rem;
     }
 
-    .table-observation {
+    .detalle-table-observation {
         max-width: 270px;
         line-height: 1.45;
         color: #374151;
     }
 
-    .table-status-badge,
-    .status-badge-clean {
-        padding: 0.5rem 0.8rem;
-        font-size: 0.82rem;
-        font-weight: 600;
-    }
-
-    .table-action-btn {
+    .detalle-table-btn {
         min-width: 88px;
     }
 
+    .detalle-btn-anim {
+        transition: all 0.25s ease;
+    }
+
+    .detalle-btn-anim:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 .75rem 1.5rem rgba(0, 0, 0, 0.08);
+    }
+
+    .detalle-empty-state {
+        border-radius: 18px;
+    }
+
     @media (max-width: 991.98px) {
-        .table-observation {
+        .detalle-table-observation {
             max-width: 180px;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .detalle-carpeta-hero-inner,
+        .detalle-card-header,
+        .detalle-card-body {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .detalle-table-btn {
+            min-width: auto;
         }
     }
 </style>
@@ -689,7 +741,6 @@
 document.addEventListener("DOMContentLoaded", function () {
     const formFiltro = document.getElementById("formFiltroPlanos");
     const bloqueListado = document.getElementById("bloque-listado-planos");
-    const btnLimpiar = document.getElementById("btnLimpiarFiltro");
 
     if (formFiltro && bloqueListado) {
         formFiltro.addEventListener("submit", function (e) {
@@ -715,23 +766,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     bloqueListado.innerHTML = nuevoBloque.innerHTML;
                     window.history.replaceState({}, "", url);
                     window.scrollTo({ top: currentScrollY });
-
-                    // volver a enlazar eventos
-                    setTimeout(() => {
-                        const nuevoForm = document.getElementById("formFiltroPlanos");
-                        if (nuevoForm) {
-                            nuevoForm.dispatchEvent(new Event("shadow-rebind"));
-                        }
-                    }, 0);
                 }
             })
             .catch(error => {
                 console.error("Error al filtrar planos:", error);
             });
-        });
-
-        formFiltro.addEventListener("shadow-rebind", function () {
-            // no hace nada, solo evita errores al reinyectar
         });
     }
 

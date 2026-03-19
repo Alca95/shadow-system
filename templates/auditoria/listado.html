@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Auditoría{% endblock %}
+
+{% block page_title %}
+Auditoría
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-4">
+
+    <div class="col-12">
+        <div class="card shadow-card p-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+                <div>
+                    <h5 class="mb-1">Registro de auditoría</h5>
+                    <p class="text-muted mb-0">
+                        Consulta acciones relevantes realizadas dentro del sistema.
+                    </p>
+                </div>
+
+                <div class="text-muted small">
+                    Total: {{ auditorias|length }} registro{{ auditorias|length|pluralize }}
+                </div>
+            </div>
+
+            <form method="get" class="row g-3">
+                <div class="col-md-6 col-lg-3">
+                    <label for="q" class="form-label">Búsqueda general</label>
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="q"
+                        name="q"
+                        value="{{ filtros.q }}"
+                        placeholder="Usuario, acción, entidad..."
+                    >
+                </div>
+
+                <div class="col-md-6 col-lg-2">
+                    <label for="accion" class="form-label">Acción</label>
+                    <select id="accion" name="accion" class="form-select">
+                        <option value="">Todas</option>
+                        {% for item in acciones %}
+                            <option value="{{ item }}" {% if filtros.accion == item %}selected{% endif %}>
+                                {{ item }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6 col-lg-2">
+                    <label for="entidad" class="form-label">Entidad</label>
+                    <select id="entidad" name="entidad" class="form-select">
+                        <option value="">Todas</option>
+                        {% for item in entidades %}
+                            <option value="{{ item }}" {% if filtros.entidad == item %}selected{% endif %}>
+                                {{ item }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3 col-lg-2">
+                    <label for="fecha_desde" class="form-label">Desde</label>
+                    <input
+                        type="date"
+                        class="form-control"
+                        id="fecha_desde"
+                        name="fecha_desde"
+                        value="{{ filtros.fecha_desde }}"
+                    >
+                </div>
+
+                <div class="col-md-3 col-lg-2">
+                    <label for="fecha_hasta" class="form-label">Hasta</label>
+                    <input
+                        type="date"
+                        class="form-control"
+                        id="fecha_hasta"
+                        name="fecha_hasta"
+                        value="{{ filtros.fecha_hasta }}"
+                    >
+                </div>
+
+                <div class="col-12 d-flex gap-2 flex-wrap">
+                    <button type="submit" class="btn btn-shadow">
+                        <i class="bi bi-search me-2"></i>
+                        Aplicar filtros
+                    </button>
+
+                    <a href="{% url 'auditoria' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise me-2"></i>
+                        Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card shadow-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0">Movimientos registrados</h5>
+                <span class="text-muted">Últimos eventos del sistema</span>
+            </div>
+
+            {% if auditorias %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Usuario</th>
+                                <th>Acción</th>
+                                <th>Entidad</th>
+                                <th>ID entidad</th>
+                                <th>Descripción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in auditorias %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold">{{ item.fecha|date:"d/m/Y" }}</div>
+                                        <div class="text-muted small">{{ item.fecha|date:"H:i:s" }}</div>
+                                    </td>
+                                    <td>{{ item.usuario }}</td>
+                                    <td>
+                                        <span class="badge bg-dark-subtle text-dark border">
+                                            {{ item.accion }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if item.entidad %}
+                                            {{ item.entidad }}
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.entidad_id %}
+                                            {{ item.entidad_id }}
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="min-width: 260px;">
+                                        {% if item.descripcion %}
+                                            {{ item.descripcion }}
+                                        {% else %}
+                                            <span class="text-muted">Sin descripción</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-secondary mb-0">
+                    No se encontraron registros de auditoría con los filtros actuales.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

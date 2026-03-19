@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Empresas contratistas{% endblock %}
+
+{% block page_title %}
+Empresas contratistas
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-4">
+
+    <div class="col-12">
+        <div class="card shadow-card p-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+                <div>
+                    <h5 class="mb-1">Consulta de empresas contratistas</h5>
+                    <p class="text-muted mb-0">Visualiza las empresas registradas para referencia dentro del sistema. Este módulo es solo de consulta.</p>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="badge rounded-pill text-bg-success">Activas: {{ empresas_activas }}</span>
+                    <span class="badge rounded-pill text-bg-light border text-dark">Total: {{ total_empresas }}</span>
+                </div>
+            </div>
+
+            <form method="get" class="row g-3">
+                <div class="col-md-8 col-lg-5">
+                    <label for="q" class="form-label">Buscar por nombre o RUC</label>
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="q"
+                        name="q"
+                        value="{{ filtros.q }}"
+                        placeholder="Ej: Constructora del Sur o 80012345-6"
+                    >
+                </div>
+
+                <div class="col-12 d-flex gap-2 flex-wrap align-items-end">
+                    <button type="submit" class="btn btn-shadow">
+                        <i class="bi bi-search me-2"></i>
+                        Buscar
+                    </button>
+
+                    <a href="{% url 'empresas_contratistas' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise me-2"></i>
+                        Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card shadow-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0">Listado de empresas</h5>
+                <span class="text-muted">Resultados: {{ empresas|length }}</span>
+            </div>
+
+            {% if empresas %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nombre</th>
+                                <th>RUC</th>
+                                <th>Contacto</th>
+                                <th>Teléfono</th>
+                                <th>Email</th>
+                                <th>Estado</th>
+                                <th>Fecha de creación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for empresa in empresas %}
+                                <tr>
+                                    <td><strong>{{ empresa.nombre }}</strong></td>
+                                    <td>{{ empresa.ruc|default:"-" }}</td>
+                                    <td>{{ empresa.contacto|default:"-" }}</td>
+                                    <td>{{ empresa.telefono|default:"-" }}</td>
+                                    <td>{{ empresa.email|default:"-" }}</td>
+                                    <td>
+                                        {% if empresa.activo %}
+                                            <span class="badge bg-success">Activa</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactiva</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ empresa.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-secondary mb-0">
+                    No se encontraron empresas contratistas con los filtros actuales.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

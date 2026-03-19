@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block title %}Reportes{% endblock %}
+
+{% block page_title %}
+Reportes
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-4">
+
+    <div class="col-12">
+        <div class="card shadow-card p-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+                <div>
+                    <h5 class="mb-1">Reportes operativos</h5>
+                    <p class="text-muted mb-0">
+                        Consulta información de carpetas y planos con filtros simples.
+                    </p>
+                </div>
+            </div>
+
+            <ul class="nav nav-pills gap-2">
+                <li class="nav-item">
+                    <a class="btn {% if tab == 'carpetas' %}btn-shadow{% else %}btn-outline-secondary{% endif %}"
+                       href="{% url 'reportes' %}?tab=carpetas">
+                        <i class="bi bi-folder2-open me-2"></i>Reporte de carpetas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="btn {% if tab == 'planos' %}btn-shadow{% else %}btn-outline-secondary{% endif %}"
+                       href="{% url 'reportes' %}?tab=planos">
+                        <i class="bi bi-file-earmark-text me-2"></i>Reporte de planos
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    {% if tab == 'carpetas' %}
+    <div class="col-12">
+        <div class="card shadow-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0">Filtros de carpetas</h5>
+                <span class="text-muted">Total: {{ carpetas|length }}</span>
+            </div>
+
+            <form method="get" class="row g-3">
+                <input type="hidden" name="tab" value="carpetas">
+
+                <div class="col-md-6 col-lg-3">
+                    <label for="carpeta_q" class="form-label">Código</label>
+                    <input type="text" class="form-control" id="carpeta_q" name="carpeta_q"
+                           value="{{ filtros.carpeta_q }}" placeholder="Ej: CARP001">
+                </div>
+
+                <div class="col-md-6 col-lg-2">
+                    <label for="carpeta_estado" class="form-label">Estado</label>
+                    <select id="carpeta_estado" name="carpeta_estado" class="form-select">
+                        <option value="">Todos</option>
+                        {% for value, label in carpeta_estado_choices %}
+                            <option value="{{ value }}" {% if filtros.carpeta_estado == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <label for="carpeta_empresa" class="form-label">Empresa</label>
+                    <select id="carpeta_empresa" name="carpeta_empresa" class="form-select">
+                        <option value="">Todas</option>
+                        {% for empresa in empresas %}
+                            <option value="{{ empresa.id }}" {% if filtros.carpeta_empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
+                                {{ empresa.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3 col-lg-2">
+                    <label for="carpeta_mes" class="form-label">Mes</label>
+                    <input type="number" class="form-control" id="carpeta_mes" name="carpeta_mes"
+                           min="1" max="12" value="{{ filtros.carpeta_mes }}" placeholder="3">
+                </div>
+
+                <div class="col-md-3 col-lg-2">
+                    <label for="carpeta_anio" class="form-label">Año</label>
+                    <input type="number" class="form-control" id="carpeta_anio" name="carpeta_anio"
+                           value="{{ filtros.carpeta_anio }}" placeholder="2026">
+                </div>
+
+                <div class="col-12 d-flex gap-2 flex-wrap">
+                    <button type="submit" class="btn btn-shadow">
+                        <i class="bi bi-search me-2"></i>Aplicar filtros
+                    </button>
+                    <a href="{% url 'reportes' %}?tab=carpetas" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card shadow-card p-4">
+            <h5 class="mb-4">Resultado del reporte de carpetas</h5>
+
+            {% if carpetas %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Código</th>
+                                <th>Empresa</th>
+                                <th>Período</th>
+                                <th>Estado</th>
+                                <th>Fecha de creación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for carpeta in carpetas %}
+                                <tr>
+                                    <td><strong>{{ carpeta.codigo_carpeta }}</strong></td>
+                                    <td>
+                                        {% if carpeta.empresa %}
+                                            {{ carpeta.empresa.nombre }}
+                                        {% else %}
+                                            <span class="text-muted">Sin empresa</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ carpeta.mes }}/{{ carpeta.anio }}</td>
+                                    <td>{{ carpeta.get_estado_display }}</td>
+                                    <td>{{ carpeta.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-secondary mb-0">
+                    No se encontraron carpetas con los filtros actuales.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if tab == 'planos' %}
+    <div class="col-12">
+        <div class="card shadow-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0">Filtros de planos</h5>
+                <span class="text-muted">Total: {{ planos|length }}</span>
+            </div>
+
+            <form method="get" class="row g-3">
+                <input type="hidden" name="tab" value="planos">
+
+                <div class="col-md-6 col-lg-3">
+                    <label for="plano_q" class="form-label">Plano o carpeta</label>
+                    <input type="text" class="form-control" id="plano_q" name="plano_q"
+                           value="{{ filtros.plano_q }}" placeholder="ID depósito o carpeta">
+                </div>
+
+                <div class="col-md-6 col-lg-2">
+                    <label for="plano_estado" class="form-label">Estado</label>
+                    <select id="plano_estado" name="plano_estado" class="form-select">
+                        <option value="">Todos</option>
+                        {% for value, label in plano_estado_choices %}
+                            <option value="{{ value }}" {% if filtros.plano_estado == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <label for="plano_empresa" class="form-label">Empresa</label>
+                    <select id="plano_empresa" name="plano_empresa" class="form-select">
+                        <option value="">Todas</option>
+                        {% for empresa in empresas %}
+                            <option value="{{ empresa.id }}" {% if filtros.plano_empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
+                                {{ empresa.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6 col-lg-2">
+                    <label for="plano_procesado" class="form-label">Procesado</label>
+                    <select id="plano_procesado" name="plano_procesado" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="si" {% if filtros.plano_procesado == 'si' %}selected{% endif %}>Sí</option>
+                        <option value="no" {% if filtros.plano_procesado == 'no' %}selected{% endif %}>No</option>
+                    </select>
+                </div>
+
+                <div class="col-12 d-flex gap-2 flex-wrap">
+                    <button type="submit" class="btn btn-shadow">
+                        <i class="bi bi-search me-2"></i>Aplicar filtros
+                    </button>
+                    <a href="{% url 'reportes' %}?tab=planos" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card shadow-card p-4">
+            <h5 class="mb-4">Resultado del reporte de planos</h5>
+
+            {% if planos %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID plano depósito</th>
+                                <th>Carpeta</th>
+                                <th>Empresa</th>
+                                <th>Estado</th>
+                                <th>Procesado</th>
+                                <th>Fecha de carga</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for plano in planos %}
+                                <tr>
+                                    <td>
+                                        {% if plano.id_plano_deposito %}
+                                            {{ plano.id_plano_deposito }}
+                                        {% else %}
+                                            <span class="text-muted">Sin ID</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if plano.carpeta %}
+                                            {{ plano.carpeta.codigo_carpeta }}
+                                        {% else %}
+                                            <span class="text-muted">Sin carpeta</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if plano.carpeta and plano.carpeta.empresa %}
+                                            {{ plano.carpeta.empresa.nombre }}
+                                        {% else %}
+                                            <span class="text-muted">Sin empresa</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ plano.get_estado_display }}</td>
+                                    <td>
+                                        {% if plano.procesado %}
+                                            <span class="badge bg-success">Sí</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">No</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ plano.fecha_carga|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-secondary mb-0">
+                    No se encontraron planos con los filtros actuales.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}

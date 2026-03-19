@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q, Count
 from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
 
@@ -597,3 +598,236 @@ def toggle_usuario_activo_view(request, user_id):
     messages.success(request, f"Usuario {estado} correctamente.")
 
     return redirect("gestion_usuarios")
+
+
+@login_required
+@user_passes_test(user_is_admin)
+def empresas_contratistas_view(request):
+    q = request.GET.get("q", "").strip()
+
+    empresas = EmpresaContratista.objects.all()
+
+    if q:
+        empresas = empresas.filter(
+            Q(nombre__icontains=q) |
+            Q(ruc__icontains=q)
+        )
+
+    empresas = empresas.order_by("-activo", "nombre")
+
+    total_empresas = empresas.count()
+    activas = empresas.filter(activo=True).count()
+
+    return render(request, "empresas_contratistas/listado.html", {
+        "app_name": "Shadow",
+        "titulo_pantalla": "Empresas contratistas",
+        "empresas": empresas,
+        "filtros": {"q": q},
+        "total_empresas": total_empresas,
+        "empresas_activas": activas,
+    })
+
+@login_required
+def auditoria_view(request):
+    require_admin_or_funcionario(request)
+
+    query = request.GET.get("q", "").strip()
+    accion = request.GET.get("accion", "").strip()
+    entidad = request.GET.get("entidad", "").strip()
+    fecha_desde = request.GET.get("fecha_desde", "").strip()
+    fecha_hasta = request.GET.get("fecha_hasta", "").strip()
+
+    auditorias = Auditoria.objects.all().order_by("-fecha")
+
+    if query:
+        auditorias = auditorias.filter(
+            Q(usuario__icontains=query) |
+            Q(accion__icontains=query) |
+            Q(descripcion__icontains=query) |
+            Q(entidad__icontains=query) |
+            Q(entidad_id__icontains=query)
+        )
+
+    if accion:
+        auditorias = auditorias.filter(accion=accion)
+
+    if entidad:
+        auditorias = auditorias.filter(entidad=entidad)
+
+    if fecha_desde:
+        auditorias = auditorias.filter(fecha__date__gte=fecha_desde)
+
+    if fecha_hasta:
+        auditorias = auditorias.filter(fecha__date__lte=fecha_hasta)
+
+    acciones = (
+        Auditoria.objects
+        .exclude(accion__isnull=True)
+        .exclude(accion__exact="")
+        .values_list("accion", flat=True)
+        .distinct()
+        .order_by("accion")
+    )
+
+    entidades = (
+        Auditoria.objects
+        .exclude(entidad__isnull=True)
+        .exclude(entidad__exact="")
+        .values_list("entidad", flat=True)
+        .distinct()
+        .order_by("entidad")
+    )
+
+    return render(request, "auditoria/listado.html", {
+        "app_name": "Shadow",
+        "titulo_pantalla": "Auditoría",
+        "auditorias": auditorias,
+        "acciones": acciones,
+        "entidades": entidades,
+        "filtros": {
+            "q": query,
+            "accion": accion,
+            "entidad": entidad,
+            "fecha_desde": fecha_desde,
+            "fecha_hasta": fecha_hasta,
+        },
+    })
+
+@login_required
+def estadisticas_view(request):
+    require_admin_or_funcionario(request)
+
+    total_carpetas = Carpeta.objects.filter(eliminada=False).count()
+    total_planos = Plano.objects.filter(eliminado=False).count()
+    total_planos_procesados = Plano.objects.filter(eliminado=False, procesado=True).count()
+    total_planos_pendientes = Plano.objects.filter(eliminado=False, procesado=False).count()
+    total_usuarios_activos = User.objects.filter(is_active=True).count()
+
+    carpetas_por_estado_qs = (
+        Carpeta.objects
+        .filter(eliminada=False)
+        .values("estado")
+        .order_by("estado")
+        .annotate(total=Count("id"))
+    )
+
+    planos_por_estado_qs = (
+        Plano.objects
+        .filter(eliminado=False)
+        .values("estado")
+        .order_by("estado")
+        .annotate(total=Count("id"))
+    )
+
+    usuarios_por_rol_qs = (
+        PerfilUsuario.objects
+        .values("rol")
+        .order_by("rol")
+        .annotate(total=Count("id"))
+    )
+
+    planos_por_empresa_qs = (
+        Plano.objects
+        .filter(eliminado=False)
+        .values("carpeta__empresa__nombre")
+        .annotate(total=Count("id"))
+        .order_by("-total", "carpeta__empresa__nombre")
+    )
+
+    planos_por_empresa = []
+    for item in planos_por_empresa_qs:
+        nombre_empresa = item.get("carpeta__empresa__nombre") or "Sin empresa"
+        planos_por_empresa.append({
+            "empresa": nombre_empresa,
+            "total": item["total"],
+        })
+
+    return render(request, "estadisticas/listado.html", {
+        "app_name": "Shadow",
+        "titulo_pantalla": "Estadísticas",
+        "resumen": {
+            "total_carpetas": total_carpetas,
+            "total_planos": total_planos,
+            "total_planos_procesados": total_planos_procesados,
+            "total_planos_pendientes": total_planos_pendientes,
+            "total_usuarios_activos": total_usuarios_activos,
+        },
+        "carpetas_por_estado": carpetas_por_estado_qs,
+        "planos_por_estado": planos_por_estado_qs,
+        "usuarios_por_rol": usuarios_por_rol_qs,
+        "planos_por_empresa": planos_por_empresa,
+        "estadisticas_v2_pendiente": True,
+    })
+
+@login_required
+def reportes_view(request):
+    require_admin_or_funcionario(request)
+
+    tab = request.GET.get("tab", "carpetas").strip() or "carpetas"
+
+    # Filtros carpetas
+    carpeta_q = request.GET.get("carpeta_q", "").strip()
+    carpeta_estado = request.GET.get("carpeta_estado", "").strip()
+    carpeta_empresa = request.GET.get("carpeta_empresa", "").strip()
+    carpeta_mes = request.GET.get("carpeta_mes", "").strip()
+    carpeta_anio = request.GET.get("carpeta_anio", "").strip()
+
+    # Filtros planos
+    plano_q = request.GET.get("plano_q", "").strip()
+    plano_estado = request.GET.get("plano_estado", "").strip()
+    plano_empresa = request.GET.get("plano_empresa", "").strip()
+    plano_procesado = request.GET.get("plano_procesado", "").strip()
+
+    carpetas = Carpeta.objects.filter(eliminada=False).select_related("empresa").order_by("-fecha_creacion")
+    if carpeta_q:
+        carpetas = carpetas.filter(codigo_carpeta__icontains=carpeta_q)
+    if carpeta_estado:
+        carpetas = carpetas.filter(estado=carpeta_estado)
+    if carpeta_empresa:
+        carpetas = carpetas.filter(empresa_id=carpeta_empresa)
+    if carpeta_mes:
+        carpetas = carpetas.filter(mes=carpeta_mes)
+    if carpeta_anio:
+        carpetas = carpetas.filter(anio=carpeta_anio)
+
+    planos = Plano.objects.filter(eliminado=False).select_related("carpeta", "carpeta__empresa").order_by("-fecha_carga")
+    if plano_q:
+        planos = planos.filter(
+            Q(id_plano_deposito__icontains=plano_q) |
+            Q(carpeta__codigo_carpeta__icontains=plano_q)
+        )
+    if plano_estado:
+        planos = planos.filter(estado=plano_estado)
+    if plano_empresa:
+        planos = planos.filter(carpeta__empresa_id=plano_empresa)
+    if plano_procesado == "si":
+        planos = planos.filter(procesado=True)
+    elif plano_procesado == "no":
+        planos = planos.filter(procesado=False)
+
+    empresas = EmpresaContratista.objects.all().order_by("nombre")
+    carpeta_estado_choices = Carpeta.ESTADO_CHOICES
+    plano_estado_choices = Plano.ESTADO_CHOICES
+
+    return render(request, "reportes/listado.html", {
+        "app_name": "Shadow",
+        "titulo_pantalla": "Reportes",
+        "tab": tab,
+        "carpetas": carpetas,
+        "planos": planos,
+        "empresas": empresas,
+        "carpeta_estado_choices": carpeta_estado_choices,
+        "plano_estado_choices": plano_estado_choices,
+        "filtros": {
+            "carpeta_q": carpeta_q,
+            "carpeta_estado": carpeta_estado,
+            "carpeta_empresa": carpeta_empresa,
+            "carpeta_mes": carpeta_mes,
+            "carpeta_anio": carpeta_anio,
+            "plano_q": plano_q,
+            "plano_estado": plano_estado,
+            "plano_empresa": plano_empresa,
+            "plano_procesado": plano_procesado,
+        }
+    })
+

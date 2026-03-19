@@ -1,123 +1,194 @@
 {% extends "base.html" %}
 
 {% block title %}Crear carpeta{% endblock %}
-
 {% block show_page_header %}{% endblock %}
 
 {% block content %}
 
-<div class="row justify-content-center">
-    <div class="col-lg-8">
+<div class="row justify-content-center shadow-animate-in">
+    <div class="col-xl-9 col-xxl-8">
 
-        <!-- TÍTULO ALINEADO -->
-        <div class="page-title-wrap mb-4">
-            <div class="page-title-icon">
-                <i class="bi bi-folder-plus"></i>
+```
+    <!-- HEADER LIMPIO -->
+    <div class="crear-carpeta-hero shadow-surface-card shadow-glow-wrap mb-4">
+        <div class="crear-carpeta-hero-inner d-flex justify-content-between align-items-center">
+
+            <div class="d-flex align-items-center gap-3">
+                <div class="shadow-page-icon">
+                    <i class="bi bi-folder-plus"></i>
+                </div>
+
+                <div>
+                    <div class="shadow-header-badge mb-1">
+                        <i class="bi bi-stars"></i>
+                        Registro operativo
+                    </div>
+
+                    <h2 class="shadow-title mb-0">Crear carpeta</h2>
+                </div>
             </div>
 
-            <h3 class="page-title mb-0">
-                Crear carpeta
-            </h3>
-        </div>
-
-        <div class="card shadow-card">
-
-            <div class="card-header shadow-section-header">
-                <h5 class="mb-0">Datos de la carpeta</h5>
-            </div>
-
-            <div class="card-body shadow-section-body">
-
-                {% if error %}
-                    <div class="alert alert-danger">
-                        {{ error }}
-                    </div>
-                {% endif %}
-
-                <form method="post" class="row g-3">
-
-                    {% csrf_token %}
-
-                    <div class="col-12">
-                        <label class="form-label">Empresa contratista</label>
-
-                        <select name="empresa" class="form-select" required>
-
-                            <option value="">Seleccionar empresa</option>
-
-                            {% for empresa in empresas %}
-                                <option value="{{ empresa.id }}">
-                                    {{ empresa.nombre }}
-                                </option>
-                            {% endfor %}
-
-                        </select>
-                    </div>
-
-                    <div class="col-md-6">
-
-                        <label class="form-label">Mes</label>
-
-                        <input
-                            type="number"
-                            name="mes"
-                            class="form-control"
-                            min="1"
-                            max="12"
-                            placeholder="Ej: 3"
-                            required
-                        >
-
-                    </div>
-
-                    <div class="col-md-6">
-
-                        <label class="form-label">Año</label>
-
-                        <input
-                            type="number"
-                            name="anio"
-                            class="form-control"
-                            placeholder="Ej: 2026"
-                            required
-                        >
-
-                    </div>
-
-                    <div class="col-12">
-
-                        <label class="form-label">Observación (opcional)</label>
-
-                        <textarea
-                            name="observacion_general"
-                            class="form-control"
-                            rows="3"
-                            placeholder="Agregar alguna observación general sobre la carpeta..."
-                        ></textarea>
-
-                    </div>
-
-                    <div class="col-12 d-flex justify-content-between flex-wrap gap-2 mt-3">
-
-                        <a href="{% url 'carpetas' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left me-2"></i>
-                            Volver
-                        </a>
-
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-folder-plus me-2"></i>
-                            Crear carpeta
-                        </button>
-
-                    </div>
-
-                </form>
-
+            <div class="crear-carpeta-hero-side">
+                <div class="crear-carpeta-side-label">FLUJO</div>
+                <div class="crear-carpeta-side-value">Paso inicial</div>
             </div>
 
         </div>
-
     </div>
+
+    <!-- FORM -->
+    <div class="shadow-surface-card shadow-card-hover crear-carpeta-card">
+
+        <div class="crear-carpeta-card-header">
+            <h5 class="shadow-title mb-1">Datos de la carpeta</h5>
+            <p class="shadow-helper-text mb-0">
+                Completa la información principal para crear la estructura operativa.
+            </p>
+        </div>
+
+        <div class="shadow-section-divider"></div>
+
+        <div class="crear-carpeta-card-body">
+
+            {% if error %}
+                <div class="shadow-alert-danger mb-4">
+                    {{ error }}
+                </div>
+            {% endif %}
+
+            <form method="post" class="row g-4">
+                {% csrf_token %}
+
+                <div class="col-12">
+                    <label class="shadow-form-label">Empresa contratista</label>
+                    <select name="empresa" class="shadow-select contrast-input" required>
+                        <option value="">Seleccionar empresa</option>
+                        {% for empresa in empresas %}
+                            <option value="{{ empresa.id }}">{{ empresa.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="shadow-form-label">Mes</label>
+                    <input
+                        type="number"
+                        name="mes"
+                        class="shadow-input contrast-input"
+                        min="1"
+                        max="12"
+                        placeholder="Ej: 3"
+                        required
+                    >
+                </div>
+
+                <div class="col-md-6">
+                    <label class="shadow-form-label">Año</label>
+                    <input
+                        type="number"
+                        name="anio"
+                        class="shadow-input contrast-input"
+                        placeholder="Ej: 2026"
+                        required
+                    >
+                </div>
+
+                <div class="col-12">
+                    <label class="shadow-form-label">Observación (opcional)</label>
+                    <textarea
+                        name="observacion_general"
+                        class="shadow-textarea contrast-input"
+                        rows="4"
+                        placeholder="Agregar alguna observación general sobre la carpeta..."
+                    ></textarea>
+                </div>
+
+                <div class="col-12 d-flex justify-content-between flex-wrap gap-2 mt-2">
+                    <a href="{% url 'carpetas' %}" class="btn shadow-btn shadow-btn-soft">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Volver
+                    </a>
+
+                    <button type="submit" class="btn shadow-btn shadow-btn-primary">
+                        <i class="bi bi-folder-plus me-2"></i>
+                        Crear carpeta
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
 </div>
+```
+
+</div>
+
+<style>
+/* HEADER */
+.crear-carpeta-hero {
+    border-radius: 28px;
+    padding: 1.2rem 1.4rem;
+}
+
+.crear-carpeta-hero-side {
+    padding: 0.9rem 1.2rem;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #ffffff, #f3f4ff);
+    border: 1px solid rgba(226,232,240,0.8);
+    text-align: center;
+}
+
+.crear-carpeta-side-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--shadow-text-muted);
+}
+
+.crear-carpeta-side-value {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--shadow-primary);
+}
+
+/* CARD */
+.crear-carpeta-card {
+    border-radius: 28px;
+    overflow: hidden;
+}
+
+.crear-carpeta-card-header {
+    padding: 1.3rem;
+    background: linear-gradient(180deg, #ffffff, #f7f8ff);
+}
+
+.crear-carpeta-card-body {
+    padding: 1.4rem;
+}
+
+/* CONTRASTE INPUTS */
+.contrast-input {
+    background: linear-gradient(180deg, #f9faff, #f1f4ff);
+    border: 1px solid rgba(91,82,214,0.15);
+}
+
+.contrast-input:focus {
+    background: #ffffff;
+    border-color: var(--shadow-primary);
+    box-shadow: 0 0 0 4px rgba(91,82,214,0.12);
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+    .crear-carpeta-hero {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .crear-carpeta-hero-side {
+        width: 100%;
+    }
+}
+</style>
 
 {% endblock %}

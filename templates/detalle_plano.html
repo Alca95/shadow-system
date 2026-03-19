@@ -1,383 +1,244 @@
 {% extends "base.html" %}
 
 {% block title %}Detalle del plano{% endblock %}
-
 {% block show_page_header %}{% endblock %}
 
 {% block content %}
 
-<div class="row justify-content-center">
+<div class="row justify-content-center shadow-animate-in">
     <div class="col-xl-11">
 
-        <!-- TÍTULO + ACCESOS -->
-        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <div class="page-title-wrap mb-0">
-                    <div class="page-title-icon floating-icon">
-                        <i class="bi bi-file-earmark-text"></i>
+        <!-- HERO -->
+        <div class="shadow-surface-card shadow-glow-wrap mb-4">
+            <div style="padding:1.4rem 1.5rem;">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="shadow-page-icon">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </div>
+
+                        <div>
+                            <div class="shadow-header-badge mb-1">
+                                <i class="bi bi-stars"></i>
+                                Análisis OCR
+                            </div>
+                            <h2 class="shadow-title mb-0">Detalle del plano</h2>
+                        </div>
                     </div>
-                    <div>
-                        <h3 class="page-title mb-0">Detalle del plano</h3>
-                    </div>
+
+                    <form method="post" action="{% url 'procesar_ocr' plano.id %}" class="m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn shadow-btn shadow-btn-primary">
+                            <i class="bi bi-arrow-repeat me-2"></i>
+                            Reprocesar OCR
+                        </button>
+                    </form>
+
                 </div>
-
-                <form method="post" action="{% url 'procesar_plano' plano.id %}" class="m-0">
-                    {% csrf_token %}
-                    <button
-                        type="submit"
-                        class="btn reprocess-icon-btn"
-                        title="Volver a procesar OCR"
-                        aria-label="Volver a procesar OCR">
-                        <i class="bi bi-arrow-repeat"></i>
-                    </button>
-                </form>
-            </div>
-
-            <div class="d-flex flex-wrap gap-2 top-action-group">
-                <a href="#resultados-nr" class="btn btn-outline-light shadow-action-btn top-nav-btn">
-                    <i class="bi bi-list-check me-2"></i>
-                    Resultados por NR
-                </a>
-                <a href="#motivo-diagnostico" class="btn btn-outline-light shadow-action-btn top-nav-btn">
-                    <i class="bi bi-clipboard-pulse me-2"></i>
-                    Motivo / Diagnóstico
-                </a>
-                <a href="#texto-ocr" class="btn btn-outline-light shadow-action-btn top-nav-btn">
-                    <i class="bi bi-filetype-txt me-2"></i>
-                    Texto OCR
-                </a>
             </div>
         </div>
 
-        <!-- FILA SUPERIOR COMPACTA -->
-        <div class="row g-3 mb-3 align-items-stretch">
+        <!-- BLOQUES SUPERIORES -->
+        <div class="row g-4 mb-4">
 
-            <!-- DETALLE DEL PLANO -->
+            <!-- DETALLE -->
             <div class="col-lg-4">
-                <div class="card shadow-card shadow-lift card-clean compact-top-card h-100">
-                    <div class="card-header shadow-section-header compact-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Detalle del plano</h5>
-                        <span class="section-chip section-chip-soft">
-                            <i class="bi bi-info-circle me-1"></i> Registro
-                        </span>
+                <div class="shadow-surface-card shadow-card-hover p-3 h-100">
+
+                    <h5 class="shadow-title mb-3">Detalle</h5>
+
+                    <div class="detalle-mini-grid">
+
+                        <div class="detalle-mini-card">
+                            <div class="label">ID</div>
+                            <div class="value">{{ plano.id_plano_deposito }}</div>
+                        </div>
+
+                        <div class="detalle-mini-card">
+                            <div class="label">Fecha carga</div>
+                            <div class="value">{{ plano.fecha_carga|date:"d/m/Y H:i" }}</div>
+                        </div>
+
+                        <div class="detalle-mini-card">
+                            <div class="label">Carpeta</div>
+                            <div class="value">{{ plano.carpeta.codigo_carpeta }}</div>
+                        </div>
+
+                        <div class="detalle-mini-card">
+                            <div class="label">Fecha plano</div>
+                            <div class="value">
+                                {% if plano.fecha_plano %}
+                                    {{ plano.fecha_plano|date:"d/m/Y" }}
+                                {% else %}-{% endif %}
+                            </div>
+                        </div>
+
                     </div>
 
-                    <div class="card-body shadow-section-body compact-top-body">
-                        <div class="detail-mini-grid">
-                            <div class="detail-mini-card">
-                                <div class="detail-mini-label">ID plano depósito</div>
-                                <div class="detail-mini-value">{{ plano.id_plano_deposito }}</div>
-                            </div>
+                    <div class="mt-3">
+                        <div class="shadow-header-badge">
+                            Estado: {{ plano.estado }}
+                        </div>
+                    </div>
 
-                            <div class="detail-mini-card">
-                                <div class="detail-mini-label">Fecha de carga</div>
-                                <div class="detail-mini-value">{{ plano.fecha_carga|date:"d/m/Y H:i" }}</div>
-                            </div>
+                </div>
+            </div>
 
-                            <div class="detail-mini-card">
-                                <div class="detail-mini-label">Carpeta</div>
-                                <div class="detail-mini-value">{{ plano.carpeta.codigo_carpeta }}</div>
-                            </div>
+            <!-- RESUMEN -->
+            <div class="col-lg-4">
+                <div class="shadow-surface-card shadow-card-hover p-3 h-100">
 
-                            <div class="detail-mini-card">
-                                <div class="detail-mini-label">Fecha del plano</div>
-                                <div class="detail-mini-value">
-                                    {% if plano.fecha_plano %}
-                                        {{ plano.fecha_plano|date:"d/m/Y" }}
+                    <h5 class="shadow-title mb-3">Resumen</h5>
+
+                    <div class="text-center mb-3">
+                        <div class="shadow-header-badge">NR detectados</div>
+                        <div style="font-size:2rem;font-weight:800;">{{ total_nr }}</div>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="mini-box success">
+                                <div>Aprobados</div>
+                                <strong>{{ total_aprobados }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mini-box danger">
+                                <div>Rechazados</div>
+                                <strong>{{ total_rechazados }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ACCIONES -->
+            <div class="col-lg-4">
+                <div class="shadow-surface-card shadow-card-hover p-3 h-100">
+
+                    <h5 class="shadow-title mb-3">Acciones</h5>
+
+                    <div class="d-grid gap-2">
+                        <form method="post" action="{% url 'cancelar_plano' plano.id %}">
+                            {% csrf_token %}
+                            <button class="btn shadow-btn shadow-btn-soft w-100">
+                                <i class="bi bi-trash me-2"></i>Eliminar
+                            </button>
+                        </form>
+
+                        <a href="{% url 'detalle_carpeta' plano.carpeta.id %}" class="btn shadow-btn shadow-btn-soft">
+                            <i class="bi bi-arrow-left me-2"></i>Volver
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RESULTADOS -->
+        <div class="shadow-surface-card shadow-card-hover p-4 mb-4">
+            <h5 class="shadow-title mb-3">Resultados OCR</h5>
+
+            {% if resultados %}
+                <div class="accordion" id="acc">
+                    {% for r in resultados %}
+                        <div class="accordion-item mb-2">
+                            <button class="accordion-button collapsed ocr-accordion-btn" data-bs-toggle="collapse" data-bs-target="#r{{forloop.counter}}">
+                                <div class="ocr-accordion-head">
+                                    <span class="ocr-accordion-code">{{ r.nr_detectado }}</span>
+                                    {% if r.estado_resultado == "APROBADO" %}
+                                        <span class="ocr-status-pill ocr-status-approved">Aprobado</span>
+                                    {% elif r.estado_resultado == "RECHAZADO" %}
+                                        <span class="ocr-status-pill ocr-status-rejected">Rechazado</span>
                                     {% else %}
-                                        -
+                                        <span class="ocr-status-pill ocr-status-warning">En verificación</span>
                                     {% endif %}
                                 </div>
-                            </div>
+                            </button>
 
-                            <div class="detail-mini-card detail-mini-card-full detail-status-card">
-                                <div class="detail-mini-label">Estado actual</div>
+                            <div id="r{{forloop.counter}}" class="accordion-collapse collapse">
+                                <div class="accordion-body">
 
-                                {% if plano.estado == "APROBADO" %}
-                                    <span class="badge bg-success px-3 py-2 status-badge-glow">
-                                        <i class="bi bi-check-circle me-2"></i>Aprobado
-                                    </span>
-                                {% elif plano.estado == "RECHAZADO" %}
-                                    <span class="badge bg-danger px-3 py-2 status-badge-glow">
-                                        <i class="bi bi-x-circle me-2"></i>Rechazado
-                                    </span>
-                                {% elif plano.estado == "EN_VERIFICACION" %}
-                                    <span class="badge bg-warning text-dark px-3 py-2 status-badge-glow">
-                                        <i class="bi bi-exclamation-circle me-2"></i>En verificación
-                                    </span>
-                                {% elif plano.estado == "EN_REVISION" %}
-                                    <span class="badge bg-primary px-3 py-2 status-badge-glow">
-                                        <i class="bi bi-search me-2"></i>En revisión
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-secondary px-3 py-2 status-badge-glow">
-                                        <i class="bi bi-clock me-2"></i>En espera
-                                    </span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- RESUMEN DE VALIDACIÓN -->
-            <div class="col-lg-4">
-                <div class="card shadow-card shadow-lift card-clean compact-top-card h-100">
-                    <div class="card-header shadow-section-header compact-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Resumen de validación</h5>
-                        <span class="section-chip">
-                            <i class="bi bi-bar-chart-line me-1"></i> Resumen
-                        </span>
-                    </div>
-
-                    <div class="card-body shadow-section-body compact-top-body">
-                        <div class="summary-tight-stack">
-                            <div class="summary-tight-main">
-                                <div class="summary-tight-main-label">NR detectados</div>
-                                <div class="summary-tight-main-value">{{ total_nr }}</div>
-                            </div>
-
-                            <div class="summary-tight-grid">
-                                <div class="summary-tight-box summary-tight-success">
-                                    <div class="summary-tight-label">Aprobados</div>
-                                    <div class="summary-tight-value">{{ total_aprobados }}</div>
-                                </div>
-
-                                <div class="summary-tight-box summary-tight-danger">
-                                    <div class="summary-tight-label">Rechazados</div>
-                                    <div class="summary-tight-value">{{ total_rechazados }}</div>
-                                </div>
-                            </div>
-
-                            {% if total_en_verificacion > 0 %}
-                            <div class="summary-tight-warning">
-                                <div class="summary-tight-warning-label">En verificación</div>
-                                <div class="summary-tight-warning-value">{{ total_en_verificacion }}</div>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- VISUALIZACIÓN -->
-            <div class="col-lg-4">
-                <div class="card shadow-card shadow-lift card-clean compact-top-card h-100">
-                    <div class="card-header shadow-section-header compact-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Visualización</h5>
-                        <button class="btn btn-sm btn-outline-dark section-toggle-btn compact-toggle-btn" type="button" data-bs-toggle="collapse" data-bs-target="#collapseVisualizacion" aria-expanded="false" aria-controls="collapseVisualizacion">
-                            <i class="bi bi-arrows-angle-expand me-1"></i>
-                            Expandir
-                        </button>
-                    </div>
-
-                    <div class="card-body shadow-section-body compact-top-body">
-                        <div class="visual-action-stack">
-                            <form method="post" action="{% url 'cancelar_plano' plano.id %}" onsubmit="return confirm('¿Deseas eliminar lógicamente este plano?');" class="w-100">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-danger shadow-action-btn-main w-100">
-                                    <i class="bi bi-trash me-2"></i>
-                                    Eliminar
-                                </button>
-                            </form>
-
-                            <a href="{% url 'detalle_carpeta' plano.carpeta.id %}" class="btn btn-outline-secondary shadow-action-btn-main w-100">
-                                <i class="bi bi-arrow-left me-2"></i>
-                                Volver a carpeta
-                            </a>
-                        </div>
-                    </div>
-
-                    <div class="collapse" id="collapseVisualizacion">
-                        <div class="card-body shadow-section-body pt-0">
-                            <div class="border p-3 bg-light text-center preview-panel preview-glow preview-box compact-preview-box">
-                                {% if plano.archivo %}
-                                    {% with plano.archivo.url|lower as archivo_url %}
-                                        {% if ".jpg" in archivo_url or ".jpeg" in archivo_url or ".png" in archivo_url or ".webp" in archivo_url %}
-                                            <img src="{{ plano.archivo.url }}" alt="Vista previa del plano" class="img-fluid shadow-sm preview-image">
-                                        {% elif ".pdf" in archivo_url %}
-                                            <iframe src="{{ plano.archivo.url }}" class="w-100 border bg-white preview-frame"></iframe>
-                                        {% else %}
-                                            <div class="py-4 text-muted">
-                                                <i class="bi bi-file-earmark-x fs-1 d-block mb-3"></i>
-                                                No hay vista previa disponible para este formato.
-                                            </div>
-                                        {% endif %}
-                                    {% endwith %}
-                                {% else %}
-                                    <div class="py-4 text-muted">
-                                        <i class="bi bi-image-alt fs-1 d-block mb-3"></i>
-                                        No se cargó ningún archivo.
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- RESULTADOS POR NR -->
-        <div class="card shadow-card mb-4 shadow-lift card-clean" id="resultados-nr">
-            <div class="card-header shadow-section-header section-header-strong d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Resultados por NR</h5>
-                <span class="section-chip">
-                    <i class="bi bi-diagram-3 me-1"></i> Detalle principal
-                </span>
-            </div>
-
-            <div class="card-body shadow-section-body">
-                {% if resultados %}
-                    <div class="accordion shadow-accordion" id="accordionResultadosNR">
-                        {% for r in resultados %}
-                            <div class="accordion-item border-0 mb-3 overflow-hidden result-accordion-item result-item-clean">
-                                <h2 class="accordion-header" id="heading{{ forloop.counter }}">
-                                    <button class="accordion-button collapsed shadow-none result-accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse{{ forloop.counter }}">
-                                        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center w-100 gap-3">
-                                            <div>
-                                                <div class="fw-bold fs-6">
-                                                    <i class="bi bi-upc-scan me-2"></i>{{ r.nr_detectado }}
-                                                </div>
-                                                <div class="small text-soft">Presiona para ver el detalle</div>
-                                            </div>
-
-                                            <div class="d-flex flex-wrap gap-2">
-                                                {% if r.estado_resultado == "APROBADO" %}
-                                                    <span class="badge bg-success px-3 py-2">Aprobado</span>
-                                                {% elif r.estado_resultado == "RECHAZADO" %}
-                                                    <span class="badge bg-danger px-3 py-2">Rechazado</span>
-                                                {% else %}
-                                                    <span class="badge bg-warning text-dark px-3 py-2">En verificación</span>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </button>
-                                </h2>
-
-                                <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#accordionResultadosNR">
-                                    <div class="accordion-body bg-white">
-                                        <div class="row g-3">
-                                            <div class="col-md-3">
-                                                <div class="shadow-info-box text-center h-100 info-hover info-box-clean">
-                                                    <div class="small text-soft mb-2">Ciudad</div>
+                                    <div class="row g-2">
+                                        <div class="col-md-3">
+                                            <div class="ocr-check-card">
+                                                <div class="ocr-check-label">Ciudad</div>
+                                                <div class="ocr-check-value">
                                                     {% if r.ciudad_ok %}
-                                                        <div class="fw-semibold text-success">
-                                                            <i class="bi bi-check-circle-fill me-1"></i> OK
-                                                        </div>
+                                                        <span class="badge ocr-badge ocr-badge-success">OK</span>
                                                     {% else %}
-                                                        <div class="fw-semibold text-muted">-</div>
+                                                        <span class="badge ocr-badge ocr-badge-muted">-</span>
                                                     {% endif %}
                                                 </div>
                                             </div>
-
-                                            <div class="col-md-3">
-                                                <div class="shadow-info-box text-center h-100 info-hover info-box-clean">
-                                                    <div class="small text-soft mb-2">Zona</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="ocr-check-card">
+                                                <div class="ocr-check-label">Zona</div>
+                                                <div class="ocr-check-value">
                                                     {% if r.zona_ok %}
-                                                        <div class="fw-semibold text-success">
-                                                            <i class="bi bi-check-circle-fill me-1"></i> OK
-                                                        </div>
+                                                        <span class="badge ocr-badge ocr-badge-success">OK</span>
                                                     {% else %}
-                                                        <div class="fw-semibold text-muted">-</div>
+                                                        <span class="badge ocr-badge ocr-badge-muted">-</span>
                                                     {% endif %}
                                                 </div>
                                             </div>
-
-                                            <div class="col-md-3">
-                                                <div class="shadow-info-box text-center h-100 info-hover info-box-clean">
-                                                    <div class="small text-soft mb-2">Fecha</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="ocr-check-card">
+                                                <div class="ocr-check-label">Fecha</div>
+                                                <div class="ocr-check-value">
                                                     {% if r.fecha_ok %}
-                                                        <div class="fw-semibold text-success">
-                                                            <i class="bi bi-check-circle-fill me-1"></i> OK
-                                                        </div>
+                                                        <span class="badge ocr-badge ocr-badge-success">OK</span>
                                                     {% else %}
-                                                        <div class="fw-semibold text-muted">-</div>
+                                                        <span class="badge ocr-badge ocr-badge-muted">-</span>
                                                     {% endif %}
                                                 </div>
                                             </div>
-
-                                            <div class="col-md-3">
-                                                <div class="shadow-info-box text-center h-100 info-hover info-box-clean">
-                                                    <div class="small text-soft mb-2">Resultado</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="ocr-check-card">
+                                                <div class="ocr-check-label">Estado</div>
+                                                <div class="ocr-check-value">
                                                     {% if r.estado_resultado == "APROBADO" %}
-                                                        <div class="fw-semibold text-success">Aprobado</div>
+                                                        <span class="badge ocr-badge ocr-badge-success">Aprobado</span>
                                                     {% elif r.estado_resultado == "RECHAZADO" %}
-                                                        <div class="fw-semibold text-danger">Rechazado</div>
+                                                        <span class="badge ocr-badge ocr-badge-danger">Rechazado</span>
                                                     {% else %}
-                                                        <div class="fw-semibold text-warning">En verificación</div>
+                                                        <span class="badge ocr-badge ocr-badge-warning">En verificación</span>
                                                     {% endif %}
-                                                </div>
-                                            </div>
-
-                                            <div class="col-12">
-                                                <div class="shadow-info-box detail-box info-box-clean">
-                                                    <div class="small text-soft mb-2">Detalle</div>
-                                                    <div>{{ r.motivo_resultado|default:"-" }}</div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
+
                                 </div>
                             </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="alert alert-secondary mb-0">
-                        Aún no hay resultados de validación para este plano.
-                    </div>
-                {% endif %}
-            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="shadow-helper-text">Sin resultados aún</div>
+            {% endif %}
         </div>
 
-        <!-- BLOQUE INFERIOR -->
+        <!-- TEXTO -->
         <div class="row g-4">
 
-            <!-- MOTIVO -->
-            <div class="col-lg-6" id="motivo-diagnostico">
-                <div class="card shadow-card h-100 shadow-lift card-clean">
-                    <div class="card-header shadow-section-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Motivo / diagnóstico</h5>
-                        <button class="btn btn-sm btn-outline-dark section-toggle-btn" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDiagnostico" aria-expanded="true" aria-controls="collapseDiagnostico">
-                            <i class="bi bi-arrows-angle-expand me-1"></i>
-                            Expandir / contraer
-                        </button>
-                    </div>
-
-                    <div class="collapse show" id="collapseDiagnostico">
-                        <div class="card-body shadow-section-body">
-                            {% if plano.motivo %}
-                                <div class="shadow-info-box diagnostic-box info-box-clean">
-                                    {{ plano.motivo }}
-                                </div>
-                            {% else %}
-                                <div class="alert alert-secondary mb-0">
-                                    Aún no se procesó el plano.
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
+            <div class="col-lg-6">
+                <div class="shadow-surface-card p-3 h-100">
+                    <h5 class="shadow-title">Motivo</h5>
+                    <div class="shadow-helper-text">{{ plano.motivo|default:"-" }}</div>
                 </div>
             </div>
 
-            <!-- TEXTO OCR -->
-            <div class="col-lg-6" id="texto-ocr">
-                <div class="card shadow-card h-100 shadow-lift card-clean">
-                    <div class="card-header shadow-section-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Texto OCR</h5>
-                        <button class="btn btn-sm btn-outline-dark section-toggle-btn" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOCR" aria-expanded="true" aria-controls="collapseOCR">
-                            <i class="bi bi-arrows-angle-expand me-1"></i>
-                            Expandir / contraer
-                        </button>
-                    </div>
-
-                    <div class="collapse show" id="collapseOCR">
-                        <div class="card-body shadow-section-body">
-                            <div class="shadow-info-box ocr-box info-box-clean">
-                                {{ plano.texto_ocr|default:"Aún no se ejecutó el OCR." }}
-                            </div>
-                        </div>
-                    </div>
+            <div class="col-lg-6">
+                <div class="shadow-surface-card p-3 h-100">
+                    <h5 class="shadow-title">Texto OCR</h5>
+                    <div class="shadow-helper-text">{{ plano.texto_ocr|default:"-" }}</div>
                 </div>
             </div>
 
@@ -387,426 +248,148 @@
 </div>
 
 <style>
-    html {
-        scroll-behavior: smooth;
-    }
+.detalle-mini-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:.5rem;
+}
+.detalle-mini-card{
+background:linear-gradient(180deg,#f9faff,#f1f4ff);
+padding:.6rem;
+border-radius:12px;
+border:1px solid rgba(91,82,214,.1);
+}
+.detalle-mini-card .label{
+font-size:.7rem;
+color:#64748b;
+}
+.detalle-mini-card .value{
+font-weight:700;
+}
+
+.mini-box{
+padding:.6rem;
+border-radius:12px;
+text-align:center;
+}
+.mini-box.success{background:#ecfdf5}
+.mini-box.danger{background:#fef2f2}
+
+.ocr-check-card{
+background:linear-gradient(180deg,#f9faff,#f1f4ff);
+padding:.7rem;
+border-radius:12px;
+border:1px solid rgba(91,82,214,.1);
+height:100%;
+}
+.ocr-check-label{
+font-size:.72rem;
+color:#64748b;
+font-weight:700;
+margin-bottom:.35rem;
+text-transform:uppercase;
+letter-spacing:.04em;
+}
+.ocr-check-value{
+font-weight:700;
+}
+.ocr-badge{
+border-radius:999px;
+padding:.42rem .68rem;
+font-size:.74rem;
+font-weight:700;
+border:1px solid transparent;
+}
+.ocr-badge-success{
+background:rgba(16,185,129,.14);
+color:#047857;
+border-color:rgba(16,185,129,.18);
+}
+.ocr-badge-danger{
+background:rgba(239,68,68,.12);
+color:#b91c1c;
+border-color:rgba(239,68,68,.18);
+}
+.ocr-badge-warning{
+background:rgba(245,158,11,.14);
+color:#b45309;
+border-color:rgba(245,158,11,.18);
+}
+.ocr-badge-muted{
+background:rgba(100,116,139,.12);
+color:#475569;
+border-color:rgba(100,116,139,.16);
+}
+
+/* Ajuste de velocidad de animaciones */
+.shadow-card-hover,
+.shadow-btn,
+.accordion-button,
+.btn,
+.detalle-mini-card,
+.mini-box{
+transition:all .18s ease !important;
+}
+.shadow-card-hover:hover,
+.btn:hover{
+transform:translateY(-2px);
+}
+
+
+/* OCR resultados - header y bordes redondeados */
+.accordion-item{
+    border-radius:16px !important;
+    overflow:hidden;
+    border:1px solid rgba(91,82,214,0.10) !important;
+    margin-bottom:10px;
+    background:linear-gradient(180deg,#ffffff,#fafbff);
+}
+.ocr-accordion-btn{
+    border-radius:16px !important;
+    background:#ffffff;
+    transition:all .18s ease !important;
+}
+.ocr-accordion-btn:hover{
+    background:rgba(91,82,214,0.04);
+}
+.accordion-button:not(.collapsed){
+    border-bottom-left-radius:0 !important;
+    border-bottom-right-radius:0 !important;
+}
+.ocr-accordion-head{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:1rem;
+    padding-right:.35rem;
+}
+.ocr-accordion-code{
+    font-weight:700;
+    color:#243247;
+}
+.ocr-status-pill{
+    padding:.38rem .78rem;
+    border-radius:999px;
+    font-size:.78rem;
+    font-weight:700;
+    display:inline-flex;
+    align-items:center;
+    white-space:nowrap;
+}
+.ocr-status-approved{
+    background:rgba(16,185,129,.15);
+    color:#047857;
+}
+.ocr-status-rejected{
+    background:rgba(239,68,68,.15);
+    color:#b91c1c;
+}
+.ocr-status-warning{
+    background:rgba(245,158,11,.15);
+    color:#b45309;
+}
 
-    .floating-icon {
-        animation: floatIcon 3.2s ease-in-out infinite;
-    }
-
-    @keyframes floatIcon {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-4px); }
-    }
-
-    .shadow-lift {
-        transition: transform 0.25s ease, box-shadow 0.25s ease;
-    }
-
-    .shadow-lift:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.08);
-    }
-
-    .card-clean,
-    .info-box-clean,
-    .preview-box,
-    .result-item-clean,
-    .section-toggle-btn,
-    .top-nav-btn,
-    .badge,
-    .alert {
-        border-radius: 0.75rem !important;
-    }
-
-    .compact-top-card {
-        overflow: hidden;
-    }
-
-    .compact-header {
-        padding-top: 0.9rem;
-        padding-bottom: 0.9rem;
-    }
-
-    .compact-top-body {
-        padding-top: 0.85rem;
-        padding-bottom: 0.85rem;
-    }
-
-    .shadow-action-btn,
-    .shadow-action-btn-main {
-        transition: all 0.25s ease;
-    }
-
-    .shadow-action-btn:hover,
-    .shadow-action-btn-main:hover {
-        transform: translateY(-2px);
-    }
-
-    .top-action-group {
-        justify-content: flex-end;
-    }
-
-    .top-nav-btn {
-        color: #ffffff !important;
-        border-color: rgba(255, 255, 255, 0.82) !important;
-        background: rgba(255, 255, 255, 0.08);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
-        font-weight: 500;
-        padding: 0.7rem 1rem;
-    }
-
-    .top-nav-btn i {
-        color: #ffffff !important;
-    }
-
-    .top-nav-btn:hover,
-    .top-nav-btn:focus {
-        color: #ffffff !important;
-        background: rgba(255, 255, 255, 0.18);
-        border-color: rgba(255, 255, 255, 1) !important;
-        box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.18);
-    }
-
-    .info-hover {
-        transition: all 0.25s ease;
-    }
-
-    .info-hover:hover {
-        transform: translateY(-3px) scale(1.01);
-        box-shadow: 0 .75rem 1.5rem rgba(0, 0, 0, 0.06);
-    }
-
-    .section-chip {
-        font-size: 0.82rem;
-        padding: 0.42rem 0.78rem;
-        border-radius: 0.75rem;
-        background: rgba(255,255,255,0.14);
-        color: #ffffff;
-        border: 1px solid rgba(255,255,255,0.18);
-        display: inline-flex;
-        align-items: center;
-        font-weight: 500;
-    }
-
-    .section-chip-soft {
-        background: rgba(255,255,255,0.18);
-    }
-
-    .section-header-strong {
-        box-shadow: inset 0 -1px 0 rgba(255,255,255,0.06);
-    }
-
-    .detail-mini-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.7rem;
-    }
-
-    .detail-mini-card {
-        background: linear-gradient(135deg, #f8fbff, #eef4fb);
-        border: 1px solid #dde7f1;
-        border-radius: 0.85rem;
-        padding: 0.75rem 0.85rem;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
-        min-height: 74px;
-    }
-
-    .detail-mini-card-full {
-        grid-column: 1 / -1;
-    }
-
-    .detail-status-card {
-        min-height: auto;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .detail-mini-label {
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: #64748b;
-        margin-bottom: 0.28rem;
-    }
-
-    .detail-mini-value {
-        color: #1e293b;
-        font-weight: 700;
-        line-height: 1.35;
-        word-break: break-word;
-        font-size: 0.98rem;
-    }
-
-    .summary-tight-stack {
-        display: grid;
-        gap: 0.7rem;
-    }
-
-    .summary-tight-main {
-        background: linear-gradient(135deg, #0f172a, #1e293b);
-        color: #ffffff;
-        border-radius: 0.9rem;
-        padding: 0.85rem 0.9rem;
-        text-align: center;
-        box-shadow: 0 12px 22px rgba(15, 23, 42, 0.14);
-    }
-
-    .summary-tight-main-label {
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        opacity: 0.78;
-        margin-bottom: 0.2rem;
-    }
-
-    .summary-tight-main-value {
-        font-size: 1.85rem;
-        font-weight: 800;
-        line-height: 1;
-    }
-
-    .summary-tight-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.7rem;
-    }
-
-    .summary-tight-box {
-        border-radius: 0.85rem;
-        padding: 0.75rem 0.65rem;
-        text-align: center;
-        box-shadow: 0 8px 16px rgba(15, 23, 42, 0.05);
-    }
-
-    .summary-tight-success {
-        background: linear-gradient(135deg, #ecfdf3, #dcfce7);
-        border: 1px solid #bbf7d0;
-    }
-
-    .summary-tight-danger {
-        background: linear-gradient(135deg, #fff1f2, #ffe4e6);
-        border: 1px solid #fecdd3;
-    }
-
-    .summary-tight-label {
-        font-size: 0.7rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #64748b;
-        margin-bottom: 0.18rem;
-    }
-
-    .summary-tight-value {
-        font-size: 1.28rem;
-        font-weight: 800;
-        line-height: 1;
-        color: #1e293b;
-    }
-
-    .summary-tight-warning {
-        border-radius: 0.85rem;
-        padding: 0.75rem 0.8rem;
-        text-align: center;
-        background: linear-gradient(135deg, #fff8db, #fef3c7);
-        border: 1px solid #fde68a;
-        box-shadow: 0 8px 16px rgba(15, 23, 42, 0.05);
-    }
-
-    .summary-tight-warning-label {
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #8a6b00;
-        margin-bottom: 0.18rem;
-    }
-
-    .summary-tight-warning-value {
-        font-size: 1.18rem;
-        font-weight: 800;
-        line-height: 1;
-        color: #8a6b00;
-    }
-
-    .visual-action-stack {
-        display: grid;
-        gap: 0.7rem;
-    }
-
-    .compact-toggle-btn {
-        white-space: nowrap;
-        color: #cbd5e1 !important;
-        border-color: rgba(255,255,255,0.25) !important;
-        background: rgba(255,255,255,0.05);
-    }
-
-    .compact-toggle-btn i {
-        color: #cbd5e1 !important;
-    }
-
-    .compact-toggle-btn:hover {
-        color: #ffffff !important;
-        border-color: rgba(255,255,255,0.6) !important;
-        background: rgba(255,255,255,0.12);
-    }
-
-    .compact-preview-box {
-        margin-top: 0.15rem;
-    }
-
-    .preview-panel {
-        min-height: 220px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s ease;
-    }
-
-    .preview-glow:hover {
-        box-shadow: inset 0 0 0 1px rgba(0,0,0,.04), 0 0 25px rgba(0,0,0,.05);
-    }
-
-    .preview-image {
-        max-height: 320px;
-        object-fit: contain;
-        transition: transform 0.35s ease;
-    }
-
-    .preview-image:hover {
-        transform: scale(1.015);
-    }
-
-    .preview-frame {
-        height: 320px;
-    }
-
-    .diagnostic-box {
-        white-space: pre-wrap;
-        line-height: 1.8;
-        min-height: 320px;
-    }
-
-    .ocr-box {
-        white-space: pre-wrap;
-        min-height: 320px;
-        max-height: 320px;
-        overflow-y: auto;
-        line-height: 1.8;
-    }
-
-    .detail-box {
-        white-space: pre-wrap;
-        line-height: 1.7;
-    }
-
-    .result-accordion-item {
-        background: transparent;
-    }
-
-    .result-accordion-button {
-        background: #ffffff;
-        border: 1px solid rgba(0,0,0,.08);
-        transition: all 0.25s ease;
-        border-radius: 0.75rem !important;
-    }
-
-    .result-accordion-button:not(.collapsed) {
-        background: #f8fafc;
-        box-shadow: none;
-    }
-
-    .result-accordion-button:hover {
-        transform: translateY(-1px);
-    }
-
-    .status-badge-glow {
-        box-shadow: 0 0 0.75rem rgba(0, 0, 0, 0.08);
-    }
-
-    .section-toggle-btn {
-        border-color: rgba(255,255,255,0.3);
-    }
-
-    .reprocess-icon-btn {
-        width: 56px;
-        height: 56px;
-        border-radius: 16px !important;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, #16a34a, #15803d);
-        color: #ffffff !important;
-        border: none;
-        box-shadow: 0 14px 28px rgba(22, 163, 74, 0.24);
-        transition: all 0.25s ease;
-        flex-shrink: 0;
-    }
-
-    .reprocess-icon-btn i {
-        font-size: 1.25rem;
-        color: #ffffff !important;
-    }
-
-    .reprocess-icon-btn:hover {
-        transform: translateY(-2px) rotate(-20deg);
-        box-shadow: 0 18px 30px rgba(22, 163, 74, 0.30);
-        filter: brightness(1.03);
-    }
-
-    .reprocess-icon-btn:focus {
-        box-shadow: 0 0 0 0.18rem rgba(22, 163, 74, 0.18);
-    }
-
-    .text-soft {
-        color: #6c757d;
-    }
-
-    @media (max-width: 991.98px) {
-        .top-action-group {
-            justify-content: flex-start;
-        }
-
-        .detail-mini-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .summary-tight-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .preview-frame {
-            height: 300px;
-        }
-    }
-
-    @media (max-width: 767.98px) {
-        .reprocess-icon-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 14px !important;
-        }
-    }
-
-    @media (max-width: 575.98px) {
-        .summary-tight-main-value {
-            font-size: 1.55rem;
-        }
-
-        .summary-tight-value {
-            font-size: 1.15rem;
-        }
-
-        .preview-frame {
-            height: 250px;
-        }
-    }
 </style>
 
 {% endblock %}

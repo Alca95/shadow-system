@@ -1,59 +1,94 @@
 {% extends "base.html" %}
 
 {% block title %}Subir plano{% endblock %}
-
 {% block show_page_header %}{% endblock %}
 
 {% block content %}
 
-<div class="row justify-content-center">
-    <div class="col-lg-8">
+<div class="row justify-content-center shadow-animate-in">
+    <div class="col-xl-9 col-xxl-8">
 
-        <!-- TÍTULO ALINEADO CON LA TARJETA -->
-        <div class="page-title-wrap mb-4">
-            <div class="page-title-icon">
-                <i class="bi bi-file-earmark-text"></i>
+        <div class="subir-plano-hero shadow-surface-card shadow-glow-wrap mb-4">
+            <div class="subir-plano-hero-inner">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="shadow-page-icon">
+                            <i class="bi bi-upload"></i>
+                        </div>
+
+                        <div>
+                            <div class="shadow-header-badge mb-2">
+                                <i class="bi bi-stars"></i>
+                                Carga documental
+                            </div>
+
+                            <h2 class="shadow-title subir-plano-title mb-2">Subir plano</h2>
+                            <p class="shadow-subtitle mb-0">
+                                Carga archivos del plano con una interfaz guiada, consistente y alineada con la paleta del sistema.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="subir-plano-hero-side">
+                        <div class="subir-plano-side-label">FLUJO</div>
+                        <div class="subir-plano-side-value">Paso 2</div>
+                    </div>
+                </div>
             </div>
-            <h3 class="page-title mb-0">Subir plano</h3>
         </div>
 
-        <div class="card shadow-card">
-            <div class="card-header shadow-section-header">
-                <h5 class="mb-0">Datos del plano</h5>
+        <div class="shadow-surface-card shadow-card-hover subir-plano-card">
+            <div class="subir-plano-card-header">
+                <h5 class="shadow-title mb-1">Datos del plano</h5>
+                <p class="shadow-helper-text mb-0">
+                    Completa la información necesaria para registrar el archivo en la carpeta correspondiente.
+                </p>
             </div>
 
-            <div class="card-body shadow-section-body">
+            <div class="shadow-section-divider"></div>
+
+            <div class="subir-plano-card-body">
 
                 {% if error %}
-                    <div class="alert alert-danger">
+                    <div class="shadow-alert-danger mb-4">
                         {{ error }}
                     </div>
                 {% endif %}
 
                 {% if carpeta_actual %}
-                    <div class="shadow-info-box mb-4">
-                        <div><strong>Carpeta actual:</strong> {{ carpeta_actual.codigo_carpeta }}</div>
-                        <div>
-                            <strong>Empresa:</strong>
-                            {% if carpeta_actual.empresa %}
-                                {{ carpeta_actual.empresa.nombre }}
-                            {% else %}
-                                Sin empresa
-                            {% endif %}
+                    <div class="subir-plano-info-box mb-4">
+                        <div class="subir-plano-info-item">
+                            <span class="subir-plano-info-label">Carpeta actual</span>
+                            <strong>{{ carpeta_actual.codigo_carpeta }}</strong>
                         </div>
-                        <div><strong>Período:</strong> {{ carpeta_actual.mes }}/{{ carpeta_actual.anio }}</div>
+
+                        <div class="subir-plano-info-item">
+                            <span class="subir-plano-info-label">Empresa</span>
+                            <strong>
+                                {% if carpeta_actual.empresa %}
+                                    {{ carpeta_actual.empresa.nombre }}
+                                {% else %}
+                                    Sin empresa
+                                {% endif %}
+                            </strong>
+                        </div>
+
+                        <div class="subir-plano-info-item">
+                            <span class="subir-plano-info-label">Período</span>
+                            <strong>{{ carpeta_actual.mes }}/{{ carpeta_actual.anio }}</strong>
+                        </div>
                     </div>
                 {% endif %}
 
-                <form method="post" enctype="multipart/form-data" class="row g-3">
+                <form method="post" enctype="multipart/form-data" class="row g-4">
                     {% csrf_token %}
 
                     {% if carpeta_actual %}
                         <input type="hidden" name="carpeta" value="{{ carpeta_actual.id }}">
                     {% else %}
                         <div class="col-12">
-                            <label for="carpeta" class="form-label">Carpeta</label>
-                            <select name="carpeta" id="carpeta" class="form-select" required>
+                            <label for="carpeta" class="shadow-form-label">Carpeta</label>
+                            <select name="carpeta" id="carpeta" class="shadow-select" required>
                                 <option value="">Seleccione una carpeta</option>
                                 {% for carpeta in carpetas %}
                                     <option value="{{ carpeta.id }}">
@@ -71,46 +106,50 @@
                     {% endif %}
 
                     <div class="col-12">
-                        <label for="id_plano_deposito" class="form-label">ID plano depósito</label>
+                        <label for="id_plano_deposito" class="shadow-form-label">ID plano depósito</label>
                         <input
                             type="text"
                             name="id_plano_deposito"
                             id="id_plano_deposito"
-                            class="form-control"
+                            class="shadow-input"
                             placeholder="Ej: PLANO-001"
                             required
                         >
                     </div>
 
                     <div class="col-12">
-                        <label for="archivo" class="form-label">Archivo</label>
-                        <input
-                            type="file"
-                            name="archivo"
-                            id="archivo"
-                            class="form-control"
-                            accept=".jpg,.jpeg,.png,.pdf"
-                            required
-                        >
-                        <div class="form-text">
-                            Formatos permitidos: JPG, JPEG, PNG y PDF.
+                        <label for="archivo" class="shadow-form-label">Archivo</label>
+
+                        <div class="subir-plano-file-wrap">
+                            <input
+                                type="file"
+                                name="archivo"
+                                id="archivo"
+                                class="shadow-input subir-plano-file-input"
+                                accept=".jpg,.jpeg,.png,.pdf"
+                                required
+                            >
+                            <div class="subir-plano-file-hint">
+                                <i class="bi bi-file-earmark-arrow-up me-2"></i>
+                                Formatos permitidos: JPG, JPEG, PNG y PDF
+                            </div>
                         </div>
                     </div>
 
-                    <div class="col-12 d-flex justify-content-between flex-wrap gap-2 mt-3">
+                    <div class="col-12 d-flex justify-content-between flex-wrap gap-2 mt-2">
                         {% if carpeta_actual %}
-                            <a href="{% url 'detalle_carpeta' carpeta_actual.id %}" class="btn btn-outline-secondary">
+                            <a href="{% url 'detalle_carpeta' carpeta_actual.id %}" class="btn shadow-btn shadow-btn-soft">
                                 <i class="bi bi-arrow-left me-2"></i>
                                 Volver a carpeta
                             </a>
                         {% else %}
-                            <a href="{% url 'carpetas' %}" class="btn btn-outline-secondary">
+                            <a href="{% url 'carpetas' %}" class="btn shadow-btn shadow-btn-soft">
                                 <i class="bi bi-arrow-left me-2"></i>
                                 Volver
                             </a>
                         {% endif %}
 
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn shadow-btn shadow-btn-primary">
                             <i class="bi bi-upload me-2"></i>
                             Subir plano
                         </button>
@@ -122,5 +161,140 @@
 
     </div>
 </div>
+
+<style>
+    .subir-plano-hero {
+        border-radius: 30px;
+    }
+
+    .subir-plano-hero-inner {
+        position: relative;
+        z-index: 2;
+        padding: 1.45rem 1.5rem;
+    }
+
+    .subir-plano-title {
+        font-size: clamp(1.65rem, 2.1vw, 2.35rem);
+        letter-spacing: -0.04em;
+    }
+
+    .subir-plano-hero-side {
+        min-width: 150px;
+        padding: 1rem 1.1rem;
+        border-radius: 20px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(243,244,255,0.88));
+        border: 1px solid rgba(226,232,240,0.9);
+        box-shadow: 0 10px 24px rgba(15,23,42,0.08);
+        text-align: center;
+    }
+
+    .subir-plano-side-label {
+        color: var(--shadow-text-muted);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 0.2rem;
+    }
+
+    .subir-plano-side-value {
+        color: var(--shadow-primary);
+        font-size: 1rem;
+        font-weight: 800;
+    }
+
+    .subir-plano-card {
+        overflow: hidden;
+        border-radius: 30px;
+    }
+
+    .subir-plano-card-header {
+        padding: 1.35rem 1.45rem 1.1rem;
+        background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(246,248,255,0.92));
+    }
+
+    .subir-plano-card-body {
+        padding: 1.4rem 1.45rem 1.55rem;
+        background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.95));
+    }
+
+    .subir-plano-info-box {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.9rem;
+        padding: 1rem;
+        border-radius: 20px;
+        background: linear-gradient(135deg, rgba(91,82,214,0.08), rgba(56,189,248,0.08));
+        border: 1px solid rgba(91,82,214,0.12);
+    }
+
+    .subir-plano-info-item {
+        padding: 0.85rem 0.95rem;
+        border-radius: 16px;
+        background: rgba(255,255,255,0.78);
+        border: 1px solid rgba(226,232,240,0.72);
+    }
+
+    .subir-plano-info-label {
+        display: block;
+        margin-bottom: 0.25rem;
+        color: var(--shadow-text-muted);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+    .subir-plano-file-wrap {
+        display: grid;
+        gap: 0.7rem;
+    }
+
+    .subir-plano-file-input {
+        padding-top: 0.85rem;
+        padding-bottom: 0.85rem;
+        background: linear-gradient(180deg, #f9faff, #f1f4ff);
+        border: 1px dashed rgba(91,82,214,0.28);
+    }
+
+    .subir-plano-file-input:hover {
+        border-color: rgba(91,82,214,0.42);
+    }
+
+    .subir-plano-file-hint {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        padding: 0.65rem 0.9rem;
+        border-radius: 14px;
+        background: rgba(91,82,214,0.08);
+        color: var(--shadow-primary-dark);
+        font-size: 0.87rem;
+        font-weight: 700;
+    }
+
+    @media (max-width: 991.98px) {
+        .subir-plano-info-box {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .subir-plano-hero-inner,
+        .subir-plano-card-header,
+        .subir-plano-card-body {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .subir-plano-hero-side {
+            width: 100%;
+        }
+
+        .subir-plano-card-body .btn {
+            width: 100%;
+        }
+    }
+</style>
 
 {% endblock %}
