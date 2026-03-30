@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from rapidfuzz import fuzz
 
-from .models import NRMateriales, Plano, ResultadoValidacionPlano
+from .models import NRMateriales, Plano, ResultadoValidacionPlano, Reclamo
 
 
 FUZZY_THRESHOLD = 80
@@ -105,29 +105,34 @@ def build_preliminar_estado(nrs: List[str], validos: List[str], desconocidos: Li
         return ESTADO_EN_VERIFICACION, motivos
 
     if not validos:
-        motivos.append("No se detectó ningún NR válido (existente en BD).")
+        motivos.append("No se detectó ningún NR válido (existente en Reclamo).")
         return ESTADO_EN_VERIFICACION, motivos
 
     if desconocidos:
-        motivos.append(f"Se detectaron NR no existentes en BD: {', '.join(desconocidos)}")
+        motivos.append(f"Se detectaron NR no existentes en Reclamo: {', '.join(desconocidos)}")
         return ESTADO_EN_VERIFICACION, motivos
 
     return ESTADO_EN_REVISION, motivos
 
 
-def crear_resultado_validacion_preliminar(plano: Plano, nr: str, nr_obj: Optional[NRMateriales]):
-    if nr_obj:
+def crear_resultado_validacion_preliminar(
+    plano: Plano,
+    nr: str,
+    reclamo_obj: Optional[Reclamo],
+    nr_obj: Optional[NRMateriales] = None,
+):
+    if reclamo_obj:
         return ResultadoValidacionPlano.objects.create(
             plano=plano,
             nr_detectado=nr,
             nr_normalizado=nr,
             nr_materiales_encontrado=nr_obj,
-            reclamo_encontrado=nr_obj.reclamo,
-            estado_resultado=ESTADO_EN_VERIFICACION,  # preliminar, luego services.py define mejor
+            reclamo_encontrado=reclamo_obj,
+            estado_resultado=ESTADO_EN_VERIFICACION,
             ciudad_ok=False,
             zona_ok=False,
             fecha_ok=False,
-            motivo_resultado="NR encontrado en base de datos. Pendiente de validación completa.",
+            motivo_resultado="NR encontrado en Reclamo. Pendiente de validación completa.",
         )
 
     return ResultadoValidacionPlano.objects.create(
@@ -140,7 +145,7 @@ def crear_resultado_validacion_preliminar(plano: Plano, nr: str, nr_obj: Optiona
         ciudad_ok=False,
         zona_ok=False,
         fecha_ok=False,
-        motivo_resultado="NR no encontrado en base de datos.",
+        motivo_resultado="NR no encontrado en Reclamo.",
     )
 
 
@@ -152,7 +157,9 @@ def validar_plano_contra_bd(plano: Plano, dias_repeticion: int = 90) -> dict:
     - deja estado preliminar
     - crea resultados básicos por NR detectado
 
-    Esta función NO hace todavía la validación completa contra Reclamo.
+    NUEVA REGLA:
+    - el NR del plano se busca primero en Reclamo
+    - NRMateriales queda para etapas posteriores de validación de materiales
     """
     nrs = parse_csv(plano.nr_detectados)
 
@@ -162,18 +169,18 @@ def validar_plano_contra_bd(plano: Plano, dias_repeticion: int = 90) -> dict:
     # Si el plano se reprocesa, limpiamos resultados previos
     plano.resultados_validacion.all().delete()
 
-    # Búsqueda en lote para evitar múltiples consultas
-    nr_objs = {
-        obj.numero_nr: obj
-        for obj in NRMateriales.objects.filter(numero_nr__in=nrs).select_related("reclamo")
+    # Búsqueda en lote en Reclamo
+    reclamos_map = {
+        obj.numero_reclamo: obj
+        for obj in Reclamo.objects.filter(numero_reclamo__in=nrs)
     }
 
     for nr in nrs:
-        nr_obj = nr_objs.get(nr)
+        reclamo_obj = reclamos_map.get(nr)
 
-        if nr_obj:
+        if reclamo_obj:
             validos.append(nr)
-            crear_resultado_validacion_preliminar(plano, nr, nr_obj)
+            crear_resultado_validacion_preliminar(plano, nr, reclamo_obj)
         else:
             desconocidos.append(nr)
             crear_resultado_validacion_preliminar(plano, nr, None)

@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+
+# Media y archivos subidos
+media/
+planos/
+
+# Entorno virtual (por si usas)
+venv/
+.env
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
