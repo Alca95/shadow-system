@@ -1,15 +1,30 @@
 from __future__ import annotations
 
+import hashlib
 import re
 import unicodedata
 from datetime import date
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 
 import cv2
 import pytesseract
 from dateutil import parser as dateparser
 from rapidfuzz import fuzz
 
+
+# =========================================================
+# CACHE OCR ESTRUCTURADO
+# =========================================================
+
+_OCR_STRUCTURED_CACHE: Dict[str, Dict[str, Dict[str, Any]]] = {}
+
+
+# =========================================================
+# REGEX BASE
+# =========================================================
+
+RE_MULTI_SPACE = re.compile(r"\s+")
+RE_SEPARADORES_RAROS = re.compile(r"[–—_=]+")
 
 RE_FECHA_NUMERICA = re.compile(
     r"(?<!\d)(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})(?!\d)"
@@ -21,43 +36,35 @@ RE_FECHA_TEXTUAL = re.compile(
     r"\s*(?:de\s+)?\d{2,4})\b"
 )
 
-RE_FECHA_LABEL_FLEX = re.compile(r"(?i)\bf[eé]ch[a4]\b")
+RE_FECHA_LABEL = re.compile(r"(?i)\bfecha\b\s*[:\-]?\s*(.+)?")
 
-RE_NR_NUMERO = re.compile(r"(?<!\d)(\d{6,8})\s*[-/\.]?\s*(\d{2,4})(?!\d)")
-
-RE_ETIQUETA_NR = re.compile(
-    r"(?i)\b(?:r\s*\.?\s*n|rn|r\s+n|nr|n[°ºo*]?\s*r|n[°ºo*])\b"
+RE_NR_LINE = re.compile(
+    r"(?i)\b(?:r\s*\.?\s*n|rn|nr|r\s+n|r\s*-\s*n|n\s*[°ºo*]?\s*r|n\s*[°ºo*])\b"
 )
 
-RE_ETIQUETA_NR_FLEX = re.compile(
-    r"(?i)(?:\b(?:nr|rn)\b|n\s*[°ºo*]?\s*r|r\s*\.?\s*n|n[°ºo*])"
+RE_NR_NUMERO = re.compile(
+    r"(?<!\d)(\d{6,8})\s*[-/\.]?\s*(\d{2,4})(?!\d)"
 )
 
-RE_LINEA_RUIDO = re.compile(
-    r"(?i)\b(x|y)\s*[:=]|\bplano\b|\boem\b|\blpn\b|\bpartida\b|\bart[ií]culo\b"
+RE_ZONA_LINE = re.compile(
+    r"(?i)\bz[o0]n[a4]\b\s*[:\-]?\s*(.*)$"
 )
 
-RE_ZONA_FLEX = re.compile(
-    r"(?i)\bz[o0]n[a4]\b\s*[:\-]?\s*(.+)"
+RE_COORD_LINE = re.compile(r"(?i)^\s*[xy]\s*[:=]")
+RE_RUIDO_GLOBAL = re.compile(
+    r"(?i)\b(oem|lpn|item|mantenimientos|rep\.?\s*t[eé]cnico|fiscal|ingenier[ií]a|omega|influencia|dist\.?|secc\.?|py\d+|bcc|blc|bca)\b"
 )
 
+RE_CANTIDAD_SOLO = re.compile(r"^\s*(\d+(?:[.,]\d+)?)\s*$")
 RE_MATERIAL_LINEA = re.compile(
-    r"^\s*(\d+(?:[.,]\d+)?)\s+([A-ZÁÉÍÓÚÑ0-9][A-ZÁÉÍÓÚÑ0-9\s./,\-]+)$",
+    r"^\s*(\d+(?:[.,]\d+)?)\s+(.+?)\s*$",
     re.IGNORECASE,
 )
 
-RE_MATERIAL_SEGMENTO = re.compile(
-    r"(?i)(\d+(?:[.,]\d+)?)\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9\s./,\-]{2,}?)(?=\s+\d+(?:[.,]\d+)?\s+[A-ZÁÉÍÓÚÑ]|\Z)"
-)
 
-RE_LINEA_RUIDO_DETALLE = re.compile(
-    r"(?i)\b(x|y)\s*[:=]|\boem\b|\blpn\b|\bitem\b|\bmantenimientos\b|"
-    r"\brep\.?\s*t[eé]cnico\b|\bfiscal\b|\binfluencia\b|\bdist\.\b|"
-    r"\bsecc\.\b|\bpy\d+\b|\bbca\b|\bbcc\b|\bblc\b"
-)
-
-RE_SEPARADORES_RAROS = re.compile(r"[–—_=]+")
-RE_MULTI_SPACE = re.compile(r"\s+")
+# =========================================================
+# CATÁLOGO DE MATERIALES
+# =========================================================
 
 MATERIALES_CATALOGO = [
     ("IFE", "unidad"),
@@ -85,14 +92,20 @@ MATERIALES_CATALOGO = [
     ("FUSIBLE NH 125A", "unidad"),
     ("CABLE 2X2,5MM2", "metro"),
 ]
-MATERIALES_CATALOGO_NORM = []
 
+MATERIALES_CATALOGO_NORM: List[Dict[str, Any]] = []
+
+
+# =========================================================
+# NORMALIZADORES BASE
+# =========================================================
 
 def strip_accents(text: str) -> str:
     if not text:
         return ""
     return "".join(
-        ch for ch in unicodedata.normalize("NFD", text)
+        ch
+        for ch in unicodedata.normalize("NFD", text)
         if unicodedata.category(ch) != "Mn"
     )
 
@@ -108,51 +121,130 @@ def normalize_text_soft(text: str) -> str:
     return text
 
 
-def normalize_material_text(text: str) -> str:
+def normalize_line_for_search(line: str) -> str:
+    if not line:
+        return ""
+    line = str(line).replace("\r", " ").replace("\n", " ")
+    line = RE_SEPARADORES_RAROS.sub("-", line)
+    line = line.replace("|", " ")
+    line = line.replace("\\", "/")
+    line = RE_MULTI_SPACE.sub(" ", line).strip()
+    return line
+
+
+def deduplicate_keep_order(values: List[str]) -> List[str]:
+    uniq: List[str] = []
+    seen = set()
+    for value in values:
+        if value not in seen:
+            uniq.append(value)
+            seen.add(value)
+    return uniq
+
+
+def _text_cache_key(text: str) -> str:
+    cleaned = clean_ocr_text(text)
+    return hashlib.sha1(cleaned.encode("utf-8")).hexdigest()
+
+
+# =========================================================
+# OCR PREPROCESS
+# =========================================================
+
+def _to_gray(img_bgr):
+    return cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+
+
+def preprocess_image(img_bgr):
+    gray = _to_gray(img_bgr)
+    clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8))
+    gray = clahe.apply(gray)
+    return gray
+
+
+def build_ocr_variants(img_bgr):
+    gray = _to_gray(img_bgr)
+    variants = []
+
+    variants.append(("natural_gray", gray))
+
+    clahe_soft = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8)).apply(gray)
+    variants.append(("clahe_soft", clahe_soft))
+
+    _, otsu = cv2.threshold(
+        clahe_soft, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+    )
+    variants.append(("otsu", otsu))
+
+    adaptive = cv2.adaptiveThreshold(
+        clahe_soft,
+        255,
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY,
+        31,
+        8,
+    )
+    variants.append(("adaptive_soft", adaptive))
+
+    return variants
+
+
+# =========================================================
+# LIMPIEZA OCR
+# =========================================================
+
+def clean_ocr_text(text: str) -> str:
     if not text:
         return ""
 
-    text = normalize_text_soft(text)
+    text = str(text).replace("\r", "\n")
+    text = RE_SEPARADORES_RAROS.sub("-", text)
+    text = text.replace("|", " ")
+    text = text.replace("\\", "/")
 
     replacements = [
-        ("lamparade", "lampara de "),
-        ("lamparadz", "lampara de "),
-        ("lamparadez", "lampara de "),
-        ("lampara de250w", "lampara de 250w"),
-        ("lampara de150w", "lampara de 150w"),
-        ("lampara de100w", "lampara de 100w"),
-        ("lampara de400w", "lampara de 400w"),
-        ("react int de", "react. int. de "),
-        ("react ext de", "react. ext. de "),
-        ("porta lampara", "portalampara"),
-        ("zocalo p ife", "zocalo p/ ife"),
-        ("zocalo p/ife", "zocalo p/ ife"),
-        ("zocalo para ife", "zocalo para ife"),
-        ("umpeiza de tulipa", "limpieza de tulipa"),
-        ("umpieza de tulipa", "limpieza de tulipa"),
-        ("impeza de tulipa", "limpieza de tulipa"),
-        ("mts", ""),
-        (" mt", ""),
-        ("mm²", "mm2"),
-        ("mm2", "mm2"),
+        (r"(?i)\bR\s*\.?\s*N\b", "NR"),
+        (r"(?i)\bR\s+N\b", "NR"),
+        (r"(?i)\bR\s*-\s*N\b", "NR"),
+        (r"(?i)\bR\.?\s*N\.?\b", "NR"),
+        (r"(?i)\bN\s*[°ºo*]?\s*R\b", "NR"),
+        (r"(?i)\bR\s*N\s*[:;]?", "NR: "),
+        (r"(?i)r\s*-\s*n\s*\*?\s*[:;]?", "NR: "),
+        (r"(?i)\bR\s*\-\s*N\s*\*?\s*[:;]?", "NR: "),
+        (r"(?i)\bR\.?N\s*[:;]?", "NR: "),
+        (r"(?i)\bR\s*\.?\s*N\s*[°ºo*]?\s*[:;]?", "NR: "),
+        (r"(?i)\b2ona\b", "Zona"),
+        (r"(?i)\b2ono\b", "Zona"),
+        (r"(?i)\b2one\b", "Zona"),
+        (r"(?i)\bz0na\b", "Zona"),
+        (r"(?i)\bFecho\b", "Fecha"),
+        (r"(?i)\bFechar\b", "Fecha"),
+        (r"(?i)\bFecher\b", "Fecha"),
+        (r"(?i)\bFecna\b", "Fecha"),
+        (r"(?i)\bFecba\b", "Fecha"),
+        (r"(?i)\b1GNITOR\b", "IGNITOR"),
+        (r"(?i)\bUMPIEZADE\b", "LIMPIEZA DE"),
+        (r"(?i)\bUMPIEZA DE\b", "LIMPIEZA DE"),
+        (r"(?i)\bIMPIEZA DE\b", "LIMPIEZA DE"),
+        (r"(?i)\bLAMPARADE\b", "LAMPARA DE"),
+        (r"(?i)\bLAMPARADEZ\b", "LAMPARA DE"),
     ]
 
-    for old, new in replacements:
-        text = text.replace(old, new)
+    for pattern, replacement in replacements:
+        text = re.sub(pattern, replacement, text)
 
-    text = re.sub(r"\s*-\s*", "-", text)
-    return RE_MULTI_SPACE.sub(" ", text).strip(" -.:,")
+    cleaned_lines: List[str] = []
+    for raw_line in text.splitlines():
+        line = normalize_line_for_search(raw_line)
+        if line:
+            cleaned_lines.append(line)
+
+    return "\n".join(cleaned_lines).strip()
 
 
-for nombre, unidad in MATERIALES_CATALOGO:
-    MATERIALES_CATALOGO_NORM.append(
-        {
-            "descripcion": nombre,
-            "descripcion_norm": normalize_material_text(nombre),
-            "unidad_medida": unidad,
-        }
-    )
-
+# =========================================================
+# NR
+# =========================================================
 
 def normalize_nr(a: str, b: str) -> str:
     a = re.sub(r"\s+", "", a)
@@ -176,186 +268,8 @@ def is_valid_nr_candidate(a: str, b: str) -> bool:
     return True
 
 
-def _to_gray(img_bgr):
-    return cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
-
-
-def preprocess_image(img_bgr):
-    """
-    Preprocesado más suave para no romper texto fino.
-    Se mantiene como imagen principal del flujo.
-    """
-    gray = _to_gray(img_bgr)
-
-    # Contraste suave, sin blur agresivo
-    clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8))
-    gray = clahe.apply(gray)
-
-    return gray
-
-
-def build_ocr_variants(img_bgr):
-    """
-    Devuelve variantes de la imagen desde una toma más natural
-    hasta umbrales más fuertes. La idea es no depender de una sola
-    transformación visual.
-    """
-    gray = _to_gray(img_bgr)
-
-    variants = []
-
-    # 1) Natural / gris
-    variants.append(("natural_gray", gray))
-
-    # 2) Contraste suave
-    clahe_soft = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8)).apply(gray)
-    variants.append(("clahe_soft", clahe_soft))
-
-    # 3) Otsu suave
-    _, otsu = cv2.threshold(clahe_soft, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    variants.append(("otsu", otsu))
-
-    # 4) Adaptativo, pero sin blur previo
-    adaptive = cv2.adaptiveThreshold(
-        clahe_soft,
-        255,
-        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv2.THRESH_BINARY,
-        31,
-        8,
-    )
-    variants.append(("adaptive_soft", adaptive))
-
-    return variants
-
-
-def choose_best_ocr_text(texts: List[str]) -> str:
-    """
-    Elige la salida OCR más útil priorizando:
-    - más NR detectados
-    - más materiales/keywords
-    - más fechas
-    """
-    best_text = ""
-    best_score = -1
-
-    for text in texts:
-        if not text:
-            continue
-
-        score = 0
-        text_norm = normalize_text_soft(text)
-
-        # NRs
-        score += len(extract_nrs(text)) * 50
-
-        # Fechas
-        fechas = RE_FECHA_NUMERICA.findall(text)
-        score += len(fechas) * 10
-
-        # Keywords útiles
-        for token in [
-            "zona",
-            "fecha",
-            "ife",
-            "ignitor",
-            "capacitor",
-            "lampara",
-            "react",
-            "limpieza",
-            "zocalo",
-            "porta",
-            "equipo",
-            "fusible",
-            "cable",
-        ]:
-            if token in text_norm:
-                score += 4
-
-        if score > best_score:
-            best_score = score
-            best_text = text
-
-    return best_text
-
-
-def ocr_text_from_file(file_path: str) -> str:
-    img = cv2.imread(file_path)
-    if img is None:
-        raise ValueError(f"No se pudo leer imagen: {file_path}")
-
-    variants = build_ocr_variants(img)
-    outputs = []
-
-    for _, variant in variants:
-        for psm in ("11", "6"):
-            try:
-                text = pytesseract.image_to_string(
-                    variant,
-                    lang="spa",
-                    config=f"--oem 3 --psm {psm}",
-                )
-                if text and text.strip():
-                    outputs.append(text)
-            except Exception:
-                continue
-
-    if not outputs:
-        # fallback
-        thr = preprocess_image(img)
-        return pytesseract.image_to_string(thr, lang="spa", config="--oem 3 --psm 11")
-
-    return choose_best_ocr_text(outputs)
-
-
-def deduplicate_keep_order(values: List[str]) -> List[str]:
-
-    uniq = []
-    seen = set()
-    for value in values:
-        if value not in seen:
-            uniq.append(value)
-            seen.add(value)
-    return uniq
-
-
-def clean_ocr_text(text: str) -> str:
-    if not text:
-        return ""
-
-    text = text.replace("\r", "\n")
-    text = RE_SEPARADORES_RAROS.sub("-", text)
-    text = text.replace("|", " ")
-    text = text.replace("\\", "/")
-
-    text = re.sub(r"(?i)\bN\s*[°ºo*]?\s*R\b", "NR", text)
-    text = re.sub(r"(?i)\bR\s*\.?\s*N\b", "NR", text)
-    text = re.sub(r"(?i)\bR\s+N\b", "NR", text)
-    text = re.sub(r"(?i)\bR\.?\s*N\.?\b", "NR", text)
-
-    text = re.sub(r"(?i)\bz0na\b", "Zona", text)
-    text = re.sub(r"(?i)\bfech4\b", "Fecha", text)
-    text = re.sub(r"(?i)\bfecna\b", "Fecha", text)
-    text = re.sub(r"(?i)\bfecba\b", "Fecha", text)
-
-    cleaned_lines = []
-    for line in text.splitlines():
-        line = RE_MULTI_SPACE.sub(" ", line).strip()
-        cleaned_lines.append(line)
-
-    return "\n".join(cleaned_lines).strip()
-
-
-def normalize_line_for_search(line: str) -> str:
-    if not line:
-        return ""
-    line = RE_SEPARADORES_RAROS.sub("-", line)
-    line = RE_MULTI_SPACE.sub(" ", line).strip()
-    return line
-
-
 def extract_candidates_from_line(line: str) -> List[str]:
-    encontrados = []
+    encontrados: List[str] = []
     line = normalize_line_for_search(line)
     for match in RE_NR_NUMERO.finditer(line):
         a = match.group(1)
@@ -368,14 +282,18 @@ def extract_candidates_from_line(line: str) -> List[str]:
 def line_has_nr_label(line: str) -> bool:
     if not line:
         return False
-    line = normalize_line_for_search(line)
-    return bool(RE_ETIQUETA_NR.search(line) or RE_ETIQUETA_NR_FLEX.search(line))
+    return bool(RE_NR_LINE.search(normalize_line_for_search(line)))
 
 
-def should_skip_line(line: str) -> bool:
+def should_skip_line_for_nr(line: str) -> bool:
     if not line:
         return True
-    return bool(RE_LINEA_RUIDO.search(line))
+    line_norm = normalize_line_for_search(line)
+    if RE_COORD_LINE.search(line_norm):
+        return True
+    if RE_RUIDO_GLOBAL.search(line_norm):
+        return True
+    return False
 
 
 def extract_nrs(text: str) -> List[str]:
@@ -384,28 +302,33 @@ def extract_nrs(text: str) -> List[str]:
 
     cleaned_text = clean_ocr_text(text)
     lines = [line.strip() for line in cleaned_text.splitlines() if line.strip()]
-    encontrados = []
+    encontrados: List[str] = []
 
     for i, line in enumerate(lines):
-        if should_skip_line(line):
+        if should_skip_line_for_nr(line):
             continue
+
         if line_has_nr_label(line):
             encontrados.extend(extract_candidates_from_line(line))
-            if i + 1 < len(lines) and not should_skip_line(lines[i + 1]):
+            if i + 1 < len(lines) and not should_skip_line_for_nr(lines[i + 1]):
                 encontrados.extend(extract_candidates_from_line(lines[i + 1]))
-            if i + 2 < len(lines) and not should_skip_line(lines[i + 2]):
-                encontrados.extend(extract_candidates_from_line(lines[i + 2]))
 
-    for line in lines:
-        if not should_skip_line(line):
-            encontrados.extend(extract_candidates_from_line(line))
+    if not encontrados:
+        for line in lines:
+            if not should_skip_line_for_nr(line):
+                encontrados.extend(extract_candidates_from_line(line))
 
     return deduplicate_keep_order(encontrados)
 
 
+# =========================================================
+# FECHAS
+# =========================================================
+
 def parse_date_value(raw: str) -> Optional[date]:
     if not raw:
         return None
+
     raw = str(raw).strip().replace(".", "/").replace("-", "/")
     try:
         dt = dateparser.parse(raw, dayfirst=True)
@@ -414,28 +337,51 @@ def parse_date_value(raw: str) -> Optional[date]:
         return None
 
 
+def fix_ocr_year(fecha: date) -> date:
+    if not fecha:
+        return fecha
+
+    if fecha.year in {2028, 2078, 2088, 2020, 2038, 2058, 2068}:
+        try:
+            return date(2026, fecha.month, fecha.day)
+        except Exception:
+            return fecha
+
+    if fecha.year > 2032:
+        try:
+            return date(2026, fecha.month, fecha.day)
+        except Exception:
+            return fecha
+
+    return fecha
+
+
 def find_date_in_line(line: str) -> Optional[date]:
     if not line:
         return None
+
     line_norm = normalize_line_for_search(line)
 
-    for regex in (RE_FECHA_NUMERICA, RE_FECHA_TEXTUAL):
-        m = regex.search(line_norm)
-        if m:
-            fecha = parse_date_value(m.group(1))
-            if fecha:
-                return fecha
+    m_num = RE_FECHA_NUMERICA.search(line_norm)
+    if m_num:
+        fecha = parse_date_value(m_num.group(1))
+        if fecha:
+            return fix_ocr_year(fecha)
 
-    if RE_FECHA_LABEL_FLEX.search(line_norm):
-        after = RE_FECHA_LABEL_FLEX.split(line_norm, maxsplit=1)
-        if len(after) > 1:
-            candidate = after[1].strip(" :-")
-            for regex in (RE_FECHA_NUMERICA, RE_FECHA_TEXTUAL):
-                m = regex.search(candidate)
-                if m:
-                    fecha = parse_date_value(m.group(1))
-                    if fecha:
-                        return fecha
+    m_txt = RE_FECHA_TEXTUAL.search(line_norm)
+    if m_txt:
+        fecha = parse_date_value(m_txt.group(1))
+        if fecha:
+            return fix_ocr_year(fecha)
+
+    m_label = RE_FECHA_LABEL.search(line_norm)
+    if m_label and m_label.group(1):
+        candidate = m_label.group(1).strip(" :-")
+        m_num = RE_FECHA_NUMERICA.search(candidate)
+        if m_num:
+            fecha = parse_date_value(m_num.group(1))
+            if fecha:
+                return fix_ocr_year(fecha)
 
     return None
 
@@ -443,59 +389,35 @@ def find_date_in_line(line: str) -> Optional[date]:
 def extract_fecha_plano(text: str) -> Optional[date]:
     if not text:
         return None
+
     cleaned_text = clean_ocr_text(text)
     for line in cleaned_text.splitlines():
         fecha = find_date_in_line(line)
         if fecha:
             return fecha
+
     return None
 
 
-def is_probable_noise_detail_line(line: str) -> bool:
-    if not line:
-        return True
-    line_norm = normalize_line_for_search(line)
-    if not line_norm:
-        return True
-    if RE_LINEA_RUIDO_DETALLE.search(line_norm):
-        return True
-    if line_norm.upper().startswith("X=") or line_norm.upper().startswith("Y="):
-        return True
-    return False
-
-
-def find_nr_line_indexes(lines: List[str]) -> List[Dict[str, Any]]:
-    encontrados = []
-    for idx, line in enumerate(lines):
-        candidatos = extract_candidates_from_line(line)
-        if not candidatos:
-            continue
-        if line_has_nr_label(line) or len(candidatos) == 1:
-            for nr in candidatos:
-                encontrados.append({"index": idx, "nr": nr})
-
-    vistos = set()
-    salida = []
-    for item in encontrados:
-        key = (item["index"], item["nr"])
-        if key not in vistos:
-            salida.append(item)
-            vistos.add(key)
-    return salida
-
+# =========================================================
+# ZONA / UBICACIÓN
+# =========================================================
 
 def sanitize_zone_text(value: str) -> str:
     if not value:
         return ""
+
     value = normalize_line_for_search(value)
     value = re.sub(r"(?i)\bfecha\b.*$", "", value).strip()
     value = re.sub(r"(?i)^zona\s*", "", value).strip()
-    return value.strip(" -.:")
+    value = value.strip(" -.:,")
+    return value
 
 
 def smart_normalize_location(value: str) -> str:
     if not value:
         return ""
+
     value = normalize_text_soft(value)
     value = re.sub(r"^zona", "", value).strip()
 
@@ -505,22 +427,44 @@ def smart_normalize_location(value: str) -> str:
         "contio": "centro",
         "contto": "centro",
         "contiro": "centro",
-        "zonacontro": "centro",
-        "zonacentro": "centro",
         "centio": "centro",
         "ceniro": "centro",
-        "sari isidro": "san isidro",
-        "san isiio": "san isidro",
+        "cento": "centro",
+        "cantro": "centro",
+        "sani siro": "san isidro",
+        "sanisiro": "san isidro",
         "san isiro": "san isidro",
+        "san isiio": "san isidro",
         "san isido": "san isidro",
+        "sanisidro": "san isidro",
         "tuyu puco": "tuyu pucu",
+        "graldiaz": "gral diaz",
     }
+
     return correcciones.get(value, value)
+
+
+def is_probable_noise_detail_line(line: str) -> bool:
+    if not line:
+        return True
+
+    line_norm = normalize_line_for_search(line)
+    if not line_norm:
+        return True
+
+    if RE_COORD_LINE.search(line_norm):
+        return True
+
+    if RE_RUIDO_GLOBAL.search(line_norm):
+        return True
+
+    return False
 
 
 def is_short_location_candidate(line: str) -> bool:
     if not line:
         return False
+
     line_norm = normalize_text_soft(line)
     if not line_norm:
         return False
@@ -528,8 +472,22 @@ def is_short_location_candidate(line: str) -> bool:
         return False
     if len(line_norm) > 25:
         return False
-    if is_probable_noise_detail_line(line_norm):
+
+    invalid_tokens = {
+        "carayao",
+        "compasa",
+        "cancha",
+        "gral diaz",
+        "graldiaz",
+        "14 de mayo",
+        "yegros",
+    }
+    if line_norm in invalid_tokens:
         return False
+
+    if RE_RUIDO_GLOBAL.search(line_norm):
+        return False
+
     return True
 
 
@@ -537,8 +495,9 @@ def extract_zona_from_lines(lines: List[str]) -> Optional[str]:
     for i, line in enumerate(lines):
         if not line:
             continue
+
         line_norm = normalize_line_for_search(line)
-        m = RE_ZONA_FLEX.search(line_norm)
+        m = RE_ZONA_LINE.search(line_norm)
         if m:
             zona = sanitize_zone_text(m.group(1))
             zona = smart_normalize_location(zona)
@@ -551,33 +510,141 @@ def extract_zona_from_lines(lines: List[str]) -> Optional[str]:
                 candidate = smart_normalize_location(candidate)
                 if candidate and not is_probable_noise_detail_line(candidate):
                     return candidate.title()
+
     return None
+
+
+# =========================================================
+# MATERIALES
+# =========================================================
+
+def normalize_material_text(text: str) -> str:
+    if not text:
+        return ""
+
+    text = normalize_text_soft(text)
+
+    replacements = [
+        ("lamparade", "lampara de "),
+        ("lamparadz", "lampara de "),
+        ("lamparadez", "lampara de "),
+        ("lampara de250w", "lampara de 250w"),
+        ("lampara de150w", "lampara de 150w"),
+        ("lampara de100w", "lampara de 100w"),
+        ("lampara de400w", "lampara de 400w"),
+        ("react int de", "react. int. de "),
+        ("react ext de", "react. ext. de "),
+        ("porta lampara", "portalampara"),
+        ("zocalo p ife", "zocalo p/ ife"),
+        ("zocalo p/ife", "zocalo p/ ife"),
+        ("zocalo para ife", "zocalo para ife"),
+        ("umpieza de tulipa", "limpieza de tulipa"),
+        ("impeza de tulipa", "limpieza de tulipa"),
+        ("mm²", "mm2"),
+        ("mm2", "mm2"),
+    ]
+
+    for old, new in replacements:
+        text = text.replace(old, new)
+
+    text = re.sub(r"\s*-\s*", "-", text)
+    return RE_MULTI_SPACE.sub(" ", text).strip(" -.:,")
+
+
+for nombre, unidad in MATERIALES_CATALOGO:
+    MATERIALES_CATALOGO_NORM.append(
+        {
+            "descripcion": nombre,
+            "descripcion_norm": normalize_material_text(nombre),
+            "unidad_medida": unidad,
+        }
+    )
 
 
 def normalize_material_description(text: str) -> str:
     text = RE_MULTI_SPACE.sub(" ", text).strip(" -.:")
     text = re.sub(r"\s*-\s*", "-", text)
     text = text.replace("²", "2")
-    text = re.sub(r"(?i)\blamparade\b", "LAMPARA DE ", text)
-    text = re.sub(r"(?i)\blamparade", "LAMPARA DE ", text)
-    text = re.sub(r"(?i)\blamparadz\b", "LAMPARA DE ", text)
-    text = re.sub(r"(?i)\blamparadez\b", "LAMPARA DE ", text)
-    text = re.sub(r"(?i)\blamparadez", "LAMPARA DE ", text)
-    text = re.sub(r"(?i)\bumpieza de tulipa\b", "LIMPIEZA DE TULIPA", text)
-    text = re.sub(r"(?i)\bumpieza de tulipa\b", "LIMPIEZA DE TULIPA", text)
-    text = re.sub(r"(?i)\bimpeza de tulipa\b", "LIMPIEZA DE TULIPA", text)
-    text = re.sub(r"(?i)\bporta ife\b", "PORTA IFE", text)
-    text = re.sub(r"(?i)\bportalampara\b", "PORTALAMPARA", text)
-    text = re.sub(r"(?i)\breact int de\b", "REACT. INT. DE ", text)
-    text = re.sub(r"(?i)\breact ext de\b", "REACT. EXT. DE ", text)
-    text = re.sub(r"(?i)\bzocalo p/?\s*ife\b", "ZOCALO P/ IFE", text)
-    text = re.sub(r"(?i)\bzocalo para ife\b", "ZOCALO PARA IFE", text)
-    text = re.sub(r"(?i)\bequipo completo led\b", "EQUIPO COMPLETO LED", text)
+
+    replacements = [
+        (r"(?i)\blamparade\b", "LAMPARA DE "),
+        (r"(?i)\blamparadz\b", "LAMPARA DE "),
+        (r"(?i)\blamparadez\b", "LAMPARA DE "),
+        (r"(?i)\bumpieza de tulipa\b", "LIMPIEZA DE TULIPA"),
+        (r"(?i)\bimpeza de tulipa\b", "LIMPIEZA DE TULIPA"),
+        (r"(?i)\bporta ife\b", "PORTA IFE"),
+        (r"(?i)\bportalampara\b", "PORTALAMPARA"),
+        (r"(?i)\breact int de\b", "REACT. INT. DE "),
+        (r"(?i)\breact ext de\b", "REACT. EXT. DE "),
+        (r"(?i)\bzocalo p/?\s*ife\b", "ZOCALO P/ IFE"),
+        (r"(?i)\bzocalo para ife\b", "ZOCALO PARA IFE"),
+        (r"(?i)\bequipo completo led\b", "EQUIPO COMPLETO LED"),
+    ]
+
+    for pattern, replacement in replacements:
+        text = re.sub(pattern, replacement, text)
+
     return text.strip()
 
 
+def _looks_like_ife_candidate(text: str) -> bool:
+    """
+    OCR típico para IFE:
+    IFE, 1FE, FE, 1F, IFE., "FE, I F E
+    """
+    if not text:
+        return False
+
+    t = normalize_text_soft(text)
+    t = t.replace('"', "").replace("'", "").replace(".", "").replace(" ", "")
+
+    if t in {"ife", "1fe", "fe", "1f", "if", "lfe"}:
+        return True
+
+    if len(t) <= 3 and "f" in t and ("i" in t or "1" in t or t == "fe"):
+        return True
+
+    return False
+
+
+def _is_plausible_material_quantity(cantidad_raw: str, descripcion: str) -> bool:
+    """
+    Evita cantidades basura como coordenadas:
+    213233, 559877, 7213264, etc.
+    """
+    try:
+        cantidad = float(str(cantidad_raw).replace(",", "."))
+    except Exception:
+        return False
+
+    desc_norm = normalize_material_text(descripcion)
+
+    # cantidades absurdas
+    if cantidad > 100:
+        return False
+
+    # materiales usuales casi siempre 1-5
+    if "cable" not in desc_norm and cantidad > 10:
+        return False
+
+    # cable admite algo más, pero nunca miles
+    if "cable" in desc_norm and cantidad > 500:
+        return False
+
+    return True
+
+
 def normalizar_material_catalogo(texto: str) -> Dict[str, Any]:
+    if _looks_like_ife_candidate(texto):
+        return {
+            "descripcion": "IFE",
+            "unidad_medida": "unidad",
+            "catalogo_match": True,
+            "score_catalogo": 100,
+        }
+
     texto_norm = normalize_material_text(texto)
+
     mejor_nombre = None
     mejor_unidad = None
     mejor_score = -1
@@ -589,7 +656,7 @@ def normalizar_material_catalogo(texto: str) -> Dict[str, Any]:
             mejor_nombre = item["descripcion"]
             mejor_unidad = item["unidad_medida"]
 
-    if mejor_nombre and mejor_score >= 70:
+    if mejor_nombre and mejor_score >= 78:
         return {
             "descripcion": mejor_nombre,
             "unidad_medida": mejor_unidad,
@@ -597,13 +664,9 @@ def normalizar_material_catalogo(texto: str) -> Dict[str, Any]:
             "score_catalogo": mejor_score,
         }
 
-    unidad_fallback = "metro" if "cable" in texto_norm else "unidad"
-    if "mantenimiento solo" in texto_norm or "limpieza de tulipa" in texto_norm:
-        unidad_fallback = None
-
     return {
-        "descripcion": texto.upper(),
-        "unidad_medida": unidad_fallback,
+        "descripcion": "",
+        "unidad_medida": None,
         "catalogo_match": False,
         "score_catalogo": mejor_score if mejor_score >= 0 else 0,
     }
@@ -621,7 +684,11 @@ def is_material_description_candidate(text: str) -> bool:
     if not text:
         return False
 
+    if _looks_like_ife_candidate(text):
+        return True
+
     text_norm = normalize_material_text(text)
+
     invalid_tokens = [
         "fecha",
         "zona",
@@ -629,12 +696,11 @@ def is_material_description_candidate(text: str) -> bool:
         "yegros",
         "compasa",
         "cancha",
-        "graldiaz",
         "gral diaz",
         "san isidro",
         "centro",
     ]
-    if any(tok in text_norm for tok in invalid_tokens):
+    if any(tok == text_norm for tok in invalid_tokens):
         return False
 
     material_tokens = [
@@ -655,17 +721,27 @@ def is_material_description_candidate(text: str) -> bool:
     return any(tok in text_norm for tok in material_tokens)
 
 
-def build_material_item(cantidad_raw: str, descripcion: str, texto_original: str) -> Optional[Dict[str, Any]]:
-    try:
-        cantidad = float(cantidad_raw.replace(",", "."))
-    except Exception:
-        cantidad = None
-
+def build_material_item(
+    cantidad_raw: str,
+    descripcion: str,
+    texto_original: str,
+) -> Optional[Dict[str, Any]]:
     descripcion = normalize_material_description(descripcion)
     if not descripcion:
         return None
 
     material_final = normalizar_material_catalogo(descripcion)
+    if not material_final["catalogo_match"]:
+        return None
+
+    if not _is_plausible_material_quantity(cantidad_raw, material_final["descripcion"]):
+        return None
+
+    try:
+        cantidad = float(str(cantidad_raw).replace(",", "."))
+    except Exception:
+        return None
+
     return {
         "cantidad": cantidad,
         "cantidad_mostrar": format_quantity_for_display(cantidad),
@@ -677,98 +753,93 @@ def build_material_item(cantidad_raw: str, descripcion: str, texto_original: str
     }
 
 
+def _join_material_fragment(lines: List[str], start_idx: int) -> Tuple[str, int]:
+    base = normalize_line_for_search(lines[start_idx])
+    consumed = 1
+
+    current = base
+    for j in range(start_idx + 1, min(len(lines), start_idx + 3)):
+        extra = normalize_line_for_search(lines[j])
+        if not extra:
+            break
+        if is_probable_noise_detail_line(extra):
+            break
+        if line_has_nr_label(extra):
+            break
+        if RE_ZONA_LINE.search(extra):
+            break
+        if find_date_in_line(extra):
+            break
+        if RE_CANTIDAD_SOLO.match(extra):
+            break
+
+        current = f"{current} {extra}".strip()
+        consumed += 1
+
+        if is_material_description_candidate(current):
+            return current, consumed
+
+    return base, 1
+
+
 def extract_materiales_from_lines(lines: List[str]) -> List[Dict[str, Any]]:
-    materiales = []
+    materiales: List[Dict[str, Any]] = []
     i = 0
 
     while i < len(lines):
-        line = lines[i]
+        line = normalize_line_for_search(lines[i])
 
         if not line or is_probable_noise_detail_line(line):
             i += 1
             continue
 
-        line_norm = normalize_line_for_search(line)
-
-        if line_has_nr_label(line_norm) or RE_ZONA_FLEX.search(line_norm) or find_date_in_line(line_norm):
+        if line_has_nr_label(line) or RE_ZONA_LINE.search(line) or find_date_in_line(line):
             i += 1
             continue
 
-        # Caso 1: múltiples materiales en una sola línea OCR
-        segmentos = list(RE_MATERIAL_SEGMENTO.finditer(line_norm))
-        if segmentos:
-            encontrados_linea = 0
-            for seg in segmentos:
-                item = build_material_item(seg.group(1), seg.group(2), seg.group(0))
-                if item and is_material_description_candidate(item["descripcion"]):
-                    materiales.append(item)
-                    encontrados_linea += 1
-            if encontrados_linea > 0:
-                i += 1
-                continue
-
-        # Caso 2: material normal en una sola línea
-        m = RE_MATERIAL_LINEA.match(line_norm)
-        if m:
-            item = build_material_item(m.group(1), m.group(2), line)
-            if item and is_material_description_candidate(item["descripcion"]):
+        # Caso especial: IFE comprimido por OCR (1FE, FE, 1F, etc.)
+        if _looks_like_ife_candidate(line):
+            item = build_material_item("1", "IFE", line)
+            if item:
                 materiales.append(item)
                 i += 1
                 continue
 
-        # Caso 3: OCR parte el material en dos líneas (cantidad / descripción)
-        if re.fullmatch(r"\d+(?:[.,]\d+)?", line_norm) and i + 1 < len(lines):
-            next_line = lines[i + 1]
-            next_norm = normalize_line_for_search(next_line)
+        # Caso especial: material sin cantidad explícita, asumimos 1
+        line_material = line.lstrip('+*-• ').strip()
+        if is_material_description_candidate(line_material):
+            item = build_material_item("1", line_material, line)
+            if item:
+                materiales.append(item)
+                i += 1
+                continue
 
-            if (
-                next_line
-                and not is_probable_noise_detail_line(next_line)
-                and not line_has_nr_label(next_norm)
-                and not RE_ZONA_FLEX.search(next_norm)
-                and not find_date_in_line(next_norm)
-            ):
-                # intento directo con la siguiente línea
-                item = build_material_item(line_norm, next_norm, f"{line} {next_line}")
-                if item and is_material_description_candidate(item["descripcion"]):
-                    materiales.append(item)
-                    i += 2
-                    continue
+        m = RE_MATERIAL_LINEA.match(line)
+        if m:
+            item = build_material_item(m.group(1), m.group(2), line)
+            if item:
+                materiales.append(item)
+                i += 1
+                continue
 
-                # si la siguiente línea es una letra o fragmento corto, intento unir hasta 2 líneas más
-                combined = next_norm
-                consumed = 2
-                j = i + 2
-                while j < len(lines) and consumed <= 3:
-                    extra = normalize_line_for_search(lines[j])
-                    if (
-                        not extra
-                        or is_probable_noise_detail_line(extra)
-                        or line_has_nr_label(extra)
-                        or RE_ZONA_FLEX.search(extra)
-                        or find_date_in_line(extra)
-                    ):
-                        break
-                    combined = f"{combined} {extra}".strip()
-                    item = build_material_item(line_norm, combined, f"{line} {combined}")
-                    if item and is_material_description_candidate(item["descripcion"]):
-                        materiales.append(item)
-                        i = j + 1
-                        break
-                    consumed += 1
-                    j += 1
-                else:
-                    i += 1
-                    continue
-
-                # si salió por break exitoso del while, ya actualizamos i
-                if i > j - 1:
-                    continue
+        m_cant = RE_CANTIDAD_SOLO.match(line)
+        if m_cant and i + 1 < len(lines):
+            descripcion_unida, consumed = _join_material_fragment(lines, i + 1)
+            item = build_material_item(
+                m_cant.group(1),
+                descripcion_unida,
+                f"{line} {descripcion_unida}",
+            )
+            if item:
+                materiales.append(item)
+                i += 1 + consumed
+                continue
 
         i += 1
 
-    salida = []
+    salida: List[Dict[str, Any]] = []
     vistos = set()
+
     for item in materiales:
         key = (
             item["cantidad_mostrar"],
@@ -781,38 +852,306 @@ def extract_materiales_from_lines(lines: List[str]) -> List[Dict[str, Any]]:
     return salida
 
 
+# =========================================================
+# OCR ESPACIAL
+# =========================================================
+
+def _extract_lines_from_image_data(img_variant) -> List[Dict[str, Any]]:
+    data = pytesseract.image_to_data(
+        img_variant,
+        lang="spa",
+        config="--oem 3 --psm 11",
+        output_type=pytesseract.Output.DICT,
+    )
+
+    grouped: Dict[Tuple[int, int, int], Dict[str, Any]] = {}
+
+    n = len(data.get("text", []))
+    for i in range(n):
+        text = str(data["text"][i]).strip()
+        conf_raw = str(data["conf"][i]).strip()
+
+        if not text:
+            continue
+
+        try:
+            conf = float(conf_raw)
+        except Exception:
+            conf = -1.0
+
+        if conf < -1:
+            continue
+
+        key = (
+            int(data["block_num"][i]),
+            int(data["par_num"][i]),
+            int(data["line_num"][i]),
+        )
+
+        left = int(data["left"][i])
+        top = int(data["top"][i])
+        width = int(data["width"][i])
+        height = int(data["height"][i])
+        right = left + width
+        bottom = top + height
+
+        if key not in grouped:
+            grouped[key] = {
+                "texts": [],
+                "left": left,
+                "top": top,
+                "right": right,
+                "bottom": bottom,
+                "block_num": key[0],
+                "par_num": key[1],
+                "line_num": key[2],
+            }
+        else:
+            grouped[key]["left"] = min(grouped[key]["left"], left)
+            grouped[key]["top"] = min(grouped[key]["top"], top)
+            grouped[key]["right"] = max(grouped[key]["right"], right)
+            grouped[key]["bottom"] = max(grouped[key]["bottom"], bottom)
+
+        grouped[key]["texts"].append((left, text))
+
+    lines: List[Dict[str, Any]] = []
+    for line in grouped.values():
+        ordered = sorted(line["texts"], key=lambda x: x[0])
+        text = " ".join(t for _, t in ordered)
+        line_text = clean_ocr_text(text)
+        if not line_text:
+            continue
+
+        lines.append(
+            {
+                "text": line_text,
+                "left": line["left"],
+                "top": line["top"],
+                "right": line["right"],
+                "bottom": line["bottom"],
+                "block_num": line["block_num"],
+                "par_num": line["par_num"],
+                "line_num": line["line_num"],
+            }
+        )
+
+    lines.sort(key=lambda x: (x["top"], x["left"]))
+    return lines
+
+
+def _find_spatial_nr_anchors(lines: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    anchors: List[Dict[str, Any]] = []
+
+    for line in lines:
+        text = line["text"]
+        cands = extract_candidates_from_line(text)
+        if not cands:
+            continue
+
+        if line_has_nr_label(text) or len(cands) == 1:
+            nr = cands[0]
+            anchors.append(
+                {
+                    "nr": nr,
+                    "left": line["left"],
+                    "top": line["top"],
+                    "right": line["right"],
+                    "bottom": line["bottom"],
+                    "text": text,
+                }
+            )
+
+    uniq: List[Dict[str, Any]] = []
+    seen = set()
+    for a in sorted(anchors, key=lambda x: (x["top"], x["left"])):
+        if a["nr"] in seen:
+            continue
+        uniq.append(a)
+        seen.add(a["nr"])
+
+    return uniq
+
+
+
+
+
+def _collect_spatial_block_lines(
+    all_lines: List[Dict[str, Any]],
+    anchor: Dict[str, Any],
+    image_width: Optional[int] = None,
+) -> List[str]:
+    """
+    Bloque espacial definitivo por distancia real + separación lateral.
+    - usa cercanía geométrica al NR
+    - evita mezclar cuadrante izquierdo/derecho
+    - no depende del orden textual del OCR
+    """
+    ax1 = anchor["left"]
+    ay1 = anchor["top"]
+    ax2 = anchor["right"]
+    ay2 = anchor["bottom"]
+
+    nr_center_x = (ax1 + ax2) / 2.0
+
+    # Radios calibrados para este tipo de plano
+    max_dx_left = 90
+    max_dx_right = 260
+    max_dy_up = 55
+    max_dy_down = 140
+
+    selected: List[Tuple[int, int, str]] = []
+
+    for line in all_lines:
+        text = line["text"]
+        if not text:
+            continue
+
+        lx1 = line["left"]
+        ly1 = line["top"]
+        lx2 = line["right"]
+
+        # Filtro lateral por mitad del plano.
+        # Esto evita que un NR del lado derecho robe materiales del lado izquierdo
+        # y viceversa.
+        if image_width:
+            line_center_x = (lx1 + lx2) / 2.0
+            mitad = image_width / 2.0
+
+            if nr_center_x >= mitad:
+                if line_center_x < mitad - 20:
+                    continue
+            else:
+                if line_center_x > mitad + 20:
+                    continue
+
+        # Filtro de distancia real respecto al ancla NR
+        if lx1 < ax1 - max_dx_left:
+            continue
+        if lx1 > ax2 + max_dx_right:
+            continue
+        if ly1 < ay1 - max_dy_up:
+            continue
+        if ly1 > ay2 + max_dy_down:
+            continue
+
+        # Excluir otros NR distintos del ancla
+        cands = extract_candidates_from_line(text)
+        if cands and line_has_nr_label(text) and anchor["nr"] not in cands:
+            continue
+
+        if is_probable_noise_detail_line(text):
+            continue
+
+        selected.append((line["top"], line["left"], text))
+
+    selected.sort(key=lambda x: (x[0], x[1]))
+
+    salida: List[str] = []
+    vistos = set()
+    for _, _, line_text in selected:
+        if line_text not in vistos:
+            salida.append(line_text)
+            vistos.add(line_text)
+
+    nr_line = anchor["text"]
+    if nr_line in salida:
+        salida.remove(nr_line)
+    salida.insert(0, nr_line)
+
+    return salida
+
+
+def _extract_structured_details_from_image(img_variant) -> Dict[str, Dict[str, Any]]:
+    lines = _extract_lines_from_image_data(img_variant)
+    anchors = _find_spatial_nr_anchors(lines)
+
+    try:
+        image_width = int(img_variant.shape[1])
+    except Exception:
+        image_width = None
+
+    detalles: Dict[str, Dict[str, Any]] = {}
+    for anchor in anchors:
+        block_lines = _collect_spatial_block_lines(lines, anchor, image_width=image_width)
+        ordered = extract_ordered_details_from_block(block_lines)
+
+        detalles[anchor["nr"]] = {
+            "zona": ordered.get("zona"),
+            "fecha": ordered.get("fecha"),
+            "materiales": ordered.get("materiales", []),
+            "lineas": block_lines,
+        }
+
+    return detalles
+
+
+
+# =========================================================
+# SEGMENTACIÓN POR TEXTO (FALLBACK)
+# =========================================================
+
+def find_nr_line_indexes(lines: List[str]) -> List[Dict[str, Any]]:
+    encontrados: List[Dict[str, Any]] = []
+
+    for idx, line in enumerate(lines):
+        candidatos = extract_candidates_from_line(line)
+        if not candidatos:
+            continue
+
+        if line_has_nr_label(line):
+            for nr in candidatos:
+                encontrados.append({"index": idx, "nr": nr})
+
+    if not encontrados:
+        for idx, line in enumerate(lines):
+            candidatos = extract_candidates_from_line(line)
+            if len(candidatos) == 1 and not should_skip_line_for_nr(line):
+                encontrados.append({"index": idx, "nr": candidatos[0]})
+
+    salida: List[Dict[str, Any]] = []
+    vistos = set()
+    for item in encontrados:
+        key = (item["index"], item["nr"])
+        if key not in vistos:
+            salida.append(item)
+            vistos.add(key)
+
+    return salida
+
+
 def extract_fecha_from_lines(lines: List[str]) -> Optional[date]:
     for i, line in enumerate(lines):
         if not line:
             continue
+
         fecha = find_date_in_line(line)
         if fecha:
             return fecha
-        line_norm = normalize_line_for_search(line)
-        if RE_FECHA_LABEL_FLEX.search(line_norm) and i + 1 < len(lines):
+
+        if RE_FECHA_LABEL.search(line) and i + 1 < len(lines):
             fecha = find_date_in_line(lines[i + 1])
             if fecha:
                 return fecha
+
     return None
 
 
 def extract_ordered_details_from_block(block_lines: List[str]) -> Dict[str, Any]:
     zona = None
     fecha = None
-    materiales = []
+    materiales: List[Dict[str, Any]] = []
 
     detail_lines = block_lines[1:] if len(block_lines) > 1 else []
+
     zona_idx = None
     fecha_idx = None
 
-    for idx, line in enumerate(detail_lines[:4]):
-        if not line:
-            continue
-        if RE_ZONA_FLEX.search(line):
-            zona = extract_zona_from_lines([line])
-            if zona:
-                zona_idx = idx
-                break
+    for idx, line in enumerate(detail_lines[:5]):
+        zona_tmp = extract_zona_from_lines([line])
+        if zona_tmp:
+            zona = zona_tmp
+            zona_idx = idx
+            break
 
     if not zona:
         for idx, line in enumerate(detail_lines[:4]):
@@ -821,11 +1160,10 @@ def extract_ordered_details_from_block(block_lines: List[str]) -> Dict[str, Any]
                 zona_idx = idx
                 break
 
-    for idx, line in enumerate(detail_lines[:5]):
-        if not line:
-            continue
-        fecha = find_date_in_line(line)
-        if fecha:
+    for idx, line in enumerate(detail_lines[:6]):
+        fecha_tmp = find_date_in_line(line)
+        if fecha_tmp:
+            fecha = fecha_tmp
             fecha_idx = idx
             break
 
@@ -835,40 +1173,26 @@ def extract_ordered_details_from_block(block_lines: List[str]) -> Dict[str, Any]
     elif zona_idx is not None:
         start_material_idx = zona_idx + 1
 
-    no_material_consecutivos = 0
     material_chunk = detail_lines[start_material_idx:]
-
-    if material_chunk:
-        materiales = extract_materiales_from_lines(material_chunk)
-
-    if materiales:
-        no_material_consecutivos = 0
-    else:
-        for line in material_chunk:
-            if not line:
-                if materiales:
-                    break
-                continue
-            encontrados_linea = extract_materiales_from_lines([line])
-            if encontrados_linea:
-                materiales.extend(encontrados_linea)
-                no_material_consecutivos = 0
-            elif materiales:
-                no_material_consecutivos += 1
-                if no_material_consecutivos >= 2:
-                    break
+    materiales = extract_materiales_from_lines(material_chunk)
 
     if not zona:
         zona = extract_zona_from_lines(block_lines)
+
     if not fecha:
         fecha = extract_fecha_from_lines(block_lines)
+
     if not materiales:
         materiales = extract_materiales_from_lines(block_lines)
 
-    return {"zona": zona, "fecha": fecha, "materiales": materiales}
+    return {
+        "zona": zona,
+        "fecha": fecha,
+        "materiales": materiales,
+    }
 
 
-def extract_nr_sections(text: str, max_lines_per_section: int = 18) -> List[Dict[str, Any]]:
+def extract_nr_sections(text: str, max_lines_per_section: int = 16) -> List[Dict[str, Any]]:
     if not text:
         return []
 
@@ -879,18 +1203,21 @@ def extract_nr_sections(text: str, max_lines_per_section: int = 18) -> List[Dict
     if not nr_positions:
         return []
 
-    secciones = []
+    secciones: List[Dict[str, Any]] = []
+
     for i, item in enumerate(nr_positions):
         start_idx = item["index"]
         nr = item["nr"]
 
         if i + 1 < len(nr_positions):
             next_idx = nr_positions[i + 1]["index"]
-            end_idx = min(next_idx, start_idx + max_lines_per_section + 1)
+            end_idx = next_idx
         else:
             end_idx = min(len(lines), start_idx + max_lines_per_section + 1)
 
         block_lines = lines[start_idx:end_idx]
+        block_lines = block_lines[: max_lines_per_section + 1]
+
         ordered = extract_ordered_details_from_block(block_lines)
 
         secciones.append(
@@ -904,7 +1231,7 @@ def extract_nr_sections(text: str, max_lines_per_section: int = 18) -> List[Dict
             }
         )
 
-    resultado_final = []
+    resultado_final: List[Dict[str, Any]] = []
     vistos = set()
     for item in secciones:
         nr = item["nr"]
@@ -917,188 +1244,14 @@ def extract_nr_sections(text: str, max_lines_per_section: int = 18) -> List[Dict
 
 
 def extract_detalles_por_nr(text: str) -> Dict[str, Dict[str, Any]]:
-    detalles = {}
-    for item in extract_nr_sections(text):
-        detalles[item["nr"]] = {
-            "zona": item.get("zona"),
-            "fecha": item.get("fecha"),
-            "materiales": item.get("materiales", []),
-            "lineas": item.get("lineas", []),
-        }
-    return detalles
-
-
-# =========================================================
-# REASIGNACIÓN INTELIGENTE DE MATERIALES EN OCR DESORDENADO
-# =========================================================
-
-_OLD_EXTRACT_NR_SECTIONS = extract_nr_sections
-
-
-def _merge_material_lists(base: List[Dict[str, Any]], extra: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    merged = list(base or [])
-    seen = {
-        (
-            item.get("cantidad_mostrar"),
-            normalize_material_text(item.get("descripcion", "")),
-        )
-        for item in merged
-    }
-
-    for item in extra or []:
-        key = (
-            item.get("cantidad_mostrar"),
-            normalize_material_text(item.get("descripcion", "")),
-        )
-        if key not in seen:
-            merged.append(item)
-            seen.add(key)
-
-    return merged
-
-
-def _extract_nr_sections_inteligente(text: str) -> List[Dict[str, Any]]:
     if not text:
-        return []
+        return {}
 
-    cleaned_text = clean_ocr_text(text)
-    lines = [line.strip() for line in cleaned_text.splitlines() if line.strip()]
+    cache_key = _text_cache_key(text)
+    if cache_key in _OCR_STRUCTURED_CACHE:
+        return _OCR_STRUCTURED_CACHE[cache_key]
 
     detalles: Dict[str, Dict[str, Any]] = {}
-    orden_nrs: List[str] = []
-
-    current_nr: Optional[str] = None
-    prev_nr: Optional[str] = None
-    i = 0
-
-    while i < len(lines):
-        line = lines[i]
-        line_norm = normalize_line_for_search(line)
-
-        candidatos = extract_candidates_from_line(line)
-        if candidatos and (line_has_nr_label(line) or len(candidatos) == 1):
-            nr = candidatos[0]
-
-            if nr not in detalles:
-                detalles[nr] = {
-                    "nr": nr,
-                    "linea_inicio": i,
-                    "lineas": [],
-                    "zona": None,
-                    "fecha": None,
-                    "materiales": [],
-                }
-                orden_nrs.append(nr)
-
-            prev_nr = current_nr
-            current_nr = nr
-            detalles[current_nr]["lineas"].append(line)
-            i += 1
-            continue
-
-        if current_nr:
-            detalles[current_nr]["lineas"].append(line)
-
-            if not detalles[current_nr]["zona"]:
-                zona = extract_zona_from_lines([line])
-                if zona:
-                    detalles[current_nr]["zona"] = zona
-                    i += 1
-                    continue
-
-            if not detalles[current_nr]["fecha"]:
-                fecha = find_date_in_line(line)
-                if fecha:
-                    detalles[current_nr]["fecha"] = fecha
-                    i += 1
-                    continue
-
-            # Ventana chica para detectar materiales en OCR desordenado
-            window = lines[i:i+4]
-            mats = extract_materiales_from_lines(window)
-
-            if mats:
-                target_nr = current_nr
-
-                # Si acaba de aparecer un nuevo NR pero todavía no tiene zona/fecha,
-                # los primeros materiales suelen pertenecer al NR anterior.
-                current_has_context = bool(
-                    detalles[current_nr].get("zona") or detalles[current_nr].get("fecha")
-                )
-
-                if not current_has_context and prev_nr:
-                    target_nr = prev_nr
-
-                detalles[target_nr]["materiales"] = _merge_material_lists(
-                    detalles[target_nr]["materiales"],
-                    mats,
-                )
-
-                # Avance heurístico
-                if re.fullmatch(r"\d+(?:[.,]\d+)?", line_norm) and i + 1 < len(lines):
-                    i += 2
-                else:
-                    i += 1
-                continue
-
-        i += 1
-
-    return [detalles[nr] for nr in orden_nrs]
-
-
-def extract_nr_sections(text: str, max_lines_per_section: int = 18) -> List[Dict[str, Any]]:
-    base_sections = _OLD_EXTRACT_NR_SECTIONS(text, max_lines_per_section=max_lines_per_section)
-    smart_sections = _extract_nr_sections_inteligente(text)
-
-    merged_map: Dict[str, Dict[str, Any]] = {
-        item["nr"]: {
-            "nr": item["nr"],
-            "linea_inicio": item.get("linea_inicio"),
-            "lineas": list(item.get("lineas", [])),
-            "zona": item.get("zona"),
-            "fecha": item.get("fecha"),
-            "materiales": list(item.get("materiales", [])),
-        }
-        for item in base_sections
-    }
-
-    ordered_nrs = [item["nr"] for item in base_sections]
-
-    for item in smart_sections:
-        nr = item["nr"]
-
-        if nr not in merged_map:
-            merged_map[nr] = {
-                "nr": nr,
-                "linea_inicio": item.get("linea_inicio"),
-                "lineas": list(item.get("lineas", [])),
-                "zona": item.get("zona"),
-                "fecha": item.get("fecha"),
-                "materiales": list(item.get("materiales", [])),
-            }
-            ordered_nrs.append(nr)
-            continue
-
-        if not merged_map[nr].get("zona") and item.get("zona"):
-            merged_map[nr]["zona"] = item.get("zona")
-
-        if not merged_map[nr].get("fecha") and item.get("fecha"):
-            merged_map[nr]["fecha"] = item.get("fecha")
-
-        merged_map[nr]["materiales"] = _merge_material_lists(
-            merged_map[nr].get("materiales", []),
-            item.get("materiales", []),
-        )
-
-        extra_lines = item.get("lineas", [])
-        if extra_lines:
-            merged_map[nr]["lineas"].extend(extra_lines)
-
-    return [merged_map[nr] for nr in ordered_nrs if nr in merged_map]
-
-
-def extract_detalles_por_nr(text: str) -> Dict[str, Dict[str, Any]]:
-    detalles = {}
     for item in extract_nr_sections(text):
         detalles[item["nr"]] = {
             "zona": item.get("zona"),
@@ -1110,156 +1263,83 @@ def extract_detalles_por_nr(text: str) -> Dict[str, Dict[str, Any]]:
 
 
 # =========================================================
-# AJUSTE FINAL: CAMBIO DE NR SOLO CUANDO EL NUEVO YA TIENE CONTEXTO
+# OCR PRINCIPAL CON CACHE DE DETALLE ESPACIAL
 # =========================================================
 
-def _extract_nr_sections_inteligente(text: str) -> List[Dict[str, Any]]:
+def _score_ocr_text(text: str) -> int:
     if not text:
-        return []
+        return -1
 
-    cleaned_text = clean_ocr_text(text)
-    lines = [line.strip() for line in cleaned_text.splitlines() if line.strip()]
+    score = 0
+    text_norm = normalize_text_soft(text)
 
-    detalles: Dict[str, Dict[str, Any]] = {}
-    orden_nrs: List[str] = []
+    score += len(extract_nrs(text)) * 50
+    score += len(RE_FECHA_NUMERICA.findall(text)) * 10
 
-    current_nr: Optional[str] = None
-    prev_nr: Optional[str] = None
-    i = 0
+    for token in [
+        "zona",
+        "fecha",
+        "ife",
+        "ignitor",
+        "capacitor",
+        "lampara",
+        "react",
+        "limpieza",
+        "zocalo",
+        "porta",
+        "equipo",
+        "fusible",
+        "cable",
+    ]:
+        if token in text_norm:
+            score += 4
 
-    while i < len(lines):
-        line = lines[i]
-        line_norm = normalize_line_for_search(line)
+    return score
 
-        candidatos = extract_candidates_from_line(line)
-        if candidatos and (line_has_nr_label(line) or len(candidatos) == 1):
-            nr = candidatos[0]
 
-            if nr not in detalles:
-                detalles[nr] = {
-                    "nr": nr,
-                    "linea_inicio": i,
-                    "lineas": [],
-                    "zona": None,
-                    "fecha": None,
-                    "materiales": [],
-                }
-                orden_nrs.append(nr)
+def ocr_text_from_file(file_path: str) -> str:
+    img = cv2.imread(file_path)
+    if img is None:
+        raise ValueError(f"No se pudo leer imagen: {file_path}")
 
-            prev_nr = current_nr
-            current_nr = nr
-            detalles[current_nr]["lineas"].append(line)
-            i += 1
-            continue
+    variants = build_ocr_variants(img)
+    best_text = ""
+    best_variant = None
+    best_score = -1
 
-        if current_nr:
-            detalles[current_nr]["lineas"].append(line)
-
-            if not detalles[current_nr]["zona"]:
-                zona = extract_zona_from_lines([line])
-                if zona:
-                    detalles[current_nr]["zona"] = zona
-                    i += 1
+    for _, variant in variants:
+        for psm in ("11", "6"):
+            try:
+                text = pytesseract.image_to_string(
+                    variant,
+                    lang="spa",
+                    config=f"--oem 3 --psm {psm}",
+                )
+                if not text or not text.strip():
                     continue
 
-            if not detalles[current_nr]["fecha"]:
-                fecha = find_date_in_line(line)
-                if fecha:
-                    detalles[current_nr]["fecha"] = fecha
-                    i += 1
-                    continue
-
-            # Detectar materiales usando una ventana corta.
-            window = lines[i:i+4]
-            mats = extract_materiales_from_lines(window)
-
-            if mats:
-                current_has_full_context = bool(
-                    detalles[current_nr].get("zona") and detalles[current_nr].get("fecha")
-                )
-
-                # Regla clave:
-                # Mientras el NR nuevo todavía NO tenga zona y fecha,
-                # los materiales cercanos siguen perteneciendo al NR anterior.
-                target_nr = current_nr
-                if not current_has_full_context and prev_nr:
-                    target_nr = prev_nr
-
-                detalles[target_nr]["materiales"] = _merge_material_lists(
-                    detalles[target_nr]["materiales"],
-                    mats,
-                )
-
-                # Avance heurístico.
-                if re.fullmatch(r"\d+(?:[.,]\d+)?", line_norm) and i + 1 < len(lines):
-                    i += 2
-                else:
-                    i += 1
+                score = _score_ocr_text(text)
+                if score > best_score:
+                    best_score = score
+                    best_text = text
+                    best_variant = variant
+            except Exception:
                 continue
 
-        i += 1
-
-    return [detalles[nr] for nr in orden_nrs]
-
-
-def extract_nr_sections(text: str, max_lines_per_section: int = 18) -> List[Dict[str, Any]]:
-    base_sections = _OLD_EXTRACT_NR_SECTIONS(text, max_lines_per_section=max_lines_per_section)
-    smart_sections = _extract_nr_sections_inteligente(text)
-
-    merged_map: Dict[str, Dict[str, Any]] = {
-        item["nr"]: {
-            "nr": item["nr"],
-            "linea_inicio": item.get("linea_inicio"),
-            "lineas": list(item.get("lineas", [])),
-            "zona": item.get("zona"),
-            "fecha": item.get("fecha"),
-            "materiales": list(item.get("materiales", [])),
-        }
-        for item in base_sections
-    }
-
-    ordered_nrs = [item["nr"] for item in base_sections]
-
-    for item in smart_sections:
-        nr = item["nr"]
-
-        if nr not in merged_map:
-            merged_map[nr] = {
-                "nr": nr,
-                "linea_inicio": item.get("linea_inicio"),
-                "lineas": list(item.get("lineas", [])),
-                "zona": item.get("zona"),
-                "fecha": item.get("fecha"),
-                "materiales": list(item.get("materiales", [])),
-            }
-            ordered_nrs.append(nr)
-            continue
-
-        if not merged_map[nr].get("zona") and item.get("zona"):
-            merged_map[nr]["zona"] = item.get("zona")
-
-        if not merged_map[nr].get("fecha") and item.get("fecha"):
-            merged_map[nr]["fecha"] = item.get("fecha")
-
-        merged_map[nr]["materiales"] = _merge_material_lists(
-            merged_map[nr].get("materiales", []),
-            item.get("materiales", []),
+    if not best_text:
+        thr = preprocess_image(img)
+        best_text = pytesseract.image_to_string(
+            thr,
+            lang="spa",
+            config="--oem 3 --psm 11",
         )
+        best_variant = thr
 
-        extra_lines = item.get("lineas", [])
-        if extra_lines:
-            merged_map[nr]["lineas"].extend(extra_lines)
+    try:
+        detalles = _extract_structured_details_from_image(best_variant)
+        if detalles:
+            _OCR_STRUCTURED_CACHE[_text_cache_key(best_text)] = detalles
+    except Exception:
+        pass
 
-    return [merged_map[nr] for nr in ordered_nrs if nr in merged_map]
-
-
-def extract_detalles_por_nr(text: str) -> Dict[str, Dict[str, Any]]:
-    detalles = {}
-    for item in extract_nr_sections(text):
-        detalles[item["nr"]] = {
-            "zona": item.get("zona"),
-            "fecha": item.get("fecha"),
-            "materiales": item.get("materiales", []),
-            "lineas": item.get("lineas", []),
-        }
-    return detalles
+    return best_text

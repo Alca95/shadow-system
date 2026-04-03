@@ -6,6 +6,7 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q, Count
 from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
+import re
 
 from .forms import UsuarioCrearForm, UsuarioEditarForm
 from .models import Carpeta, EmpresaContratista, Plano, Auditoria, PerfilUsuario
@@ -43,6 +44,321 @@ def require_admin_or_funcionario(request):
     if user_is_funcionario(request.user):
         return
     raise PermissionDenied("No tienes permisos para realizar esta acción.")
+
+
+# =========================================================
+# HELPERS DETALLE PLANO
+# =========================================================
+def _safe_getattr(obj, attr_name, default=None):
+    try:
+        return getattr(obj, attr_name, default)
+    except Exception:
+        return default
+
+
+def _first_value(obj, attr_names, default=None):
+    if not obj:
+        return default
+    for attr_name in attr_names:
+        value = _safe_getattr(obj, attr_name, None)
+        if value not in (None, "", [], (), {}):
+            return value
+    return default
+
+
+def _format_value(value):
+    if value in (None, "", [], (), {}):
+        return "-"
+    if hasattr(value, "strftime"):
+        try:
+            return value.strftime("%d/%m/%Y")
+        except Exception:
+            return str(value)
+    return str(value)
+
+
+def _normalize_decimal_text(value):
+    text = str(value).strip()
+    if text.endswith(".0"):
+        return text[:-2]
+    return text
+
+
+def _split_material_items(raw_text):
+    if not raw_text:
+        return []
+
+    text = str(raw_text).strip()
+    if not text or text.lower() in {"ninguno", "-", "none"}:
+        return []
+
+    text = text.replace("\n", ",")
+    parts = [p.strip(" -•\t") for p in re.split(r",|;|\|", text) if p.strip(" -•\t")]
+    return parts
+
+
+def _parse_single_material_entry(text):
+    text = str(text).strip()
+    if not text:
+        return None
+
+    match = re.match(r"^\s*(\d+(?:[\.,]\d+)?)\s+(.+)$", text)
+    if match:
+        cantidad = _normalize_decimal_text(match.group(1).replace(",", "."))
+        descripcion = match.group(2).strip()
+        return {
+            "cantidad": cantidad,
+            "unidad": "unidad",
+            "descripcion": descripcion,
+        }
+
+    return {
+        "cantidad": "-",
+        "unidad": "unidad",
+        "descripcion": text,
+    }
+
+
+def _parse_material_text_to_rows(raw_text):
+    rows = []
+    for part in _split_material_items(raw_text):
+        item = _parse_single_material_entry(part)
+        if item:
+            rows.append(item)
+    return rows
+
+
+def _extract_parenthetical_value(text, label):
+    pattern = rf"{label}\s*:\s*([^|)\n]+)"
+    match = re.search(pattern, str(text), re.IGNORECASE)
+    return match.group(1).strip() if match else None
+
+
+def _extract_ocr_data_from_motivo(motivo):
+    data = {
+        "ciudad_plano": None,
+        "ciudad_reclamo": None,
+        "zona_plano": None,
+        "zona_reclamo": None,
+        "fecha_nr": None,
+        "fecha_reclamo": None,
+        "materiales_ocr": None,
+    }
+
+    if not motivo:
+        return data
+
+    text = str(motivo)
+
+    ciudad_line = re.search(r"Ciudad\s+(?:correcta|no coincide)\s*\((.*?)\)", text, re.IGNORECASE)
+    if ciudad_line:
+        fragment = ciudad_line.group(1)
+        data["ciudad_plano"] = _extract_parenthetical_value(fragment, "Plano")
+        data["ciudad_reclamo"] = _extract_parenthetical_value(fragment, "Reclamo")
+
+    zona_line = re.search(r"Zona\s+(?:correcta|no coincide)\s*\((.*?)\)", text, re.IGNORECASE)
+    if zona_line:
+        fragment = zona_line.group(1)
+        data["zona_plano"] = _extract_parenthetical_value(fragment, "Plano/NR") or _extract_parenthetical_value(fragment, "Plano")
+        data["zona_reclamo"] = _extract_parenthetical_value(fragment, "Reclamo")
+
+    fecha_line = re.search(r"Fecha\s+correcta\s*\((.*?)\)", text, re.IGNORECASE)
+    if fecha_line:
+        fragment = fecha_line.group(1)
+        nr_match = re.search(r"NR\s*:\s*([0-9\-\/]+)", fragment, re.IGNORECASE)
+        reclamo_match = re.search(r"Reclamo\s*:\s*([0-9\-\/]+)", fragment, re.IGNORECASE)
+        if nr_match:
+            data["fecha_nr"] = nr_match.group(1).strip()
+        if reclamo_match:
+            data["fecha_reclamo"] = reclamo_match.group(1).strip()
+
+    materiales_match = re.search(r"Materiales OCR detectados:\s*(.+)$", text, re.IGNORECASE)
+    if materiales_match:
+        data["materiales_ocr"] = materiales_match.group(1).strip()
+
+    return data
+
+
+def _clean_motivo_text(motivo):
+    if not motivo:
+        return "-"
+
+    text = str(motivo).strip()
+    text = re.sub(r"\s*\|\s*Materiales OCR detectados:.*$", "", text).strip()
+    return text or "-"
+
+
+def _extract_material_rows_from_related(nr_obj):
+    if not nr_obj:
+        return []
+
+    related_names = [
+        "items",
+        "itemnrmateriales_set",
+        "item_nr_materiales",
+        "itemes",
+        "detalles",
+        "detalle_items",
+        "materiales",
+    ]
+
+    rows = []
+    seen = set()
+
+    for related_name in related_names:
+        related_manager = _safe_getattr(nr_obj, related_name, None)
+        if related_manager is None:
+            continue
+
+        try:
+            iterable = related_manager.all() if hasattr(related_manager, "all") else related_manager
+        except Exception:
+            continue
+
+        try:
+            for item in iterable:
+                cantidad = _first_value(item, ["cantidad", "cant"], None)
+                unidad = _first_value(item, ["unidad"], None)
+                descripcion = _first_value(
+                    item,
+                    ["descripcion", "material", "nombre", "detalle", "observacion"],
+                    None
+                )
+
+                if cantidad in (None, "", [], (), {}) and descripcion in (None, "", [], (), {}):
+                    continue
+
+                row = {
+                    "cantidad": _normalize_decimal_text(_format_value(cantidad)),
+                    "unidad": _format_value(unidad) if unidad not in (None, "") else "unidad",
+                    "descripcion": _format_value(descripcion),
+                }
+
+                signature = (
+                    row["cantidad"].lower(),
+                    row["unidad"].lower(),
+                    row["descripcion"].lower(),
+                )
+
+                if signature not in seen:
+                    seen.add(signature)
+                    rows.append(row)
+        except Exception:
+            continue
+
+    return rows
+
+
+def _merge_material_rows(*groups):
+    rows = []
+    seen = set()
+
+    for group in groups:
+        for item in group or []:
+            row = {
+                "cantidad": _normalize_decimal_text(item.get("cantidad", "-")),
+                "unidad": item.get("unidad", "unidad"),
+                "descripcion": item.get("descripcion", "-"),
+            }
+            signature = (
+                str(row["cantidad"]).strip().lower(),
+                str(row["unidad"]).strip().lower(),
+                str(row["descripcion"]).strip().lower(),
+            )
+            if signature not in seen:
+                seen.add(signature)
+                rows.append(row)
+
+    return rows
+
+
+def _build_resultado_detalle(resultado):
+    nr_obj = _safe_getattr(resultado, "nr_materiales_encontrado", None)
+    reclamo_obj = _safe_getattr(resultado, "reclamo_encontrado", None)
+
+    motivo_resultado = _format_value(
+        _first_value(resultado, ["motivo_resultado", "diagnostico", "detalle"], None)
+    )
+    parsed = _extract_ocr_data_from_motivo(motivo_resultado)
+
+    ciudad_plano = _first_value(
+        resultado,
+        ["ciudad_plano", "ciudad_detectada", "ciudad_extraida", "ciudad_ocr"],
+        None,
+    ) or parsed["ciudad_plano"]
+
+    zona_plano = _first_value(
+        resultado,
+        ["zona_plano", "zona_detectada", "zona_extraida", "zona_ocr"],
+        None,
+    ) or parsed["zona_plano"]
+
+    fecha_plano = _first_value(
+        resultado,
+        ["fecha_plano", "fecha_detectada", "fecha_extraida", "fecha_ocr"],
+        None,
+    ) or parsed["fecha_nr"]
+
+    if ciudad_plano in (None, ""):
+        ciudad_plano = _first_value(nr_obj, ["ciudad"], None)
+
+    if zona_plano in (None, ""):
+        zona_plano = _first_value(resultado, ["zona"], None) or _first_value(nr_obj, ["zona"], None)
+
+    if fecha_plano in (None, ""):
+        fecha_plano = _first_value(nr_obj, ["fecha_trabajo"], None)
+
+    ciudad_bd = _first_value(reclamo_obj, ["ciudad"], None) or parsed["ciudad_reclamo"] or _first_value(nr_obj, ["ciudad"], None)
+    zona_bd = _first_value(reclamo_obj, ["zona"], None) or parsed["zona_reclamo"] or _first_value(nr_obj, ["zona"], None)
+    fecha_bd = _first_value(reclamo_obj, ["fecha_reclamo"], None) or parsed["fecha_reclamo"] or _first_value(nr_obj, ["fecha_trabajo"], None)
+
+    materiales_plano_texto = (
+        _first_value(resultado, ["materiales_plano", "materiales_detectados", "materiales_extraidos"], None)
+        or parsed["materiales_ocr"]
+    )
+
+    materiales_bd_texto = (
+        _first_value(resultado, ["materiales_bd", "materiales_registrados"], None)
+        or _first_value(nr_obj, ["observacion"], None)
+    )
+
+    materiales_plano_tabla = _parse_material_text_to_rows(materiales_plano_texto)
+    materiales_bd_tabla_rel = _extract_material_rows_from_related(nr_obj)
+    materiales_bd_tabla_text = _parse_material_text_to_rows(materiales_bd_texto)
+    materiales_bd_tabla = _merge_material_rows(materiales_bd_tabla_rel, materiales_bd_tabla_text)
+
+    estado_resultado = _first_value(resultado, ["estado_resultado"], "EN_VERIFICACION")
+
+    return {
+        "obj": resultado,
+        "nr_detectado": _first_value(
+            resultado,
+            ["nr_detectado", "numero_nr", "nr", "codigo_nr"],
+            None,
+        ) or _first_value(nr_obj, ["numero_nr"], "NR no identificado"),
+        "estado_resultado": estado_resultado,
+        "ciudad_ok": bool(_first_value(resultado, ["ciudad_ok"], False)),
+        "zona_ok": bool(_first_value(resultado, ["zona_ok"], False)),
+        "fecha_ok": bool(_first_value(resultado, ["fecha_ok"], False)),
+        "ciudad_plano": _format_value(ciudad_plano),
+        "zona_plano": _format_value(zona_plano),
+        "fecha_plano": _format_value(fecha_plano),
+        "ciudad_reclamo": _format_value(ciudad_bd),
+        "zona_reclamo": _format_value(zona_bd),
+        "fecha_reclamo": _format_value(fecha_bd),
+        "resultado_ocr": _format_value(
+            _first_value(resultado, ["resultado_ocr", "observacion_ocr"], None)
+        ),
+        "observacion": _format_value(
+            _first_value(resultado, ["observacion", "detalle", "diagnostico"], None)
+        ),
+        "motivo_resultado": motivo_resultado,
+        "motivo_resultado_limpio": _clean_motivo_text(motivo_resultado),
+        "materiales_plano": None if str(materiales_plano_texto).strip().lower() in {"ninguno", "-", "none", ""} else materiales_plano_texto,
+        "materiales_plano_tabla": materiales_plano_tabla,
+        "materiales_bd": None if str(materiales_bd_texto).strip().lower() in {"ninguno", "-", "none", ""} else materiales_bd_texto,
+        "materiales_bd_tabla": materiales_bd_tabla,
+    }
 
 
 def login_view(request):
@@ -441,16 +757,18 @@ def detalle_plano_view(request, plano_id):
         if plano.carpeta.empresa_id != perfil.empresa_id:
             raise PermissionDenied("No puedes acceder a este plano.")
 
-    resultados = list(
+    resultados_qs = (
         plano.resultados_validacion
         .select_related("nr_materiales_encontrado", "reclamo_encontrado")
         .all()
     )
 
+    resultados = [_build_resultado_detalle(r) for r in resultados_qs]
+
     total_nr = len(resultados)
-    total_aprobados = sum(1 for r in resultados if r.estado_resultado == "APROBADO")
-    total_rechazados = sum(1 for r in resultados if r.estado_resultado == "RECHAZADO")
-    total_en_verificacion = sum(1 for r in resultados if r.estado_resultado == "EN_VERIFICACION")
+    total_aprobados = sum(1 for r in resultados if r["estado_resultado"] == "APROBADO")
+    total_rechazados = sum(1 for r in resultados if r["estado_resultado"] == "RECHAZADO")
+    total_en_verificacion = sum(1 for r in resultados if r["estado_resultado"] == "EN_VERIFICACION")
 
     contexto = {
         "app_name": "Shadow",
@@ -478,21 +796,34 @@ def procesar_plano_view(request, plano_id):
     if request.method == "POST":
         es_reproceso = bool(plano.procesado)
 
+        extractor = (request.POST.get("extractor") or "ocr").strip().lower()
+        if extractor not in {"ocr", "gpt"}:
+            extractor = "ocr"
+
+        accion_base = "REPROCESAR_PLANO" if es_reproceso else "INICIAR_PROCESAMIENTO_PLANO"
+        accion = f"{accion_base}_{extractor.upper()}"
+
+        descripcion = (
+            f"Se solicitó reprocesar el plano {plano.id_plano_deposito} usando {extractor.upper()}"
+            if es_reproceso
+            else f"Se solicitó procesar el plano {plano.id_plano_deposito} usando {extractor.upper()}"
+        )
+
         Auditoria.objects.create(
             plano=plano,
             carpeta=plano.carpeta,
             usuario=str(request.user),
-            accion="REPROCESAR_PLANO" if es_reproceso else "INICIAR_PROCESAMIENTO_PLANO",
-            descripcion=(
-                f"Se solicitó reprocesar el plano {plano.id_plano_deposito}"
-                if es_reproceso
-                else f"Se solicitó procesar el plano {plano.id_plano_deposito}"
-            ),
+            accion=accion,
+            descripcion=descripcion,
             entidad="Plano",
             entidad_id=str(plano.id),
         )
 
-        procesar_plano_completo(plano, usuario=str(request.user))
+        procesar_plano_completo(
+            plano,
+            usuario=str(request.user),
+            extractor=extractor,
+        )
 
     return redirect("detalle_plano", plano_id=plano.id)
 
@@ -627,6 +958,7 @@ def empresas_contratistas_view(request):
         "empresas_activas": activas,
     })
 
+
 @login_required
 def auditoria_view(request):
     require_admin_or_funcionario(request)
@@ -692,6 +1024,7 @@ def auditoria_view(request):
             "fecha_hasta": fecha_hasta,
         },
     })
+
 
 @login_required
 def estadisticas_view(request):
@@ -759,20 +1092,19 @@ def estadisticas_view(request):
         "estadisticas_v2_pendiente": True,
     })
 
+
 @login_required
 def reportes_view(request):
     require_admin_or_funcionario(request)
 
     tab = request.GET.get("tab", "carpetas").strip() or "carpetas"
 
-    # Filtros carpetas
     carpeta_q = request.GET.get("carpeta_q", "").strip()
     carpeta_estado = request.GET.get("carpeta_estado", "").strip()
     carpeta_empresa = request.GET.get("carpeta_empresa", "").strip()
     carpeta_mes = request.GET.get("carpeta_mes", "").strip()
     carpeta_anio = request.GET.get("carpeta_anio", "").strip()
 
-    # Filtros planos
     plano_q = request.GET.get("plano_q", "").strip()
     plano_estado = request.GET.get("plano_estado", "").strip()
     plano_empresa = request.GET.get("plano_empresa", "").strip()
@@ -830,4 +1162,3 @@ def reportes_view(request):
             "plano_procesado": plano_procesado,
         }
     })
-

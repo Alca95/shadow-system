@@ -4,215 +4,430 @@
 {% block show_page_header %}{% endblock %}
 
 {% block content %}
-
 <div class="row justify-content-center shadow-animate-in">
     <div class="col-xl-11">
 
-        <!-- HERO -->
-        <div class="shadow-surface-card shadow-glow-wrap mb-4">
-            <div style="padding:1.4rem 1.5rem;">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div class="dp-hero mb-4">
+            <div class="dp-hero__main">
+                <div class="dp-hero__icon">
+                    <i class="bi bi-file-earmark-check"></i>
+                </div>
 
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="shadow-page-icon">
-                            <i class="bi bi-file-earmark-text"></i>
+                <div>
+                    <div class="dp-eyebrow">
+                        <i class="bi bi-stars"></i>
+                        Análisis OCR · Validación técnica
+                    </div>
+                    <h1 class="dp-title mb-1">Detalle del plano</h1>
+                    <div class="dp-subtitle">
+                        Visualización premium del resultado OCR, comparaciones por NR y contraste con base de datos.
+                    </div>
+                </div>
+            </div>
+
+            <div class="dp-hero__actions">
+                <form method="post" action="{% url 'procesar_ocr' plano.id %}" class="m-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="extractor" value="ocr">
+                    <button type="submit" class="btn dp-btn dp-btn-primary">
+                        <i class="bi bi-arrow-repeat me-2"></i>
+                        Procesar con OCR
+                    </button>
+                </form>
+
+                <form method="post" action="{% url 'procesar_ocr' plano.id %}" class="m-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="extractor" value="gpt">
+                    <button type="submit" class="btn dp-btn dp-btn-gpt">
+                        <i class="bi bi-cpu me-2"></i>
+                        Procesar con GPT
+                    </button>
+                </form>
+
+                <form method="post" action="{% url 'cancelar_plano' plano.id %}" class="m-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn dp-btn dp-btn-soft-danger">
+                        <i class="bi bi-trash me-2"></i>
+                        Cancelar
+                    </button>
+                </form>
+
+                <a href="{% url 'detalle_carpeta' plano.carpeta.id %}" class="btn dp-btn dp-btn-soft">
+                    <i class="bi bi-arrow-left me-2"></i>
+                    Volver
+                </a>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-lg-6">
+                <div class="dp-panel h-100">
+                    <div class="dp-panel__head">
+                        <div>
+                            <div class="dp-section-label">Información general</div>
+                            <h5 class="dp-section-title mb-0">Datos del plano</h5>
                         </div>
 
                         <div>
-                            <div class="shadow-header-badge mb-1">
-                                <i class="bi bi-stars"></i>
-                                Análisis OCR
-                            </div>
-                            <h2 class="shadow-title mb-0">Detalle del plano</h2>
+                            {% if plano.estado == "APROBADO" %}
+                                <span class="dp-state dp-state-success">Aprobado</span>
+                            {% elif plano.estado == "RECHAZADO" %}
+                                <span class="dp-state dp-state-danger">Rechazado</span>
+                            {% elif plano.estado == "EN_REVISION" %}
+                                <span class="dp-state dp-state-info">En revisión</span>
+                            {% elif plano.estado == "EN_ESPERA" %}
+                                <span class="dp-state dp-state-muted">En espera</span>
+                            {% else %}
+                                <span class="dp-state dp-state-warning">En verificación</span>
+                            {% endif %}
                         </div>
                     </div>
 
-                    <form method="post" action="{% url 'procesar_ocr' plano.id %}" class="m-0">
-                        {% csrf_token %}
-                        <button type="submit" class="btn shadow-btn shadow-btn-primary">
-                            <i class="bi bi-arrow-repeat me-2"></i>
-                            Reprocesar OCR
-                        </button>
-                    </form>
-
-                </div>
-            </div>
-        </div>
-
-        <!-- BLOQUES SUPERIORES -->
-        <div class="row g-4 mb-4">
-
-            <!-- DETALLE -->
-            <div class="col-lg-4">
-                <div class="shadow-surface-card shadow-card-hover p-3 h-100">
-
-                    <h5 class="shadow-title mb-3">Detalle</h5>
-
-                    <div class="detalle-mini-grid">
-
-                        <div class="detalle-mini-card">
-                            <div class="label">ID</div>
-                            <div class="value">{{ plano.id_plano_deposito }}</div>
+                    <div class="dp-meta-grid dp-meta-grid--main">
+                        <div class="dp-meta-card">
+                            <div class="dp-meta-label">ID plano</div>
+                            <div class="dp-meta-value">{{ plano.id_plano_deposito|default:plano.id }}</div>
                         </div>
 
-                        <div class="detalle-mini-card">
-                            <div class="label">Fecha carga</div>
-                            <div class="value">{{ plano.fecha_carga|date:"d/m/Y H:i" }}</div>
+                        <div class="dp-meta-card">
+                            <div class="dp-meta-label">Carpeta</div>
+                            <div class="dp-meta-value">{{ plano.carpeta.codigo_carpeta|default:"-" }}</div>
                         </div>
 
-                        <div class="detalle-mini-card">
-                            <div class="label">Carpeta</div>
-                            <div class="value">{{ plano.carpeta.codigo_carpeta }}</div>
-                        </div>
-
-                        <div class="detalle-mini-card">
-                            <div class="label">Fecha plano</div>
-                            <div class="value">
-                                {% if plano.fecha_plano %}
-                                    {{ plano.fecha_plano|date:"d/m/Y" }}
-                                {% else %}-{% endif %}
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <div class="mt-3">
-                        <div class="shadow-header-badge">
-                            Estado: {{ plano.estado }}
+                        <div class="dp-meta-card dp-meta-card--wide">
+                            <div class="dp-meta-label">Fecha de carga</div>
+                            <div class="dp-meta-value">{{ plano.fecha_carga|date:"d/m/Y H:i"|default:"-" }}</div>
                         </div>
                     </div>
-
                 </div>
             </div>
 
-            <!-- RESUMEN -->
-            <div class="col-lg-4">
-                <div class="shadow-surface-card shadow-card-hover p-3 h-100">
-
-                    <h5 class="shadow-title mb-3">Resumen</h5>
-
-                    <div class="text-center mb-3">
-                        <div class="shadow-header-badge">NR detectados</div>
-                        <div style="font-size:2rem;font-weight:800;">{{ total_nr }}</div>
-                    </div>
-
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <div class="mini-box success">
-                                <div>Aprobados</div>
-                                <strong>{{ total_aprobados }}</strong>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="mini-box danger">
-                                <div>Rechazados</div>
-                                <strong>{{ total_rechazados }}</strong>
-                            </div>
+            <div class="col-lg-3">
+                <div class="dp-panel h-100">
+                    <div class="dp-panel__head">
+                        <div>
+                            <div class="dp-section-label">Resumen de validación</div>
+                            <h5 class="dp-section-title mb-0">Indicadores principales</h5>
                         </div>
                     </div>
 
+                    <div class="dp-kpi-grid dp-kpi-grid--compact">
+                        <div class="dp-kpi-card dp-kpi-card--primary">
+                            <span class="dp-kpi-label">NR detectados</span>
+                            <strong class="dp-kpi-value">{{ total_nr|default:0 }}</strong>
+                        </div>
+
+                        <div class="dp-kpi-card dp-kpi-card--success">
+                            <span class="dp-kpi-label">Aprobados</span>
+                            <strong class="dp-kpi-value">{{ total_aprobados|default:0 }}</strong>
+                        </div>
+
+                        <div class="dp-kpi-card dp-kpi-card--danger">
+                            <span class="dp-kpi-label">Rechazados</span>
+                            <strong class="dp-kpi-value">{{ total_rechazados|default:0 }}</strong>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- ACCIONES -->
-            <div class="col-lg-4">
-                <div class="shadow-surface-card shadow-card-hover p-3 h-100">
-
-                    <h5 class="shadow-title mb-3">Acciones</h5>
+            <div class="col-lg-3">
+                <div class="dp-panel h-100">
+                    <div class="dp-panel__head">
+                        <div>
+                            <div class="dp-section-label">Acciones</div>
+                            <h5 class="dp-section-title mb-0">Gestión rápida</h5>
+                        </div>
+                    </div>
 
                     <div class="d-grid gap-2">
-                        <form method="post" action="{% url 'cancelar_plano' plano.id %}">
-                            {% csrf_token %}
-                            <button class="btn shadow-btn shadow-btn-soft w-100">
-                                <i class="bi bi-trash me-2"></i>Eliminar
+                        {% if tiene_preview_plano %}
+                            <button
+                                type="button"
+                                class="btn dp-btn dp-btn-soft w-100"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#vistaPreviaPlano"
+                                aria-expanded="false"
+                                aria-controls="vistaPreviaPlano">
+                                <i class="bi bi-eye me-2"></i>
+                                Vista previa del plano
                             </button>
-                        </form>
+                        {% endif %}
 
-                        <a href="{% url 'detalle_carpeta' plano.carpeta.id %}" class="btn shadow-btn shadow-btn-soft">
-                            <i class="bi bi-arrow-left me-2"></i>Volver
+                        <a href="#resultados-nr" class="btn dp-btn dp-btn-soft w-100">
+                            <i class="bi bi-diagram-3 me-2"></i>
+                            Ver resultados
                         </a>
+
+                        <button
+                            type="button"
+                            class="btn dp-btn dp-btn-soft w-100"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#bloqueInfoExtra"
+                            aria-expanded="false"
+                            aria-controls="bloqueInfoExtra">
+                            <i class="bi bi-file-text me-2"></i>
+                            Diagnóstico global / OCR
+                        </button>
                     </div>
 
+                    <div class="dp-helper-box mt-3">
+                        <div class="dp-helper-box__title">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Motor de extracción
+                        </div>
+                        <div class="dp-helper-box__body">
+                            Usa <strong>OCR</strong> como flujo tradicional o <strong>GPT</strong> para pruebas comparativas sin afectar la validación actual.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if tiene_preview_plano %}
+            <div class="collapse mb-4" id="vistaPreviaPlano">
+                <div class="dp-panel dp-preview-panel">
+                    <div class="dp-panel__head dp-panel__head--tight">
+                        <div>
+                            <div class="dp-section-label">Visualización</div>
+                            <h5 class="dp-section-title mb-0">Vista previa del plano</h5>
+                        </div>
+                    </div>
+
+                    <div class="dp-preview-wrap">
+                        {% if es_imagen_preview %}
+                            <img src="{{ archivo_url }}" alt="{{ archivo_nombre|default:'Plano' }}" class="dp-preview-image">
+                        {% elif es_pdf_preview %}
+                            <iframe src="{{ archivo_url }}" class="dp-preview-frame" title="Vista previa del plano"></iframe>
+                        {% else %}
+                            <div class="dp-empty-main">
+                                <i class="bi bi-paperclip"></i>
+                                <div>
+                                    <strong>Vista previa no disponible</strong>
+                                    <div>
+                                        <a href="{{ archivo_url }}" target="_blank" rel="noopener">Abrir archivo</a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="dp-panel dp-panel-results mb-4" id="resultados-nr">
+            <div class="dp-panel__head dp-panel__head--tight">
+                <div>
+                    <div class="dp-section-label">Comparación detallada</div>
+                    <h5 class="dp-section-title mb-0">Resultados por NR</h5>
                 </div>
             </div>
 
-        </div>
-
-        <!-- RESULTADOS -->
-        <div class="shadow-surface-card shadow-card-hover p-4 mb-4">
-            <h5 class="shadow-title mb-3">Resultados OCR</h5>
-
             {% if resultados %}
-                <div class="accordion" id="acc">
+                <div class="accordion dp-accordion" id="accResultadosPlano">
                     {% for r in resultados %}
-                        <div class="accordion-item mb-2">
-                            <button class="accordion-button collapsed ocr-accordion-btn" data-bs-toggle="collapse" data-bs-target="#r{{forloop.counter}}">
-                                <div class="ocr-accordion-head">
-                                    <span class="ocr-accordion-code">{{ r.nr_detectado }}</span>
-                                    {% if r.estado_resultado == "APROBADO" %}
-                                        <span class="ocr-status-pill ocr-status-approved">Aprobado</span>
-                                    {% elif r.estado_resultado == "RECHAZADO" %}
-                                        <span class="ocr-status-pill ocr-status-rejected">Rechazado</span>
-                                    {% else %}
-                                        <span class="ocr-status-pill ocr-status-warning">En verificación</span>
-                                    {% endif %}
-                                </div>
-                            </button>
+                        <div class="accordion-item dp-accordion-item">
+                            <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                                <button class="accordion-button collapsed dp-accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#nr{{ forloop.counter }}" aria-expanded="false" aria-controls="nr{{ forloop.counter }}">
+                                    <div class="dp-acc-header">
+                                        <div class="dp-acc-left">
+                                            <div class="dp-acc-code">{{ r.nr_detectado|default:"NR no identificado" }}</div>
 
-                            <div id="r{{forloop.counter}}" class="accordion-collapse collapse">
-                                <div class="accordion-body">
+                                            <div class="dp-validation-strip">
+                                                <span class="dp-validation-pill {% if r.ciudad_ok %}is-ok{% else %}is-ko{% endif %}">
+                                                    <strong>Ciudad:</strong> {{ r.ciudad_resumen|default:"-" }}
+                                                </span>
+                                                <span class="dp-validation-pill {% if r.zona_ok %}is-ok{% else %}is-ko{% endif %}">
+                                                    <strong>Zona:</strong> {{ r.zona_resumen|default:"-" }}
+                                                </span>
+                                                <span class="dp-validation-pill {% if r.fecha_ok %}is-ok{% else %}is-ko{% endif %}">
+                                                    <strong>Fecha:</strong> {{ r.fecha_resumen|default:"-" }}
+                                                </span>
+                                            </div>
+                                        </div>
 
-                                    <div class="row g-2">
-                                        <div class="col-md-3">
-                                            <div class="ocr-check-card">
-                                                <div class="ocr-check-label">Ciudad</div>
-                                                <div class="ocr-check-value">
-                                                    {% if r.ciudad_ok %}
-                                                        <span class="badge ocr-badge ocr-badge-success">OK</span>
+                                        <div class="dp-acc-right">
+                                            {% if r.estado_resultado == "APROBADO" %}
+                                                <span class="dp-state dp-state-success">Aprobado</span>
+                                            {% elif r.estado_resultado == "RECHAZADO" %}
+                                                <span class="dp-state dp-state-danger">Rechazado</span>
+                                            {% else %}
+                                                <span class="dp-state dp-state-warning">En verificación</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </button>
+                            </h2>
+
+                            <div id="nr{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#accResultadosPlano">
+                                <div class="accordion-body dp-accordion-body">
+
+                                    <div class="dp-compare-shell mb-4">
+                                        <div class="row g-4">
+                                            <div class="col-lg-6">
+                                                <div class="dp-form-panel">
+                                                    <div class="dp-form-panel__title">
+                                                        <i class="bi bi-file-earmark-text"></i>
+                                                        Datos detectados en el plano
+                                                    </div>
+
+                                                    <div class="dp-form-grid">
+                                                        <div class="dp-field">
+                                                            <label>Ciudad</label>
+                                                            <div class="dp-field-value">{{ r.ciudad_plano }}</div>
+                                                        </div>
+
+                                                        <div class="dp-field">
+                                                            <label>Zona</label>
+                                                            <div class="dp-field-value">{{ r.zona_plano }}</div>
+                                                        </div>
+
+                                                        <div class="dp-field">
+                                                            <label>Fecha</label>
+                                                            <div class="dp-field-value">{{ r.fecha_plano }}</div>
+                                                        </div>
+
+                                                        <div class="dp-field">
+                                                            <label>Resultado OCR</label>
+                                                            <div class="dp-field-value">{{ r.resultado_ocr }}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-lg-6">
+                                                <div class="dp-form-panel">
+                                                    <div class="dp-form-panel__title">
+                                                        <i class="bi bi-database-check"></i>
+                                                        Datos registrados en base de datos
+                                                    </div>
+
+                                                    <div class="dp-form-grid">
+                                                        <div class="dp-field">
+                                                            <label>Ciudad reclamo / BD</label>
+                                                            <div class="dp-field-value">{{ r.ciudad_reclamo }}</div>
+                                                        </div>
+
+                                                        <div class="dp-field">
+                                                            <label>Zona reclamo / BD</label>
+                                                            <div class="dp-field-value">{{ r.zona_reclamo }}</div>
+                                                        </div>
+
+                                                        <div class="dp-field">
+                                                            <label>Fecha reclamo / trabajo</label>
+                                                            <div class="dp-field-value">{{ r.fecha_reclamo }}</div>
+                                                        </div>
+
+                                                        <div class="dp-field">
+                                                            <label>Observación validación</label>
+                                                            <div class="dp-field-value">{{ r.observacion }}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="dp-materials-shell">
+                                        <div class="dp-materials-head">
+                                            <div>
+                                                <div class="dp-section-label">Comparación de materiales</div>
+                                                <h6 class="dp-materials-title mb-0">Plano vs base de datos</h6>
+                                            </div>
+                                        </div>
+
+                                        <div class="row g-4">
+                                            <div class="col-lg-6">
+                                                <div class="dp-form-panel dp-form-panel--materials">
+                                                    <div class="dp-form-panel__title">
+                                                        <i class="bi bi-box-seam"></i>
+                                                        Materiales detectados en el plano
+                                                    </div>
+
+                                                    {% if r.materiales_plano_tabla %}
+                                                        <div class="table-responsive">
+                                                            <table class="table dp-table align-middle mb-0">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th>Cantidad</th>
+                                                                        <th>Unidad</th>
+                                                                        <th>Descripción</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {% for item in r.materiales_plano_tabla %}
+                                                                        <tr>
+                                                                            <td>{{ item.cantidad|default:"-" }}</td>
+                                                                            <td>{{ item.unidad|default:"unidad" }}</td>
+                                                                            <td>{{ item.descripcion|default:"-" }}</td>
+                                                                        </tr>
+                                                                    {% endfor %}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    {% elif r.materiales_plano %}
+                                                        <div class="dp-raw-box">
+                                                            {{ r.materiales_plano|linebreaksbr }}
+                                                        </div>
                                                     {% else %}
-                                                        <span class="badge ocr-badge ocr-badge-muted">-</span>
+                                                        <div class="dp-empty-box">
+                                                            Sin materiales detectados para este NR.
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+
+                                            <div class="col-lg-6">
+                                                <div class="dp-form-panel dp-form-panel--materials">
+                                                    <div class="dp-form-panel__title">
+                                                        <i class="bi bi-journal-check"></i>
+                                                        Materiales registrados en base de datos
+                                                    </div>
+
+                                                    {% if r.materiales_bd_tabla %}
+                                                        <div class="table-responsive">
+                                                            <table class="table dp-table align-middle mb-0">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th>Cantidad</th>
+                                                                        <th>Unidad</th>
+                                                                        <th>Descripción</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {% for item in r.materiales_bd_tabla %}
+                                                                        <tr>
+                                                                            <td>{{ item.cantidad|default:"-" }}</td>
+                                                                            <td>{{ item.unidad|default:"unidad" }}</td>
+                                                                            <td>{{ item.descripcion|default:"-" }}</td>
+                                                                        </tr>
+                                                                    {% endfor %}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    {% elif r.materiales_bd %}
+                                                        <div class="dp-raw-box">
+                                                            {{ r.materiales_bd|linebreaksbr }}
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="dp-empty-box">
+                                                            Sin materiales registrados en base de datos para este NR.
+                                                        </div>
                                                     {% endif %}
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="col-md-3">
-                                            <div class="ocr-check-card">
-                                                <div class="ocr-check-label">Zona</div>
-                                                <div class="ocr-check-value">
-                                                    {% if r.zona_ok %}
-                                                        <span class="badge ocr-badge ocr-badge-success">OK</span>
-                                                    {% else %}
-                                                        <span class="badge ocr-badge ocr-badge-muted">-</span>
-                                                    {% endif %}
+
+                                        {% if r.motivo_resultado_limpio and r.motivo_resultado_limpio != "-" %}
+                                            <div class="dp-diagnostic mt-4">
+                                                <div class="dp-diagnostic__title">
+                                                    <i class="bi bi-clipboard2-pulse"></i>
+                                                    Diagnóstico del NR
+                                                </div>
+                                                <div class="dp-diagnostic__body">
+                                                    {{ r.motivo_resultado_limpio|linebreaksbr }}
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="ocr-check-card">
-                                                <div class="ocr-check-label">Fecha</div>
-                                                <div class="ocr-check-value">
-                                                    {% if r.fecha_ok %}
-                                                        <span class="badge ocr-badge ocr-badge-success">OK</span>
-                                                    {% else %}
-                                                        <span class="badge ocr-badge ocr-badge-muted">-</span>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="ocr-check-card">
-                                                <div class="ocr-check-label">Estado</div>
-                                                <div class="ocr-check-value">
-                                                    {% if r.estado_resultado == "APROBADO" %}
-                                                        <span class="badge ocr-badge ocr-badge-success">Aprobado</span>
-                                                    {% elif r.estado_resultado == "RECHAZADO" %}
-                                                        <span class="badge ocr-badge ocr-badge-danger">Rechazado</span>
-                                                    {% else %}
-                                                        <span class="badge ocr-badge ocr-badge-warning">En verificación</span>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                        </div>
+                                        {% endif %}
                                     </div>
 
                                 </div>
@@ -221,142 +436,446 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="shadow-helper-text">Sin resultados aún</div>
+                <div class="dp-empty-main">
+                    <i class="bi bi-search"></i>
+                    <div>
+                        <strong>Sin resultados aún</strong>
+                        <div>No hay comparaciones disponibles para mostrar en este plano.</div>
+                    </div>
+                </div>
             {% endif %}
         </div>
 
-        <!-- TEXTO -->
-        <div class="row g-4">
+        <div class="collapse" id="bloqueInfoExtra">
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="dp-panel h-100">
+                        <div class="dp-panel__head dp-panel__head--tight">
+                            <div>
+                                <div class="dp-section-label">Diagnóstico global</div>
+                                <h5 class="dp-section-title mb-0">Motivo</h5>
+                            </div>
+                        </div>
+                        <div class="dp-text-block">{{ plano.motivo|default:"-"|linebreaksbr }}</div>
+                    </div>
+                </div>
 
-            <div class="col-lg-6">
-                <div class="shadow-surface-card p-3 h-100">
-                    <h5 class="shadow-title">Motivo</h5>
-                    <div class="shadow-helper-text">{{ plano.motivo|default:"-" }}</div>
+                <div class="col-lg-6" id="texto-ocr">
+                    <div class="dp-panel h-100">
+                        <div class="dp-panel__head dp-panel__head--tight">
+                            <div>
+                                <div class="dp-section-label">Salida OCR / GPT</div>
+                                <h5 class="dp-section-title mb-0">Texto o estructura extraída</h5>
+                            </div>
+                        </div>
+                        <div class="dp-text-block dp-text-block--mono">{{ plano.texto_ocr|default:"-"|linebreaksbr }}</div>
+                    </div>
                 </div>
             </div>
-
-            <div class="col-lg-6">
-                <div class="shadow-surface-card p-3 h-100">
-                    <h5 class="shadow-title">Texto OCR</h5>
-                    <div class="shadow-helper-text">{{ plano.texto_ocr|default:"-" }}</div>
-                </div>
-            </div>
-
         </div>
 
     </div>
 </div>
 
 <style>
-.detalle-mini-grid{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:.5rem;
-}
-.detalle-mini-card{
-background:linear-gradient(180deg,#f9faff,#f1f4ff);
-padding:.6rem;
-border-radius:12px;
-border:1px solid rgba(91,82,214,.1);
-}
-.detalle-mini-card .label{
-font-size:.7rem;
-color:#64748b;
-}
-.detalle-mini-card .value{
-font-weight:700;
-}
-
-.mini-box{
-padding:.6rem;
-border-radius:12px;
-text-align:center;
-}
-.mini-box.success{background:#ecfdf5}
-.mini-box.danger{background:#fef2f2}
-
-.ocr-check-card{
-background:linear-gradient(180deg,#f9faff,#f1f4ff);
-padding:.7rem;
-border-radius:12px;
-border:1px solid rgba(91,82,214,.1);
-height:100%;
-}
-.ocr-check-label{
-font-size:.72rem;
-color:#64748b;
-font-weight:700;
-margin-bottom:.35rem;
-text-transform:uppercase;
-letter-spacing:.04em;
-}
-.ocr-check-value{
-font-weight:700;
-}
-.ocr-badge{
-border-radius:999px;
-padding:.42rem .68rem;
-font-size:.74rem;
-font-weight:700;
-border:1px solid transparent;
-}
-.ocr-badge-success{
-background:rgba(16,185,129,.14);
-color:#047857;
-border-color:rgba(16,185,129,.18);
-}
-.ocr-badge-danger{
-background:rgba(239,68,68,.12);
-color:#b91c1c;
-border-color:rgba(239,68,68,.18);
-}
-.ocr-badge-warning{
-background:rgba(245,158,11,.14);
-color:#b45309;
-border-color:rgba(245,158,11,.18);
-}
-.ocr-badge-muted{
-background:rgba(100,116,139,.12);
-color:#475569;
-border-color:rgba(100,116,139,.16);
+:root{
+    --dp-bg:#f6f8fc;
+    --dp-surface:#ffffff;
+    --dp-surface-soft:#fbfcff;
+    --dp-border:rgba(15, 23, 42, 0.08);
+    --dp-border-strong:rgba(91, 82, 214, 0.14);
+    --dp-text:#172033;
+    --dp-muted:#64748b;
+    --dp-primary:#5b52d6;
+    --dp-primary-soft:rgba(91,82,214,.08);
+    --dp-success:#059669;
+    --dp-success-soft:rgba(16,185,129,.10);
+    --dp-danger:#dc2626;
+    --dp-danger-soft:rgba(239,68,68,.10);
+    --dp-warning:#d97706;
+    --dp-warning-soft:rgba(245,158,11,.12);
+    --dp-info:#2563eb;
+    --dp-info-soft:rgba(37,99,235,.10);
+    --dp-gpt:#0f766e;
+    --dp-gpt-soft:rgba(15,118,110,.10);
+    --dp-shadow:0 18px 45px rgba(15, 23, 42, .06);
+    --dp-radius-xl:24px;
+    --dp-radius-lg:18px;
+    --dp-radius-md:14px;
 }
 
-/* Ajuste de velocidad de animaciones */
-.shadow-card-hover,
-.shadow-btn,
-.accordion-button,
-.btn,
-.detalle-mini-card,
-.mini-box{
-transition:all .18s ease !important;
-}
-.shadow-card-hover:hover,
-.btn:hover{
-transform:translateY(-2px);
+.dp-hero,
+.dp-panel,
+.dp-form-panel,
+.dp-diagnostic,
+.dp-accordion-item{
+    position:relative;
+    background:linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+    border:1px solid var(--dp-border);
+    box-shadow:var(--dp-shadow);
 }
 
-
-/* OCR resultados - header y bordes redondeados */
-.accordion-item{
-    border-radius:16px !important;
+.dp-hero{
+    border-radius:28px;
+    padding:1.4rem 1.5rem;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:1rem;
     overflow:hidden;
-    border:1px solid rgba(91,82,214,0.10) !important;
-    margin-bottom:10px;
-    background:linear-gradient(180deg,#ffffff,#fafbff);
 }
-.ocr-accordion-btn{
-    border-radius:16px !important;
-    background:#ffffff;
-    transition:all .18s ease !important;
+
+.dp-hero::before{
+    content:"";
+    position:absolute;
+    inset:auto -50px -80px auto;
+    width:180px;
+    height:180px;
+    background:radial-gradient(circle, rgba(91,82,214,.16) 0%, rgba(91,82,214,0) 72%);
+    pointer-events:none;
 }
-.ocr-accordion-btn:hover{
-    background:rgba(91,82,214,0.04);
+
+.dp-hero__main{
+    display:flex;
+    align-items:center;
+    gap:1rem;
+    min-width:0;
 }
-.accordion-button:not(.collapsed){
-    border-bottom-left-radius:0 !important;
-    border-bottom-right-radius:0 !important;
+
+.dp-hero__icon{
+    width:62px;
+    height:62px;
+    border-radius:20px;
+    display:grid;
+    place-items:center;
+    font-size:1.5rem;
+    color:var(--dp-primary);
+    background:linear-gradient(180deg, rgba(91,82,214,.12), rgba(91,82,214,.05));
+    border:1px solid rgba(91,82,214,.10);
+    flex:0 0 auto;
 }
-.ocr-accordion-head{
+
+.dp-eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:.45rem;
+    font-size:.76rem;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--dp-primary);
+    margin-bottom:.45rem;
+}
+
+.dp-title{
+    font-size:1.8rem;
+    font-weight:800;
+    color:var(--dp-text);
+}
+
+.dp-subtitle{
+    color:var(--dp-muted);
+    font-size:.96rem;
+}
+
+.dp-hero__actions{
+    display:flex;
+    align-items:center;
+    gap:.75rem;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+}
+
+.dp-btn{
+    border-radius:14px;
+    padding:.82rem 1rem;
+    font-weight:700;
+    border:1px solid transparent;
+    transition:all .18s ease;
+}
+
+.dp-btn:hover{
+    transform:translateY(-2px);
+}
+
+.dp-btn-primary{
+    color:#fff;
+    background:linear-gradient(135deg, #5b52d6 0%, #6e63ef 100%);
+    box-shadow:0 12px 24px rgba(91,82,214,.22);
+}
+
+.dp-btn-primary:hover{
+    color:#fff;
+}
+
+.dp-btn-gpt{
+    color:#fff;
+    background:linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+    box-shadow:0 12px 24px rgba(15,118,110,.22);
+}
+
+.dp-btn-gpt:hover{
+    color:#fff;
+}
+
+.dp-btn-soft{
+    color:var(--dp-text);
+    background:#fff;
+    border-color:var(--dp-border);
+}
+
+.dp-btn-soft-danger{
+    color:var(--dp-danger);
+    background:#fff;
+    border-color:rgba(239,68,68,.16);
+}
+
+.dp-helper-box{
+    border-radius:16px;
+    border:1px solid rgba(15,118,110,.14);
+    background:linear-gradient(180deg, rgba(15,118,110,.06), rgba(15,118,110,.02));
+    padding:.9rem 1rem;
+}
+
+.dp-helper-box__title{
+    color:var(--dp-gpt);
+    font-weight:800;
+    margin-bottom:.35rem;
+}
+
+.dp-helper-box__body{
+    color:var(--dp-muted);
+    font-size:.9rem;
+    line-height:1.55;
+}
+
+.dp-panel{
+    border-radius:var(--dp-radius-xl);
+    padding:1.2rem;
+    height:100%;
+}
+
+.dp-panel-results{
+    height:auto !important;
+    min-height:0 !important;
+    padding-bottom:1rem;
+}
+
+.dp-panel__head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:1rem;
+    margin-bottom:1rem;
+}
+
+.dp-panel__head--tight{
+    margin-bottom:1.1rem;
+}
+
+.dp-section-label{
+    font-size:.74rem;
+    font-weight:800;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--dp-muted);
+    margin-bottom:.25rem;
+}
+
+.dp-section-title{
+    color:var(--dp-text);
+    font-weight:800;
+    font-size:1.08rem;
+}
+
+.dp-state{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:.46rem .82rem;
+    border-radius:999px;
+    font-size:.78rem;
+    font-weight:800;
+    border:1px solid transparent;
+    white-space:nowrap;
+}
+
+.dp-state-success{
+    color:var(--dp-success);
+    background:var(--dp-success-soft);
+    border-color:rgba(16,185,129,.16);
+}
+
+.dp-state-danger{
+    color:var(--dp-danger);
+    background:var(--dp-danger-soft);
+    border-color:rgba(239,68,68,.16);
+}
+
+.dp-state-warning{
+    color:var(--dp-warning);
+    background:var(--dp-warning-soft);
+    border-color:rgba(245,158,11,.16);
+}
+
+.dp-state-info{
+    color:var(--dp-info);
+    background:var(--dp-info-soft);
+    border-color:rgba(37,99,235,.16);
+}
+
+.dp-state-muted{
+    color:#475569;
+    background:rgba(100,116,139,.10);
+    border-color:rgba(100,116,139,.12);
+}
+
+.dp-meta-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:.8rem;
+}
+
+.dp-meta-grid--main{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+}
+
+.dp-meta-card{
+    border-radius:16px;
+    border:1px solid var(--dp-border);
+    background:linear-gradient(180deg,#fff,#fafbff);
+    padding:.85rem .9rem;
+}
+
+.dp-meta-card--wide{
+    grid-column:1 / -1;
+}
+
+.dp-meta-label{
+    font-size:.74rem;
+    color:var(--dp-muted);
+    font-weight:700;
+    margin-bottom:.32rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+}
+
+.dp-meta-value{
+    color:var(--dp-text);
+    font-weight:800;
+    word-break:break-word;
+}
+
+.dp-kpi-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:.8rem;
+}
+
+.dp-kpi-grid--compact{
+    grid-template-columns:1fr;
+}
+
+.dp-kpi-card{
+    border-radius:18px;
+    padding:1rem .95rem;
+    border:1px solid transparent;
+    display:flex;
+    flex-direction:column;
+    gap:.3rem;
+}
+
+.dp-kpi-card--primary{
+    background:linear-gradient(180deg, rgba(91,82,214,.12), rgba(91,82,214,.05));
+    border-color:rgba(91,82,214,.12);
+}
+.dp-kpi-card--success{
+    background:linear-gradient(180deg, rgba(16,185,129,.12), rgba(16,185,129,.05));
+    border-color:rgba(16,185,129,.12);
+}
+.dp-kpi-card--danger{
+    background:linear-gradient(180deg, rgba(239,68,68,.12), rgba(239,68,68,.05));
+    border-color:rgba(239,68,68,.12);
+}
+.dp-kpi-card--warning{
+    background:linear-gradient(180deg, rgba(245,158,11,.14), rgba(245,158,11,.06));
+    border-color:rgba(245,158,11,.14);
+}
+
+.dp-kpi-label{
+    font-size:.76rem;
+    color:#475569;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+}
+
+.dp-kpi-value{
+    font-size:1.5rem;
+    line-height:1;
+    color:var(--dp-text);
+    font-weight:900;
+}
+
+.dp-preview-panel{
+    padding:1rem 1rem 1.15rem;
+}
+
+.dp-preview-wrap{
+    border-radius:18px;
+    border:1px solid var(--dp-border);
+    background:linear-gradient(180deg,#ffffff,#fbfcff);
+    padding:1rem;
+    overflow:hidden;
+}
+
+.dp-preview-image{
+    display:block;
+    width:100%;
+    max-height:820px;
+    object-fit:contain;
+    border-radius:14px;
+}
+
+.dp-preview-frame{
+    width:100%;
+    height:720px;
+    border:0;
+    border-radius:14px;
+    background:#fff;
+}
+
+.dp-accordion{
+    display:flex;
+    flex-direction:column;
+    gap:1rem;
+    margin:0;
+    padding:0;
+}
+
+.dp-accordion-item{
+    overflow:hidden;
+    border-radius:22px !important;
+    border:1px solid var(--dp-border-strong) !important;
+    background:linear-gradient(180deg,#ffffff 0%,#fafbff 100%);
+    margin:0 !important;
+}
+
+.dp-accordion-button{
+    background:transparent !important;
+    box-shadow:none !important;
+    padding:1rem 1.15rem !important;
+}
+
+.dp-accordion-button:not(.collapsed){
+    background:linear-gradient(180deg, rgba(91,82,214,.04), rgba(91,82,214,.02)) !important;
+}
+
+.dp-accordion-button::after{
+    margin-left:1rem;
+}
+
+.dp-acc-header{
     width:100%;
     display:flex;
     align-items:center;
@@ -364,32 +883,294 @@ transform:translateY(-2px);
     gap:1rem;
     padding-right:.35rem;
 }
-.ocr-accordion-code{
-    font-weight:700;
-    color:#243247;
+
+.dp-acc-left{
+    min-width:0;
 }
-.ocr-status-pill{
-    padding:.38rem .78rem;
-    border-radius:999px;
-    font-size:.78rem;
-    font-weight:700;
+
+.dp-acc-code{
+    font-size:1.02rem;
+    font-weight:900;
+    color:var(--dp-text);
+    margin-bottom:.55rem;
+}
+
+.dp-validation-strip{
+    display:flex;
+    align-items:center;
+    gap:.5rem;
+    flex-wrap:wrap;
+}
+
+.dp-validation-pill{
     display:inline-flex;
     align-items:center;
-    white-space:nowrap;
-}
-.ocr-status-approved{
-    background:rgba(16,185,129,.15);
-    color:#047857;
-}
-.ocr-status-rejected{
-    background:rgba(239,68,68,.15);
-    color:#b91c1c;
-}
-.ocr-status-warning{
-    background:rgba(245,158,11,.15);
-    color:#b45309;
+    gap:.35rem;
+    border-radius:999px;
+    padding:.42rem .7rem;
+    font-size:.75rem;
+    font-weight:800;
+    border:1px solid transparent;
+    line-height:1.1;
 }
 
+.dp-validation-pill strong{
+    font-weight:900;
+}
+
+.dp-validation-pill.is-ok{
+    color:var(--dp-success);
+    background:var(--dp-success-soft);
+    border-color:rgba(16,185,129,.15);
+}
+
+.dp-validation-pill.is-ko{
+    color:var(--dp-danger);
+    background:var(--dp-danger-soft);
+    border-color:rgba(239,68,68,.15);
+}
+
+.dp-accordion-body{
+    padding:1.15rem !important;
+    background:linear-gradient(180deg, rgba(250,251,255,.9), #ffffff);
+}
+
+.dp-compare-shell,
+.dp-materials-shell{
+    border-radius:20px;
+    border:1px solid var(--dp-border);
+    background:linear-gradient(180deg,#ffffff 0%,#fcfdff 100%);
+    padding:1rem;
+}
+
+.dp-form-panel{
+    border-radius:18px;
+    border:1px solid var(--dp-border);
+    background:linear-gradient(180deg,#ffffff 0%,#fbfcff 100%);
+    padding:1rem;
+    height:100%;
+}
+
+.dp-form-panel--materials{
+    padding:0;
+    overflow:hidden;
+}
+
+.dp-form-panel__title{
+    display:flex;
+    align-items:center;
+    gap:.55rem;
+    font-weight:800;
+    color:var(--dp-text);
+    margin-bottom:.95rem;
+}
+
+.dp-form-panel--materials .dp-form-panel__title{
+    padding:1rem 1rem .75rem;
+    margin-bottom:0;
+    border-bottom:1px solid var(--dp-border);
+    background:linear-gradient(180deg, rgba(91,82,214,.05), rgba(91,82,214,.02));
+}
+
+.dp-form-grid{
+    display:grid;
+    gap:.8rem;
+}
+
+.dp-field{
+    border:1px solid var(--dp-border);
+    border-radius:14px;
+    padding:.85rem .9rem;
+    background:#fff;
+}
+
+.dp-field label{
+    display:block;
+    font-size:.72rem;
+    font-weight:800;
+    color:var(--dp-muted);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    margin-bottom:.38rem;
+}
+
+.dp-field-value{
+    min-height:22px;
+    color:var(--dp-text);
+    font-weight:700;
+    word-break:break-word;
+}
+
+.dp-materials-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:1rem;
+    margin-bottom:1rem;
+}
+
+.dp-materials-title{
+    font-size:1rem;
+    font-weight:900;
+    color:var(--dp-text);
+}
+
+.dp-table{
+    margin:0;
+}
+
+.dp-table thead th{
+    background:#f7f9ff;
+    color:#475569;
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    border-bottom:1px solid var(--dp-border) !important;
+    font-weight:800;
+    padding:.9rem 1rem;
+}
+
+.dp-table tbody td{
+    color:var(--dp-text);
+    border-top:1px solid rgba(15,23,42,.05);
+    padding:.86rem 1rem;
+    font-weight:600;
+    vertical-align:middle;
+}
+
+.dp-raw-box,
+.dp-empty-box{
+    margin:1rem;
+    border-radius:16px;
+    border:1px dashed var(--dp-border);
+    padding:1rem;
+    background:#fff;
+    color:var(--dp-text);
+}
+
+.dp-empty-box{
+    color:var(--dp-muted);
+    font-weight:600;
+}
+
+.dp-diagnostic{
+    border-radius:18px;
+    padding:1rem;
+}
+
+.dp-diagnostic__title{
+    display:flex;
+    align-items:center;
+    gap:.5rem;
+    color:var(--dp-text);
+    font-weight:800;
+    margin-bottom:.65rem;
+}
+
+.dp-diagnostic__body{
+    color:var(--dp-muted);
+    line-height:1.7;
+}
+
+.dp-text-block{
+    border-radius:16px;
+    border:1px solid var(--dp-border);
+    background:linear-gradient(180deg,#ffffff,#fbfcff);
+    padding:1rem;
+    color:var(--dp-text);
+    line-height:1.75;
+    min-height:220px;
+    overflow:auto;
+}
+
+.dp-text-block--mono{
+    font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size:.9rem;
+    white-space:pre-wrap;
+}
+
+.dp-empty-main{
+    border-radius:18px;
+    border:1px dashed var(--dp-border);
+    padding:1rem;
+    color:var(--dp-muted);
+    display:flex;
+    align-items:center;
+    gap:.9rem;
+    background:linear-gradient(180deg,#ffffff,#fbfcff);
+}
+
+.dp-empty-main i{
+    font-size:1.3rem;
+    color:var(--dp-primary);
+}
+
+@media (max-width: 991.98px){
+    .dp-hero{
+        flex-direction:column;
+        align-items:flex-start;
+    }
+
+    .dp-hero__actions{
+        width:100%;
+        justify-content:flex-start;
+    }
+
+    .dp-meta-grid,
+    .dp-kpi-grid{
+        grid-template-columns:1fr 1fr;
+    }
+
+    .dp-meta-card--wide{
+        grid-column:auto;
+    }
+
+    .dp-kpi-grid--compact{
+        grid-template-columns:1fr;
+    }
+
+    .dp-preview-frame{
+        height:560px;
+    }
+}
+
+@media (max-width: 767.98px){
+    .dp-title{
+        font-size:1.45rem;
+    }
+
+    .dp-hero,
+    .dp-panel{
+        padding:1rem;
+        border-radius:22px;
+    }
+
+    .dp-acc-header{
+        flex-direction:column;
+        align-items:flex-start;
+    }
+
+    .dp-meta-grid,
+    .dp-kpi-grid,
+    .dp-meta-grid--main,
+    .dp-kpi-grid--compact{
+        grid-template-columns:1fr;
+    }
+
+    .dp-hero__main{
+        align-items:flex-start;
+    }
+
+    .dp-hero__icon{
+        width:54px;
+        height:54px;
+        border-radius:18px;
+        font-size:1.25rem;
+    }
+
+    .dp-preview-frame{
+        height:420px;
+    }
+}
 </style>
-
 {% endblock %}

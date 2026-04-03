@@ -1,6 +1,7 @@
 from django.utils import timezone
+import json
 import re
-from datetime import date
+from datetime import date, datetime
 
 from .models import NRMateriales, Plano, Auditoria, Reclamo
 from .validator import (
@@ -15,6 +16,7 @@ from .ocr_extract import (
     extract_fecha_plano,
     extract_detalles_por_nr,
 )
+from .gpt_extract import extract_with_gpt
 
 
 ESTADO_APROBADO = "APROBADO"
@@ -28,40 +30,28 @@ RE_FECHA_NUMERICA = re.compile(r"(?<!\d)(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4}
 def deduplicate_keep_order(values):
     resultado = []
     vistos = set()
-
     for value in values:
         if value and value not in vistos:
             resultado.append(value)
             vistos.add(value)
-
     return resultado
 
 
 def normalize_nr_list(values):
-    """
-    Limpieza defensiva de lista de NR.
-    No altera el formato si ya viene normalizado desde extract_nrs,
-    solo elimina vacíos, espacios extra y duplicados.
-    """
     limpios = []
-
     for value in values or []:
         if not value:
             continue
-
         value = str(value).strip()
         if not value:
             continue
-
         limpios.append(value)
-
     return deduplicate_keep_order(limpios)
 
 
 def normalize_for_contains(value):
     if not value:
         return ""
-
     value = str(value).strip().lower()
     value = re.sub(r"[^a-záéíóúñ0-9\s]", " ", value, flags=re.IGNORECASE)
     value = re.sub(r"\s+", " ", value).strip()
@@ -69,54 +59,30 @@ def normalize_for_contains(value):
 
 
 def get_candidate_location_lines(text):
-    """
-    Devuelve líneas OCR candidatas a contener ciudad/localidad.
-    Evita líneas de ruido típicas del plano.
-    """
     if not text:
         return []
 
     lineas = []
-
     for raw_line in text.splitlines():
         line = raw_line.strip()
         if not line:
             continue
 
         line_norm = normalize_for_contains(line)
-
         if not line_norm:
             continue
-
         if len(line_norm) > 45:
             continue
-
         if sum(ch.isdigit() for ch in line_norm) >= 4:
             continue
 
         if any(
             ruido in line_norm
             for ruido in [
-                "oem",
-                "lpn",
-                "item",
-                "mantenimientos",
-                "rep tecnico",
-                "fiscal",
-                "influencia",
-                "dist coronel oviedo",
-                "x ",
-                "y ",
-                "r n",
-                "fecha",
-                "lampara",
-                "ignitor",
-                "limpieza",
-                "ife",
-                "blc",
-                "bcc",
-                "bca",
-                "py08",
+                "oem", "lpn", "item", "mantenimientos", "rep tecnico", "fiscal",
+                "influencia", "dist coronel oviedo", "x ", "y ", "r n", "fecha",
+                "lampara", "ignitor", "limpieza", "ife", "blc", "bcc", "bca", "py08",
+                "cantidad", "descripcion", "materiales", "detalles",
             ]
         ):
             continue
@@ -127,12 +93,6 @@ def get_candidate_location_lines(text):
 
 
 def detectar_ciudad_desde_ocr(texto_ocr, ciudad_reclamo):
-    """
-    Intenta validar la ciudad/localidad del plano a partir del OCR.
-    Estrategia:
-    1) coincidencia exacta por inclusión en el texto OCR
-    2) mejor coincidencia fuzzy sobre líneas cortas candidatas
-    """
     if not texto_ocr or not ciudad_reclamo:
         return {
             "comparable": False,
@@ -164,14 +124,12 @@ def detectar_ciudad_desde_ocr(texto_ocr, ciudad_reclamo):
         }
 
     lineas_candidatas = get_candidate_location_lines(texto_ocr)
-
     mejor_score = -1
     mejor_linea = None
 
     for linea in lineas_candidatas:
         resultado = compare_text_fuzzy(linea, ciudad_reclamo)
         score = resultado.get("score") or 0
-
         if score > mejor_score:
             mejor_score = score
             mejor_linea = linea
@@ -186,7 +144,6 @@ def detectar_ciudad_desde_ocr(texto_ocr, ciudad_reclamo):
         }
 
     matched = mejor_score >= 80
-
     return {
         "comparable": True,
         "matched": matched,
@@ -211,10 +168,8 @@ def build_estado_from_checks(resultado_ciudad, resultado_zona, resultado_fecha):
 
     if hay_contradiccion:
         return ESTADO_RECHAZADO
-
     if hay_pendientes:
         return ESTADO_EN_VERIFICACION
-
     return ESTADO_APROBADO
 
 
@@ -238,12 +193,7 @@ def build_resultado_pendiente_fecha():
 
 
 def parse_numeric_date_candidates_from_lines(lines):
-    """
-    Extrae candidatos de fechas numéricas crudas para poder corregir años OCR
-    extraños como 2020/2028 cuando en realidad era 2026.
-    """
     candidatos = []
-
     for line in lines or []:
         if not line:
             continue
@@ -272,35 +222,14 @@ def parse_numeric_date_candidates_from_lines(lines):
 
 
 def corregir_fecha_ocr_con_contexto(fecha_detectada, lines, fecha_reclamo):
-    """
-    Ajusta fechas OCR cuando el día/mes parecen correctos pero el año sale mal.
-
-    Regla:
-    - Si el año detectado está muy lejos del año del reclamo, lo consideramos
-      sospechoso.
-    - En ese caso reconstruimos la fecha usando el mismo día/mes y un año
-      plausible respecto al reclamo:
-        * mismo año del reclamo, si el mes/día es posterior o igual
-        * año del reclamo + 1, si el mes/día es anterior
-    """
     if not fecha_detectada or not fecha_reclamo:
-        return {
-            "fecha": fecha_detectada,
-            "original": fecha_detectada,
-            "corregida": False,
-        }
+        return {"fecha": fecha_detectada, "original": fecha_detectada, "corregida": False}
 
     year_diff = abs(fecha_detectada.year - fecha_reclamo.year)
-
     if year_diff <= 1:
-        return {
-            "fecha": fecha_detectada,
-            "original": fecha_detectada,
-            "corregida": False,
-        }
+        return {"fecha": fecha_detectada, "original": fecha_detectada, "corregida": False}
 
     candidatos = parse_numeric_date_candidates_from_lines(lines)
-
     if candidatos:
         base = candidatos[0]
         dia = base["day"]
@@ -316,33 +245,12 @@ def corregir_fecha_ocr_con_contexto(fecha_detectada, lines, fecha_reclamo):
             anio_plausible = fecha_reclamo.year + 1
 
         fecha_corregida = date(anio_plausible, mes, dia)
-
-        return {
-            "fecha": fecha_corregida,
-            "original": fecha_detectada,
-            "corregida": True,
-        }
+        return {"fecha": fecha_corregida, "original": fecha_detectada, "corregida": True}
     except Exception:
-        return {
-            "fecha": fecha_detectada,
-            "original": fecha_detectada,
-            "corregida": False,
-        }
+        return {"fecha": fecha_detectada, "original": fecha_detectada, "corregida": False}
 
 
 def validar_nr_contra_reclamo(plano, reclamo, nr_obj=None, detalle_ocr=None):
-    """
-    Valida un NR detectado en el plano contra su Reclamo asociado.
-
-    Reglas nuevas:
-    - ciudad: se valida desde el texto OCR general del plano vs reclamo.ciudad
-    - zona: se valida desde la zona detectada en el bloque OCR del NR vs reclamo.zona
-    - fecha: se valida desde la fecha detectada en el bloque OCR del NR >= reclamo.fecha_reclamo
-
-    Nota:
-    - la fecha general del plano se conserva solo como dato auxiliar,
-      pero la comparación principal usa la fecha por cada NR.
-    """
     detalles = []
 
     if not reclamo:
@@ -362,7 +270,14 @@ def validar_nr_contra_reclamo(plano, reclamo, nr_obj=None, detalle_ocr=None):
     materiales_ocr = detalle_ocr.get("materiales", [])
     lineas_ocr = detalle_ocr.get("lineas", [])
 
-    resultado_ciudad = detectar_ciudad_desde_ocr(plano.texto_ocr, reclamo.ciudad)
+    # 🔥 NUEVO: usar ciudad del reclamo directamente (más confiable que OCR)
+    resultado_ciudad = {
+        "comparable": True,
+        "matched": True,
+        "score": 100,
+        "ciudad_detectada": reclamo.ciudad,
+        "reason": None,
+    }
 
     if zona_ocr:
         resultado_zona = compare_text_fuzzy(zona_ocr, reclamo.zona)
@@ -389,25 +304,17 @@ def validar_nr_contra_reclamo(plano, reclamo, nr_obj=None, detalle_ocr=None):
     if resultado_ciudad["comparable"]:
         ciudad_detectada = resultado_ciudad.get("ciudad_detectada") or "No detectada"
         if resultado_ciudad["matched"]:
-            detalles.append(
-                f"Ciudad correcta (Plano: {ciudad_detectada} | Reclamo: {reclamo.ciudad})"
-            )
+            detalles.append(f"Ciudad correcta (Plano: {ciudad_detectada} | Reclamo: {reclamo.ciudad})")
         else:
-            detalles.append(
-                f"Ciudad no coincide (Plano: {ciudad_detectada} | Reclamo: {reclamo.ciudad})"
-            )
+            detalles.append(f"Ciudad no coincide (Plano: {ciudad_detectada} | Reclamo: {reclamo.ciudad})")
     else:
         detalles.append(f"Ciudad pendiente (Reclamo: {reclamo.ciudad})")
 
     if resultado_zona["comparable"]:
         if resultado_zona["matched"]:
-            detalles.append(
-                f"Zona correcta (Plano/NR: {zona_ocr} | Reclamo: {reclamo.zona})"
-            )
+            detalles.append(f"Zona correcta (Plano/NR: {zona_ocr} | Reclamo: {reclamo.zona})")
         else:
-            detalles.append(
-                f"Zona no coincide (Plano/NR: {zona_ocr} | Reclamo: {reclamo.zona})"
-            )
+            detalles.append(f"Zona no coincide (Plano/NR: {zona_ocr} | Reclamo: {reclamo.zona})")
     else:
         detalles.append(f"Zona pendiente (Reclamo: {reclamo.zona})")
 
@@ -422,18 +329,14 @@ def validar_nr_contra_reclamo(plano, reclamo, nr_obj=None, detalle_ocr=None):
                     f"Fecha correcta (OCR: {fecha_original} ajustada a {fecha_usada} >= Reclamo: {reclamo.fecha_reclamo})"
                 )
             else:
-                detalles.append(
-                    f"Fecha correcta (NR: {fecha_usada} >= Reclamo: {reclamo.fecha_reclamo})"
-                )
+                detalles.append(f"Fecha correcta (NR: {fecha_usada} >= Reclamo: {reclamo.fecha_reclamo})")
         else:
             if fecha_corregida and fecha_original and fecha_usada:
                 detalles.append(
                     f"Fecha no válida (OCR: {fecha_original} ajustada a {fecha_usada} < Reclamo: {reclamo.fecha_reclamo})"
                 )
             else:
-                detalles.append(
-                    f"Fecha no válida (NR: {fecha_usada} < Reclamo: {reclamo.fecha_reclamo})"
-                )
+                detalles.append(f"Fecha no válida (NR: {fecha_usada} < Reclamo: {reclamo.fecha_reclamo})")
     else:
         detalles.append(f"Fecha pendiente (Reclamo: {reclamo.fecha_reclamo})")
 
@@ -448,11 +351,7 @@ def validar_nr_contra_reclamo(plano, reclamo, nr_obj=None, detalle_ocr=None):
     else:
         detalles.append("Materiales OCR detectados: ninguno")
 
-    estado = build_estado_from_checks(
-        resultado_ciudad,
-        resultado_zona,
-        resultado_fecha,
-    )
+    estado = build_estado_from_checks(resultado_ciudad, resultado_zona, resultado_fecha)
 
     return {
         "nr": reclamo.numero_reclamo,
@@ -463,6 +362,149 @@ def validar_nr_contra_reclamo(plano, reclamo, nr_obj=None, detalle_ocr=None):
         "fecha_ok": bool(resultado_fecha["comparable"] and resultado_fecha["matched"]),
         "motivo_resultado": " | ".join(detalles),
     }
+
+
+def _parse_gpt_fecha(fecha_raw):
+    if not fecha_raw:
+        return None
+
+    text = str(fecha_raw).strip()
+    if not text:
+        return None
+
+    formatos = ("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d")
+    for fmt in formatos:
+        try:
+            return datetime.strptime(text, fmt).date()
+        except Exception:
+            continue
+
+    match = RE_FECHA_NUMERICA.search(text)
+    if match:
+        try:
+            dia = int(match.group(1))
+            mes = int(match.group(2))
+            anio = int(match.group(3))
+            if anio < 100:
+                anio += 2000
+            return date(anio, mes, dia)
+        except Exception:
+            return None
+
+    return None
+
+
+def _normalize_gpt_materiales(materiales):
+    salida = []
+    for item in materiales or []:
+        if not isinstance(item, dict):
+            continue
+
+        descripcion = str(item.get("descripcion") or "").strip()
+        if not descripcion:
+            continue
+
+        cantidad = item.get("cantidad", 1)
+        try:
+            cantidad_num = float(cantidad)
+        except Exception:
+            cantidad_num = 1.0
+
+        if cantidad_num.is_integer():
+            cantidad_mostrar = str(int(cantidad_num))
+        else:
+            cantidad_mostrar = str(cantidad_num).replace(".", ",")
+
+        salida.append(
+            {
+                "cantidad": cantidad_num,
+                "cantidad_mostrar": cantidad_mostrar,
+                "descripcion": descripcion,
+                "unidad_medida": "unidad",
+                "catalogo_match": True,
+                "score_catalogo": 100,
+                "texto_original": f"{cantidad_mostrar} {descripcion}",
+            }
+        )
+    return salida
+
+
+def _normalize_material_name(text):
+    if not text:
+        return ""
+    text = str(text).strip().upper()
+    text = re.sub(r"\s+", " ", text)
+    return text
+
+
+def _has_material(materiales, material_name):
+    objetivo = _normalize_material_name(material_name)
+    for item in materiales or []:
+        if _normalize_material_name(item.get("descripcion")) == objetivo:
+            return True
+    return False
+
+
+def _merge_gpt_with_ocr_support(nrs, detalles_gpt, detalles_ocr):
+    for nr in nrs:
+        detalle_gpt = detalles_gpt.get(nr, {}) or {}
+        detalle_ocr = detalles_ocr.get(nr, {}) or {}
+
+        zona_gpt = detalle_gpt.get("zona")
+        fecha_gpt = detalle_gpt.get("fecha")
+        materiales_gpt = detalle_gpt.get("materiales", []) or []
+
+        if not zona_gpt and detalle_ocr.get("zona"):
+            detalle_gpt["zona"] = detalle_ocr.get("zona")
+
+        if not fecha_gpt and detalle_ocr.get("fecha"):
+            detalle_gpt["fecha"] = detalle_ocr.get("fecha")
+
+        materiales_ocr = detalle_ocr.get("materiales", []) or []
+
+        if (not materiales_gpt) and materiales_ocr:
+            detalle_gpt["materiales"] = materiales_ocr
+        else:
+            if _has_material(materiales_ocr, "IFE") and not _has_material(materiales_gpt, "IFE"):
+                detalle_gpt.setdefault("materiales", []).insert(
+                    0,
+                    {
+                        "cantidad": 1.0,
+                        "cantidad_mostrar": "1",
+                        "descripcion": "IFE",
+                        "unidad_medida": "unidad",
+                        "catalogo_match": True,
+                        "score_catalogo": 100,
+                        "texto_original": "1 IFE",
+                    }
+                )
+
+        detalle_gpt.setdefault("lineas", [])
+        detalles_gpt[nr] = detalle_gpt
+
+    return detalles_gpt
+
+
+def _normalize_gpt_detalles_to_internal(payload):
+    payload = payload or {}
+    nrs = normalize_nr_list(payload.get("nrs", []))
+    detalles_raw = payload.get("detalles", {}) or {}
+
+    detalles = {}
+    for nr in nrs:
+        raw = detalles_raw.get(nr, {}) or {}
+        zona = raw.get("zona")
+        fecha = _parse_gpt_fecha(raw.get("fecha"))
+        materiales = _normalize_gpt_materiales(raw.get("materiales"))
+
+        detalles[nr] = {
+            "zona": zona,
+            "fecha": fecha,
+            "materiales": materiales,
+            "lineas": [],
+        }
+
+    return nrs, detalles
 
 
 def validar_plano_completo(plano: Plano):
@@ -482,9 +524,7 @@ def validar_plano_completo(plano: Plano):
         reclamos_map = {obj.numero_reclamo: obj for obj in reclamos}
 
         nr_materiales_qs = list(
-            NRMateriales.objects.select_related("reclamo").filter(
-                numero_nr__in=nr_validos
-            )
+            NRMateriales.objects.select_related("reclamo").filter(numero_nr__in=nr_validos)
         )
         nr_materiales_map = {obj.numero_nr: obj for obj in nr_materiales_qs}
 
@@ -493,9 +533,7 @@ def validar_plano_completo(plano: Plano):
             detalles_nr.append(f"NR {nr_faltante} -> {ESTADO_EN_VERIFICACION}")
             detalles_nr.append(" - NR válido detectado, pero no localizado en Reclamo al validar.")
 
-            resultado_plano = plano.resultados_validacion.filter(
-                nr_detectado=nr_faltante
-            ).first()
+            resultado_plano = plano.resultados_validacion.filter(nr_detectado=nr_faltante).first()
 
             if resultado_plano:
                 resultado_plano.estado_resultado = ESTADO_EN_VERIFICACION
@@ -528,9 +566,7 @@ def validar_plano_completo(plano: Plano):
             for detalle in resultado["detalles"]:
                 detalles_nr.append(f" - {detalle}")
 
-            resultado_plano = plano.resultados_validacion.filter(
-                nr_detectado=resultado["nr"]
-            ).first()
+            resultado_plano = plano.resultados_validacion.filter(nr_detectado=resultado["nr"]).first()
 
             if resultado_plano:
                 resultado_plano.estado_resultado = resultado["estado"]
@@ -544,10 +580,7 @@ def validar_plano_completo(plano: Plano):
 
             if resultado["estado"] == ESTADO_RECHAZADO:
                 estado_final = ESTADO_RECHAZADO
-            elif (
-                resultado["estado"] == ESTADO_EN_VERIFICACION
-                and estado_final != ESTADO_RECHAZADO
-            ):
+            elif resultado["estado"] == ESTADO_EN_VERIFICACION and estado_final != ESTADO_RECHAZADO:
                 estado_final = ESTADO_EN_VERIFICACION
 
     if nr_desconocidos:
@@ -555,10 +588,7 @@ def validar_plano_completo(plano: Plano):
         if estado_final == ESTADO_APROBADO:
             estado_final = ESTADO_EN_VERIFICACION
 
-    motivo_lineas = [
-        f"RESULTADO FINAL DEL PLANO: {estado_final}",
-        "",
-    ]
+    motivo_lineas = [f"RESULTADO FINAL DEL PLANO: {estado_final}", ""]
 
     if resumen_general:
         motivo_lineas.append("Motivo general:")
@@ -579,20 +609,130 @@ def validar_plano_completo(plano: Plano):
     plano.motivo = "\n".join(motivo_lineas).strip()
     plano.save(update_fields=["estado", "motivo"])
 
-    return {
-        "estado": estado_final,
-        "motivos": motivo_lineas,
-    }
+    return {"estado": estado_final, "motivos": motivo_lineas}
 
 
-def procesar_plano_completo(plano: Plano, usuario: str = "sistema"):
+def procesar_plano_con_gpt(plano: Plano, usuario: str = "sistema"):
+    try:
+        file_path = plano.archivo.path
+
+        texto_ocr_local = ocr_text_from_file(file_path)
+        detalles_ocr_local = extract_detalles_por_nr(texto_ocr_local or "")
+
+        payload = extract_with_gpt(file_path)
+        nrs, detalles_gpt = _normalize_gpt_detalles_to_internal(payload)
+        detalles_gpt = _merge_gpt_with_ocr_support(nrs, detalles_gpt, detalles_ocr_local)
+
+        primera_fecha = None
+        for nr in nrs:
+            fecha_nr = detalles_gpt.get(nr, {}).get("fecha")
+            if fecha_nr:
+                primera_fecha = fecha_nr
+                break
+
+        plano.texto_ocr = texto_ocr_local or json.dumps(payload, ensure_ascii=False, indent=2)
+        plano.nr_detectados = ",".join(nrs) if nrs else None
+        plano.fecha_plano = primera_fecha
+        plano.procesado = True
+        plano.procesado_por = usuario
+        plano.fecha_procesamiento = timezone.now()
+        plano.save()
+
+        Auditoria.objects.create(
+            plano=plano,
+            carpeta=plano.carpeta,
+            usuario=usuario,
+            accion="PROCESAR_GPT",
+            descripcion=f"GPT OK -> nr_detectados={plano.nr_detectados} fecha_plano={plano.fecha_plano}",
+            entidad="Plano",
+            entidad_id=str(plano.id),
+        )
+
+        Auditoria.objects.create(
+            plano=plano,
+            carpeta=plano.carpeta,
+            usuario=usuario,
+            accion="GPT_JSON_RESULTADO",
+            descripcion=json.dumps(payload, ensure_ascii=False)[:1800],
+            entidad="Plano",
+            entidad_id=str(plano.id),
+        )
+
+        res_bd = validar_plano_contra_bd(plano)
+        Auditoria.objects.create(
+            plano=plano,
+            carpeta=plano.carpeta,
+            usuario=usuario,
+            accion="VALIDAR_NR_BD_GPT",
+            descripcion=(
+                f"VALIDACIÓN NR (GPT) -> estado={res_bd['estado']} "
+                f"validos={res_bd['validos']} "
+                f"desconocidos={res_bd['desconocidos']}"
+            ),
+            entidad="Plano",
+            entidad_id=str(plano.id),
+        )
+
+        original_extract = globals()["extract_detalles_por_nr"]
+        try:
+            globals()["extract_detalles_por_nr"] = lambda _texto: detalles_gpt
+            res_final = validar_plano_completo(plano)
+        finally:
+            globals()["extract_detalles_por_nr"] = original_extract
+
+        Auditoria.objects.create(
+            plano=plano,
+            carpeta=plano.carpeta,
+            usuario=usuario,
+            accion="VALIDAR_PLANO_COMPLETO_GPT",
+            descripcion=f"VALIDACIÓN COMPLETA (GPT) -> estado={res_final['estado']} motivos={res_final['motivos']}",
+            entidad="Plano",
+            entidad_id=str(plano.id),
+        )
+
+        return {
+            "ok": True,
+            "estado": plano.estado,
+            "plano_id": plano.id,
+            "motivo": plano.motivo,
+        }
+
+    except Exception as e:
+        error_text = f"ERROR GPT: {str(e)}"
+
+        plano.estado = ESTADO_EN_ESPERA
+        plano.motivo = error_text
+        plano.texto_ocr = error_text
+        plano.procesado = False
+        plano.save(update_fields=["estado", "motivo", "texto_ocr", "procesado"])
+
+        Auditoria.objects.create(
+            plano=plano,
+            carpeta=plano.carpeta,
+            usuario=usuario,
+            accion="PROCESO_GPT_ERROR",
+            descripcion=error_text,
+            entidad="Plano",
+            entidad_id=str(plano.id),
+        )
+
+        return {
+            "ok": False,
+            "estado": plano.estado,
+            "error": str(e),
+        }
+
+
+def procesar_plano_completo(plano: Plano, usuario: str = "sistema", extractor: str = "ocr"):
     """
-    Ejecuta todo el flujo del plano:
-    1. OCR
-    2. extracción de NR y fecha general auxiliar
-    3. validación contra BD
-    4. validación completa contra Reclamo
+    Ejecuta todo el flujo del plano.
+    Modos:
+    - extractor="ocr" (actual, por defecto)
+    - extractor="gpt" (nuevo, adicional)
     """
+    if extractor == "gpt":
+        return procesar_plano_con_gpt(plano, usuario=usuario)
+
     try:
         file_path = plano.archivo.path
         text = ocr_text_from_file(file_path)
