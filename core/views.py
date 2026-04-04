@@ -46,6 +46,23 @@ def require_admin_or_funcionario(request):
     raise PermissionDenied("No tienes permisos para realizar esta acción.")
 
 
+def _plano_en_edicion_session_key(plano_id):
+    return f"plano_en_edicion_{plano_id}"
+
+
+def _plano_en_edicion(request, plano_id):
+    return bool(request.session.get(_plano_en_edicion_session_key(plano_id), False))
+
+
+def _set_plano_en_edicion(request, plano_id, value):
+    key = _plano_en_edicion_session_key(plano_id)
+    if value:
+        request.session[key] = True
+    else:
+        request.session.pop(key, None)
+    request.session.modified = True
+
+
 # =========================================================
 # HELPERS DETALLE PLANO
 # =========================================================
@@ -769,6 +786,9 @@ def detalle_plano_view(request, plano_id):
     total_aprobados = sum(1 for r in resultados if r["estado_resultado"] == "APROBADO")
     total_rechazados = sum(1 for r in resultados if r["estado_resultado"] == "RECHAZADO")
     total_en_verificacion = sum(1 for r in resultados if r["estado_resultado"] == "EN_VERIFICACION")
+    plano_en_edicion = _plano_en_edicion(request, plano.id)
+    puede_guardar_plano = bool(plano.procesado and plano_en_edicion and not user_is_contratista(request.user))
+    puede_ver_resumen = bool(plano.procesado and not plano_en_edicion)
 
     contexto = {
         "app_name": "Shadow",
@@ -779,6 +799,9 @@ def detalle_plano_view(request, plano_id):
         "total_aprobados": total_aprobados,
         "total_rechazados": total_rechazados,
         "total_en_verificacion": total_en_verificacion,
+        "plano_en_edicion": plano_en_edicion,
+        "puede_guardar_plano": puede_guardar_plano,
+        "puede_ver_resumen": puede_ver_resumen,
     }
 
     if user_is_contratista(request.user):
@@ -824,8 +847,72 @@ def procesar_plano_view(request, plano_id):
             usuario=str(request.user),
             extractor=extractor,
         )
+        _set_plano_en_edicion(request, plano.id, True)
 
     return redirect("detalle_plano", plano_id=plano.id)
+
+
+@login_required
+def guardar_plano_view(request, plano_id):
+    require_admin_or_funcionario(request)
+
+    plano = get_object_or_404(Plano, id=plano_id, eliminado=False)
+
+    if request.method == "POST":
+        _set_plano_en_edicion(request, plano.id, False)
+
+        Auditoria.objects.create(
+            plano=plano,
+            carpeta=plano.carpeta,
+            usuario=str(request.user),
+            accion="GUARDAR_PLANO",
+            descripcion=f"Se confirmó y guardó el plano {plano.id_plano_deposito}",
+            entidad="Plano",
+            entidad_id=str(plano.id),
+        )
+
+    return redirect("detalle_plano", plano_id=plano.id)
+
+
+@login_required
+def resumen_plano_view(request, plano_id):
+    plano = get_object_or_404(
+        Plano.objects.select_related("carpeta", "carpeta__empresa"),
+        id=plano_id,
+        eliminado=False,
+    )
+
+    if user_is_contratista(request.user):
+        perfil = get_or_create_perfil(request.user)
+        if plano.carpeta.empresa_id != perfil.empresa_id:
+            raise PermissionDenied("No puedes acceder a este plano.")
+
+    if not plano.procesado or _plano_en_edicion(request, plano.id):
+        return redirect("detalle_plano", plano_id=plano.id)
+
+    resultados_qs = (
+        plano.resultados_validacion
+        .select_related("nr_materiales_encontrado", "reclamo_encontrado")
+        .all()
+    )
+
+    resultados = [_build_resultado_detalle(r) for r in resultados_qs]
+
+    total_nr = len(resultados)
+    total_aprobados = sum(1 for r in resultados if r["estado_resultado"] == "APROBADO")
+    total_rechazados = sum(1 for r in resultados if r["estado_resultado"] == "RECHAZADO")
+    total_en_verificacion = sum(1 for r in resultados if r["estado_resultado"] == "EN_VERIFICACION")
+
+    return render(request, "resumen_plano.html", {
+        "app_name": "Shadow",
+        "titulo_pantalla": "Resumen del plano",
+        "plano": plano,
+        "resultados": resultados,
+        "total_nr": total_nr,
+        "total_aprobados": total_aprobados,
+        "total_rechazados": total_rechazados,
+        "total_en_verificacion": total_en_verificacion,
+    })
 
 
 @login_required
@@ -835,6 +922,7 @@ def cancelar_plano_view(request, plano_id):
     plano = get_object_or_404(Plano, id=plano_id, eliminado=False)
 
     if request.method == "POST":
+        _set_plano_en_edicion(request, plano.id, False)
         plano.eliminado = True
         plano.fecha_eliminacion = timezone.now()
         plano.save()

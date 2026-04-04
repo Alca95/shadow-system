@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.urls import path
 from core import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     # =========================
@@ -39,6 +41,8 @@ urlpatterns = [
 
     # ✅ ELIMINACIÓN LÓGICA DE PLANO
     path('planos/<int:plano_id>/cancelar/', views.cancelar_plano_view, name='cancelar_plano'),
+    path('planos/<int:plano_id>/guardar/', views.guardar_plano_view, name='guardar_plano'),
+    path('planos/<int:plano_id>/resumen/', views.resumen_plano_view, name='resumen_plano'),
 
     # =========================
     # 🔍 OCR Y VALIDACIÓN
@@ -75,3 +79,5 @@ urlpatterns = [
     path('usuarios/<int:user_id>/editar/', views.editar_usuario_view, name='editar_usuario'),
     path('usuarios/<int:user_id>/toggle/', views.toggle_usuario_activo_view, name='toggle_usuario'),
 ]
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

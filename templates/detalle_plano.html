@@ -1,189 +1,1451 @@
 {% extends "base.html" %}
-
+{% load static %}
 {% block title %}Detalle del plano{% endblock %}
 {% block show_page_header %}{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center shadow-animate-in">
-    <div class="col-xl-11">
+<div class="dp-page shadow-animate-in">
+    <style>
+:root{
+    --dp-bg:#f4f5fb;
+    --dp-surface:#ffffff;
+    --dp-surface-soft:#f9faff;
+    --dp-border:rgba(25, 24, 56, 0.08);
+    --dp-border-strong:rgba(83, 76, 201, 0.16);
+    --dp-text:#111111;
+    --dp-text-soft:#1e1d4d;
+    --dp-muted:#7b8098;
+    --dp-primary-dark:#1f1d4b;
+    --dp-primary:#3f3b97;
+    --dp-primary-mid:#5a53cf;
+    --dp-primary-light:#cfcfe0;
+    --dp-silver:#e6e6eb;
+    --dp-white:#ffffff;
+    --dp-success:#059669;
+    --dp-success-soft:rgba(16,185,129,.10);
+    --dp-danger:#dc2626;
+    --dp-danger-soft:rgba(239,68,68,.10);
+    --dp-warning:#d97706;
+    --dp-warning-soft:rgba(245,158,11,.12);
+    --dp-info:#2563eb;
+    --dp-info-soft:rgba(37,99,235,.10);
+    --dp-shadow:0 20px 50px rgba(18, 18, 32, .08);
+    --dp-shadow-soft:0 14px 30px rgba(18, 18, 32, .05);
+    --dp-radius-2xl:30px;
+    --dp-radius-xl:24px;
+    --dp-radius-lg:18px;
+    --dp-radius-md:14px;
+}
 
-        <div class="dp-hero mb-4">
-            <div class="dp-hero__main">
-                <div class="dp-hero__icon">
-                    <i class="bi bi-file-earmark-check"></i>
+.dp-page{
+    padding:0 .15rem 1rem;
+}
+
+.dp-shell{
+    max-width:1400px;
+    margin:0 auto;
+}
+
+.dp-panel,
+.dp-form-panel,
+.dp-accordion-item,
+.dp-diagnostic-item{
+    background:linear-gradient(180deg, #ffffff 0%, #fbfbfe 100%);
+    border:1px solid var(--dp-border);
+    box-shadow:var(--dp-shadow-soft);
+}
+
+.dp-hero-premium{
+    position:relative;
+    overflow:hidden;
+    border-radius:var(--dp-radius-2xl);
+    padding:1.5rem;
+    background:
+        radial-gradient(circle at top right, rgba(255,255,255,.16) 0%, rgba(255,255,255,0) 28%),
+        radial-gradient(circle at bottom left, rgba(255,255,255,.12) 0%, rgba(255,255,255,0) 30%),
+        linear-gradient(135deg, var(--dp-primary-dark) 0%, var(--dp-primary) 52%, var(--dp-primary-mid) 100%);
+    box-shadow:0 26px 60px rgba(31,29,75,.24);
+    color:#fff;
+}
+
+.dp-hero-premium__overlay{
+    position:absolute;
+    inset:0;
+    background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
+    pointer-events:none;
+}
+
+.dp-hero-premium__top,
+.dp-hero-premium__bottom{
+    position:relative;
+    z-index:1;
+}
+
+.dp-hero-premium__top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:1.25rem;
+    margin-bottom:1.35rem;
+}
+
+.dp-hero-premium__left{
+    display:flex;
+    align-items:flex-start;
+    gap:1rem;
+    min-width:0;
+}
+
+.dp-hero-premium__icon{
+    width:72px;
+    height:72px;
+    border-radius:22px;
+    display:grid;
+    place-items:center;
+    font-size:1.8rem;
+    color:#fff;
+    background:linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,.10));
+    border:1px solid rgba(255,255,255,.18);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.10);
+    flex:0 0 auto;
+}
+
+.dp-hero-premium__eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:.45rem;
+    font-size:.76rem;
+    font-weight:800;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:rgba(255,255,255,.85);
+    margin-bottom:.55rem;
+}
+
+.dp-hero-premium__title{
+    font-size:2rem;
+    line-height:1.05;
+    font-weight:900;
+    margin:0 0 .45rem;
+    letter-spacing:-.02em;
+    color:#fff;
+}
+
+.dp-hero-premium__subtitle{
+    max-width:760px;
+    color:rgba(255,255,255,.82);
+    font-size:.97rem;
+    line-height:1.7;
+}
+
+.dp-hero-premium__actions{
+    display:flex;
+    gap:.75rem;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+}
+
+.dp-btn{
+    border-radius:14px;
+    padding:.82rem 1.05rem;
+    font-weight:800;
+    border:1px solid transparent;
+    transition:all .18s ease;
+}
+
+.dp-btn:hover{
+    transform:translateY(-2px);
+}
+
+.dp-btn-gpt-premium{
+    color:#fff;
+    background:linear-gradient(135deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.14) 100%);
+    border-color:rgba(255,255,255,.22);
+    box-shadow:0 12px 24px rgba(10,10,25,.18);
+    backdrop-filter:blur(6px);
+}
+
+.dp-btn-gpt-premium:hover,
+.dp-btn-gpt-premium:focus{
+    color:#fff;
+    border-color:rgba(255,255,255,.34);
+}
+
+.dp-btn-save{
+    color:#fff;
+    background:linear-gradient(135deg, #14b86f 0%, #0f9b5e 100%);
+    border-color:rgba(255,255,255,.18);
+    box-shadow:0 12px 24px rgba(20,184,111,.20);
+}
+
+.dp-btn-save:hover,
+.dp-btn-save:focus{
+    color:#fff;
+}
+
+.dp-btn-ghost-light{
+    color:#fff;
+    background:rgba(255,255,255,.08);
+    border-color:rgba(255,255,255,.16);
+}
+
+.dp-btn-ghost-light:hover,
+.dp-btn-ghost-light:focus{
+    color:#fff;
+    border-color:rgba(255,255,255,.28);
+}
+
+.dp-btn-ghost-danger{
+    color:#fff;
+    background:rgba(220,38,38,.16);
+    border-color:rgba(255,255,255,.14);
+}
+
+.dp-btn-ghost-danger:hover,
+.dp-btn-ghost-danger:focus{
+    color:#fff;
+}
+
+.dp-hero-premium__bottom{
+    display:grid;
+    grid-template-columns:minmax(0, 1.7fr) minmax(420px, .95fr);
+    gap:1rem;
+    align-items:stretch;
+}
+
+.dp-hero-status-card,
+.dp-hero-kpi{
+    border-radius:22px;
+    border:1px solid rgba(255,255,255,.14);
+    background:linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.06));
+    backdrop-filter:blur(8px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.dp-hero-status-card{
+    padding:1.15rem;
+}
+
+.dp-hero-status-card__label{
+    font-size:.74rem;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    font-weight:800;
+    color:rgba(255,255,255,.70);
+    margin-bottom:.75rem;
+}
+
+.dp-hero-status-card__state{
+    display:inline-flex;
+    align-items:center;
+    gap:.55rem;
+    padding:.72rem 1rem;
+    border-radius:16px;
+    font-size:.98rem;
+    font-weight:900;
+    margin-bottom:.85rem;
+    border:1px solid transparent;
+}
+
+.dp-hero-status-card__state.is-success{
+    color:#dcfce7;
+    background:rgba(16,185,129,.18);
+    border-color:rgba(167,243,208,.18);
+}
+
+.dp-hero-status-card__state.is-danger{
+    color:#fee2e2;
+    background:rgba(239,68,68,.18);
+    border-color:rgba(254,202,202,.18);
+}
+
+.dp-hero-status-card__state.is-warning{
+    color:#fef3c7;
+    background:rgba(245,158,11,.18);
+    border-color:rgba(253,230,138,.20);
+}
+
+.dp-hero-status-card__state.is-info{
+    color:#dbeafe;
+    background:rgba(37,99,235,.18);
+    border-color:rgba(191,219,254,.18);
+}
+
+.dp-hero-status-card__state.is-muted{
+    color:#f3f4f6;
+    background:rgba(148,163,184,.16);
+    border-color:rgba(226,232,240,.16);
+}
+
+.dp-hero-status-card__text{
+    color:rgba(255,255,255,.78);
+    line-height:1.65;
+    font-size:.92rem;
+}
+
+.dp-hero-kpis{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+    gap:1rem;
+}
+
+.dp-hero-kpi{
+    padding:1rem 1.05rem;
+    min-height:120px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+}
+
+.dp-hero-kpi__label{
+    font-size:.74rem;
+    font-weight:800;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:rgba(255,255,255,.70);
+}
+
+.dp-hero-kpi__value{
+    font-size:2rem;
+    line-height:1;
+    font-weight:900;
+    color:#fff;
+    letter-spacing:-.03em;
+}
+
+.dp-hero-kpi.is-success .dp-hero-kpi__value{ color:#d1fae5; }
+.dp-hero-kpi.is-danger .dp-hero-kpi__value{ color:#fee2e2; }
+.dp-hero-kpi.is-warning .dp-hero-kpi__value{ color:#fef3c7; }
+
+.dp-executive-strip{
+    display:grid;
+    grid-template-columns:1.25fr 1fr auto;
+    gap:1rem;
+    align-items:stretch;
+    padding:1rem 1.1rem;
+    border-radius:var(--dp-radius-xl);
+    background:linear-gradient(180deg, #ffffff 0%, #f9f9fd 100%);
+    border:1px solid rgba(63,59,151,.08);
+    box-shadow:var(--dp-shadow);
+}
+
+.dp-executive-strip__section{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    min-width:0;
+}
+
+.dp-executive-strip__section--data{
+    gap:.85rem;
+}
+
+.dp-executive-strip__header{
+    margin-bottom:.15rem;
+}
+
+.dp-executive-strip__title{
+    color:var(--dp-text-soft);
+    font-weight:900;
+    font-size:1.08rem;
+}
+
+.dp-section-label{
+    font-size:.74rem;
+    font-weight:800;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--dp-muted);
+    margin-bottom:.25rem;
+}
+
+.dp-section-label--light{
+    color:#6b6f8a;
+}
+
+.dp-inline-meta{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0,1fr));
+    gap:.8rem;
+    align-items:stretch;
+}
+
+.dp-inline-meta__item{
+    min-width:0;
+    min-height:168px;
+    border-radius:18px;
+    padding:1rem 1rem 1.15rem;
+    background:linear-gradient(180deg, rgba(90,83,207,.06), rgba(90,83,207,.02));
+    border:1px solid rgba(90,83,207,.10);
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+}
+
+.dp-inline-meta__label{
+    display:block;
+    font-size:.72rem;
+    color:#6f748c;
+    font-weight:800;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    margin-bottom:.32rem;
+}
+
+.dp-inline-meta__value{
+    display:block;
+    color:var(--dp-text-soft);
+    font-weight:900;
+    font-size:1rem;
+    line-height:1.25;
+    word-break:break-word;
+    margin-top:auto;
+}
+
+.dp-executive-strip__section--metrics{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:.85rem;
+}
+
+.dp-mini-stat{
+    border-radius:18px;
+    min-height:144px;
+    padding:1rem .95rem .95rem;
+    background:#fbfbff;
+    border:1px solid rgba(63,59,151,.08);
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+}
+
+.dp-mini-stat__label{
+    font-size:.68rem;
+    line-height:1.35;
+    color:#6f748c;
+    font-weight:800;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+}
+
+.dp-mini-stat__value{
+    color:var(--dp-text-soft);
+    font-size:1.5rem;
+    line-height:1;
+    font-weight:900;
+}
+
+.dp-mini-stat.is-success{
+    background:linear-gradient(180deg, rgba(16,185,129,.06), rgba(16,185,129,.02));
+    border-color:rgba(16,185,129,.12);
+}
+.dp-mini-stat.is-warning{
+    background:linear-gradient(180deg, rgba(245,158,11,.08), rgba(245,158,11,.02));
+    border-color:rgba(245,158,11,.14);
+}
+.dp-mini-stat.is-danger{
+    background:linear-gradient(180deg, rgba(239,68,68,.06), rgba(239,68,68,.02));
+    border-color:rgba(239,68,68,.12);
+}
+
+.dp-executive-strip__section--tools{
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    gap:.75rem;
+    min-width:290px;
+}
+
+.dp-btn-soft-board{
+    color:var(--dp-text-soft);
+    background:linear-gradient(180deg,#ffffff,#f8f8fd);
+    border-color:rgba(63,59,151,.10);
+}
+
+.dp-executive-strip__section--tools .dp-btn{
+    width:100%;
+    min-height:72px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+}
+
+.dp-executive-strip__section--tools .dp-btn:first-child{
+    min-height:144px;
+    font-size:1.05rem;
+}
+
+.dp-btn-soft-board:hover,
+.dp-btn-soft-board:focus{
+    color:var(--dp-text-soft);
+}
+
+.dp-panel{
+    border-radius:var(--dp-radius-xl);
+    padding:1.2rem;
+    height:100%;
+}
+
+.dp-panel-results{
+    height:auto !important;
+    min-height:0 !important;
+    padding-bottom:1rem;
+}
+
+.dp-panel__head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:1rem;
+    margin-bottom:1rem;
+}
+
+.dp-panel__head--tight{
+    margin-bottom:1.1rem;
+}
+
+.dp-section-title{
+    color:var(--dp-text-soft);
+    font-weight:900;
+    font-size:1.08rem;
+}
+
+.dp-state{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:.46rem .82rem;
+    border-radius:999px;
+    font-size:.78rem;
+    font-weight:800;
+    border:1px solid transparent;
+    white-space:nowrap;
+}
+
+.dp-state-success{
+    color:var(--dp-success);
+    background:var(--dp-success-soft);
+    border-color:rgba(16,185,129,.16);
+}
+
+.dp-state-danger{
+    color:var(--dp-danger);
+    background:var(--dp-danger-soft);
+    border-color:rgba(239,68,68,.16);
+}
+
+.dp-state-warning{
+    color:var(--dp-warning);
+    background:var(--dp-warning-soft);
+    border-color:rgba(245,158,11,.16);
+}
+
+.dp-state-info{
+    color:var(--dp-info);
+    background:var(--dp-info-soft);
+    border-color:rgba(37,99,235,.16);
+}
+
+.dp-state-muted{
+    color:#475569;
+    background:rgba(100,116,139,.10);
+    border-color:rgba(100,116,139,.12);
+}
+
+.dp-preview-panel{
+    padding:1rem 1rem 1.15rem;
+}
+
+.dp-preview-wrap{
+    border-radius:18px;
+    border:1px solid var(--dp-border);
+    background:linear-gradient(180deg,#ffffff,#fbfcff);
+    padding:1rem;
+    overflow:hidden;
+}
+
+.dp-preview-image{
+    display:block;
+    width:100%;
+    max-height:820px;
+    object-fit:contain;
+    border-radius:14px;
+}
+
+.dp-preview-frame{
+    width:100%;
+    height:720px;
+    border:0;
+    border-radius:14px;
+    background:#fff;
+}
+
+.dp-accordion{
+    display:flex;
+    flex-direction:column;
+    gap:1rem;
+    margin:0;
+    padding:0;
+}
+
+.dp-accordion-item{
+    overflow:hidden;
+    border-radius:22px !important;
+    border:1px solid var(--dp-border-strong) !important;
+    background:linear-gradient(180deg,#ffffff 0%,#fafbff 100%);
+    margin:0 !important;
+}
+
+.dp-accordion-button{
+    background:transparent !important;
+    box-shadow:none !important;
+    padding:1rem 1.15rem !important;
+}
+
+.dp-accordion-button:not(.collapsed){
+    background:linear-gradient(180deg, rgba(90,83,207,.05), rgba(90,83,207,.02)) !important;
+}
+
+.dp-accordion-button::after{
+    margin-left:1rem;
+}
+
+.dp-acc-header{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:1rem;
+    padding-right:.35rem;
+}
+
+.dp-acc-left{
+    min-width:0;
+}
+
+.dp-acc-code{
+    font-size:1.02rem;
+    font-weight:900;
+    color:var(--dp-text-soft);
+    margin-bottom:.55rem;
+}
+
+.dp-validation-strip{
+    display:flex;
+    align-items:center;
+    gap:.5rem;
+    flex-wrap:wrap;
+}
+
+.dp-validation-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:.35rem;
+    border-radius:999px;
+    padding:.42rem .7rem;
+    font-size:.75rem;
+    font-weight:800;
+    border:1px solid transparent;
+    line-height:1.1;
+}
+
+.dp-validation-pill strong{
+    font-weight:900;
+}
+
+.dp-validation-pill.is-ok{
+    color:var(--dp-success);
+    background:var(--dp-success-soft);
+    border-color:rgba(16,185,129,.15);
+}
+
+.dp-validation-pill.is-ko{
+    color:var(--dp-danger);
+    background:var(--dp-danger-soft);
+    border-color:rgba(239,68,68,.15);
+}
+
+.dp-accordion-body{
+    padding:1.15rem !important;
+    background:linear-gradient(180deg, rgba(250,251,255,.9), #ffffff);
+}
+
+.dp-compare-shell,
+.dp-materials-shell{
+    border-radius:20px;
+    border:1px solid var(--dp-border);
+    background:linear-gradient(180deg,#ffffff 0%,#fcfdff 100%);
+    padding:1rem;
+}
+
+.dp-form-panel{
+    border-radius:18px;
+    border:1px solid var(--dp-border);
+    background:linear-gradient(180deg,#ffffff 0%,#fbfcff 100%);
+    padding:1rem;
+    height:100%;
+}
+
+.dp-form-panel--materials{
+    padding:0;
+    overflow:hidden;
+}
+
+.dp-form-panel__title{
+    display:flex;
+    align-items:center;
+    gap:.55rem;
+    font-weight:900;
+    color:var(--dp-text-soft);
+    margin-bottom:.95rem;
+}
+
+.dp-form-panel--materials .dp-form-panel__title{
+    padding:1rem 1rem .75rem;
+    margin-bottom:0;
+    border-bottom:1px solid var(--dp-border);
+    background:linear-gradient(180deg, rgba(90,83,207,.05), rgba(90,83,207,.02));
+}
+
+.dp-form-grid{
+    display:grid;
+    gap:.8rem;
+}
+
+.dp-field{
+    border:1px solid var(--dp-border);
+    background:linear-gradient(180deg,#ffffff,#f9f9fd);
+    border-radius:14px;
+    padding:.85rem .9rem;
+    background:#fff;
+}
+
+.dp-field label{
+    display:block;
+    font-size:.72rem;
+    font-weight:800;
+    color:var(--dp-muted);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    margin-bottom:.38rem;
+}
+
+.dp-field-value{
+    min-height:22px;
+    color:var(--dp-text-soft);
+    font-weight:700;
+    word-break:break-word;
+}
+
+.dp-materials-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:1rem;
+    margin-bottom:1rem;
+}
+
+.dp-materials-title{
+    font-size:1rem;
+    font-weight:900;
+    color:var(--dp-text-soft);
+}
+
+.dp-table{
+    margin:0;
+}
+
+.dp-table thead th{
+    background:#f7f9ff;
+    color:#5e6379;
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    border-bottom:1px solid var(--dp-border) !important;
+    font-weight:800;
+    padding:.9rem 1rem;
+}
+
+.dp-table tbody td{
+    color:var(--dp-text-soft);
+    border-top:1px solid rgba(15,23,42,.05);
+    padding:.86rem 1rem;
+    font-weight:600;
+    vertical-align:middle;
+}
+
+.dp-raw-box,
+.dp-empty-box{
+    margin:1rem;
+    border-radius:16px;
+    border:1px dashed var(--dp-border);
+    padding:1rem;
+    background:#fff;
+    color:var(--dp-text-soft);
+}
+
+.dp-empty-box{
+    color:var(--dp-muted);
+    font-weight:600;
+}
+
+.dp-nr-diagnostic-accordion{
+    margin:0;
+}
+
+.dp-diagnostic-item{
+    border-radius:18px !important;
+    overflow:hidden;
+}
+
+.dp-diagnostic-button{
+    background:linear-gradient(180deg, rgba(90,83,207,.05), rgba(90,83,207,.02)) !important;
+    color:var(--dp-text-soft) !important;
+    font-weight:800;
+    box-shadow:none !important;
+}
+
+.dp-diagnostic-button:not(.collapsed){
+    color:var(--dp-text-soft) !important;
+}
+
+.dp-diagnostic-body{
+    color:var(--dp-muted);
+    line-height:1.7;
+    background:#fff;
+}
+
+.dp-text-block{
+    border-radius:16px;
+    border:1px solid var(--dp-border);
+    background:linear-gradient(180deg,#ffffff,#fbfcff);
+    padding:1rem;
+    color:var(--dp-text-soft);
+    line-height:1.75;
+    min-height:220px;
+    overflow:auto;
+}
+
+.dp-text-block--mono{
+    font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size:.9rem;
+    white-space:pre-wrap;
+}
+
+.dp-empty-main{
+    border-radius:18px;
+    border:1px dashed var(--dp-border);
+    padding:1rem;
+    color:var(--dp-muted);
+    display:flex;
+    align-items:center;
+    gap:.9rem;
+    background:linear-gradient(180deg,#ffffff,#fbfcff);
+}
+
+.dp-empty-main i{
+    font-size:1.3rem;
+    color:var(--dp-primary-mid);
+}
+
+@media (max-width: 1199.98px){
+    .dp-hero-premium__bottom{
+        grid-template-columns:1fr;
+    }
+
+    .dp-hero-kpis{
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+    }
+
+    .dp-executive-strip{
+        grid-template-columns:1fr;
+    }
+
+    .dp-executive-strip__section--tools{
+        justify-content:flex-start;
+    }
+}
+
+@media (max-width: 991.98px){
+    .dp-hero-premium__top{
+        flex-direction:column;
+    }
+
+    .dp-hero-premium__actions{
+        width:100%;
+        justify-content:flex-start;
+    }
+
+    .dp-preview-frame{
+        height:560px;
+    }
+
+    .dp-inline-meta{
+        grid-template-columns:1fr;
+    }
+
+    .dp-executive-strip__section--metrics{
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px){
+    .dp-page{
+        padding:0 0 .75rem;
+    }
+
+    .dp-hero-premium,
+    .dp-executive-strip,
+    .dp-panel{
+        border-radius:22px;
+        padding:1rem;
+    }
+
+    .dp-hero-premium__left{
+        flex-direction:column;
+    }
+
+    .dp-hero-premium__icon{
+        width:58px;
+        height:58px;
+        border-radius:18px;
+        font-size:1.35rem;
+    }
+
+    .dp-hero-premium__title{
+        font-size:1.6rem;
+    }
+
+    .dp-hero-kpis,
+    .dp-executive-strip__section--metrics{
+        grid-template-columns:1fr;
+    }
+
+    .dp-acc-header{
+        flex-direction:column;
+        align-items:flex-start;
+    }
+
+    .dp-preview-frame{
+        height:420px;
+    }
+}
+
+/* ====== Refactor superior tipo board ====== */
+.dp-hero-board{
+    position:relative;
+    overflow:hidden;
+    border-radius:30px;
+    padding:1.45rem;
+    background:
+        radial-gradient(circle at top right, rgba(255,255,255,.14) 0%, rgba(255,255,255,0) 28%),
+        radial-gradient(circle at bottom left, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 30%),
+        linear-gradient(135deg, #2a2669 0%, #403b97 54%, #6c66d8 100%);
+    box-shadow:0 26px 60px rgba(31,29,75,.24);
+    color:#fff;
+}
+.dp-hero-board__glow{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
+}
+.dp-hero-board__header,
+.dp-workboard{
+    position:relative;
+    z-index:1;
+}
+.dp-hero-board__header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:1rem;
+    margin-bottom:1.2rem;
+}
+.dp-hero-board__identity{
+    display:flex;
+    gap:1rem;
+    align-items:flex-start;
+    min-width:0;
+}
+.dp-hero-board__icon{
+    width:72px;
+    height:72px;
+    border-radius:22px;
+    display:grid;
+    place-items:center;
+    font-size:1.8rem;
+    color:#fff;
+    background:linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,.10));
+    border:1px solid rgba(255,255,255,.18);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.10);
+    flex:0 0 auto;
+}
+.dp-hero-board__eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:.45rem;
+    font-size:.76rem;
+    font-weight:800;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:rgba(255,255,255,.85);
+    margin-bottom:.55rem;
+}
+.dp-hero-board__title{
+    font-size:2rem;
+    line-height:1.05;
+    font-weight:900;
+    margin:0 0 .45rem;
+    letter-spacing:-.02em;
+    color:#fff;
+}
+.dp-hero-board__subtitle{
+    max-width:760px;
+    color:rgba(255,255,255,.82);
+    font-size:.97rem;
+    line-height:1.7;
+}
+.dp-hero-board__status-slot{
+    display:flex;
+    justify-content:flex-end;
+    align-items:flex-start;
+}
+.dp-master-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:.55rem;
+    padding:.9rem 1.45rem;
+    border-radius:18px;
+    font-size:1rem;
+    font-weight:900;
+    border:1px solid transparent;
+    white-space:nowrap;
+    box-shadow:0 10px 26px rgba(0,0,0,.14);
+}
+.dp-master-badge.is-success{
+    color:#dcfce7;
+    background:linear-gradient(135deg, rgba(16,185,129,.88), rgba(5,150,105,.78));
+    border-color:rgba(167,243,208,.25);
+}
+.dp-master-badge.is-danger{
+    color:#fff1f2;
+    background:linear-gradient(135deg, rgba(239,68,68,.90), rgba(220,38,38,.80));
+    border-color:rgba(254,202,202,.22);
+}
+.dp-master-badge.is-warning{
+    color:#fff7ed;
+    background:linear-gradient(135deg, rgba(245,158,11,.92), rgba(217,119,6,.82));
+    border-color:rgba(253,230,138,.24);
+}
+.dp-master-badge.is-info{
+    color:#eff6ff;
+    background:linear-gradient(135deg, rgba(59,130,246,.90), rgba(37,99,235,.80));
+    border-color:rgba(191,219,254,.22);
+}
+.dp-master-badge.is-muted{
+    color:#f8fafc;
+    background:linear-gradient(135deg, rgba(100,116,139,.90), rgba(71,85,105,.82));
+    border-color:rgba(226,232,240,.20);
+}
+.dp-workboard{
+    display:grid;
+    grid-template-columns:minmax(0, 1.56fr) minmax(420px, 1fr);
+    gap:1rem;
+    align-items:stretch;
+}
+.dp-workboard__left,
+.dp-workboard__right{
+    min-width:0;
+}
+.dp-data-card{
+    height:100%;
+    border-radius:22px;
+    padding:1rem;
+    border:1px solid rgba(255,255,255,.14);
+    background:linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.08));
+    backdrop-filter:blur(8px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+    display:flex;
+    flex-direction:column;
+}
+.dp-data-card__label{
+    font-size:.74rem;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    font-weight:800;
+    color:rgba(255,255,255,.82);
+    margin-bottom:.85rem;
+}
+.dp-data-grid{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:.8rem;
+    height:100%;
+}
+.dp-data-tile{
+    height:100%;
+    min-height:152px;
+    border-radius:14px;
+    padding:1rem 1rem 1.1rem;
+    background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,244,252,.92));
+    border:1px solid rgba(255,255,255,.18);
+    color:#1f1d4b;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+}
+.dp-data-tile__title{
+    display:block;
+    font-size:.72rem;
+    color:#4f536d;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+}
+.dp-data-tile__value{
+    display:block;
+    color:#35336f;
+    font-size:1.08rem;
+    font-weight:900;
+    line-height:1.3;
+    word-break:break-word;
+}
+.dp-workboard__right{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:.8rem;
+    align-items:stretch;
+}
+.dp-counter-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:.8rem;
+}
+.dp-counter-tile{
+    min-height:132px;
+    border-radius:14px;
+    padding:.9rem .95rem;
+    border:1px solid rgba(255,255,255,.12);
+    background:linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.07));
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    backdrop-filter:blur(6px);
+}
+.dp-counter-tile__label{
+    font-size:.63rem;
+    line-height:1.35;
+    color:rgba(255,255,255,.82);
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+}
+.dp-counter-tile__value{
+    color:#fff;
+    font-size:1.8rem;
+    line-height:1;
+    font-weight:900;
+}
+.dp-action-stack{
+    display:flex;
+    flex-direction:column;
+    gap:.6rem;
+}
+.dp-action-btn{
+    width:100%;
+    border-radius:14px;
+    padding:.9rem 1rem;
+    font-weight:900;
+    border:1px solid transparent;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:.65rem;
+    transition:all .18s ease;
+}
+.dp-action-btn:hover{
+    transform:translateY(-2px);
+}
+.dp-action-btn--xl{
+    min-height:72px;
+}
+.dp-action-btn--primary{
+    color:#fff;
+    background:linear-gradient(135deg, #5f86ff 0%, #4f6de8 100%);
+    box-shadow:0 16px 30px rgba(79,109,232,.28);
+}
+.dp-action-btn--primary:hover,
+.dp-action-btn--primary:focus{
+    color:#fff;
+}
+.dp-action-btn__content{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    line-height:1;
+}
+.dp-action-btn__content span{
+    font-size:1rem;
+}
+.dp-action-btn__content small{
+    font-size:.82rem;
+    font-weight:800;
+    opacity:.9;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+}
+.dp-action-btn--secondary{
+    color:#fff;
+    background:rgba(255,255,255,.10);
+    border-color:rgba(255,255,255,.20);
+}
+.dp-action-btn--secondary:hover,
+.dp-action-btn--secondary:focus{
+    color:#fff;
+}
+.dp-action-btn--success{
+    color:#fff;
+    background:linear-gradient(135deg, #4f8b00 0%, #3e6f00 100%);
+    box-shadow:0 14px 24px rgba(79,139,0,.24);
+}
+.dp-action-btn--success:hover,
+.dp-action-btn--success:focus{
+    color:#fff;
+}
+.dp-action-btn--danger{
+    color:#fff;
+    background:linear-gradient(135deg, #9d0b0b 0%, #7f0909 100%);
+    box-shadow:0 14px 24px rgba(157,11,11,.24);
+}
+.dp-action-btn--danger:hover,
+.dp-action-btn--danger:focus{
+    color:#fff;
+}
+.dp-action-btn--print{
+    color:#fff;
+    background:rgba(255,255,255,.12);
+    border-color:rgba(255,255,255,.28);
+    min-height:132px;
+    font-size:1.08rem;
+}
+.dp-action-btn--print:hover,
+.dp-action-btn--print:focus{
+    color:#fff;
+}
+.dp-action-btn--white{
+    color:#28275f;
+    background:linear-gradient(180deg,#ffffff,#f6f7ff);
+    border-color:rgba(63,59,151,.12);
+}
+.dp-action-btn--white:hover,
+.dp-action-btn--white:focus{
+    color:#28275f;
+}
+@media (max-width: 1199.98px){
+    .dp-workboard{
+        grid-template-columns:1fr;
+    }
+}
+@media (max-width: 991.98px){
+    .dp-hero-board__header{
+        flex-direction:column;
+    }
+    .dp-hero-board__status-slot{
+        justify-content:flex-start;
+    }
+    .dp-workboard__right{
+        grid-template-columns:1fr;
+    }
+}
+@media (max-width: 767.98px){
+    .dp-hero-board{
+        border-radius:22px;
+        padding:1rem;
+    }
+    .dp-hero-board__identity{
+        flex-direction:column;
+    }
+    .dp-hero-board__icon{
+        width:58px;
+        height:58px;
+        border-radius:18px;
+        font-size:1.35rem;
+    }
+    .dp-hero-board__title{
+        font-size:1.6rem;
+    }
+    .dp-data-grid,
+    .dp-counter-grid{
+        grid-template-columns:1fr;
+    }
+}
+    </style>
+    <div class="dp-shell">
+
+        
+        <section class="dp-hero-board mb-4">
+            <div class="dp-hero-board__glow"></div>
+
+            <div class="dp-hero-board__header">
+                <div class="dp-hero-board__identity">
+                    <div class="dp-hero-board__icon">
+                        <i class="bi bi-file-earmark-check"></i>
+                    </div>
+
+                    <div class="dp-hero-board__copy">
+                        <div class="dp-hero-board__eyebrow">
+                            <i class="bi bi-stars"></i>
+                            Shadow · Validación inteligente del plano
+                        </div>
+                        <h1 class="dp-hero-board__title">Detalle del plano</h1>
+                        <p class="dp-hero-board__subtitle mb-0">
+                            Panel ejecutivo para revisar el procesamiento, validar cada NR y contrastar los datos del plano con la base de datos.
+                        </p>
+                    </div>
                 </div>
 
-                <div>
-                    <div class="dp-eyebrow">
-                        <i class="bi bi-stars"></i>
-                        Análisis OCR · Validación técnica
-                    </div>
-                    <h1 class="dp-title mb-1">Detalle del plano</h1>
-                    <div class="dp-subtitle">
-                        Visualización premium del resultado OCR, comparaciones por NR y contraste con base de datos.
-                    </div>
-                </div>
-            </div>
-
-            <div class="dp-hero__actions">
-                <form method="post" action="{% url 'procesar_ocr' plano.id %}" class="m-0">
-                    {% csrf_token %}
-                    <input type="hidden" name="extractor" value="ocr">
-                    <button type="submit" class="btn dp-btn dp-btn-primary">
-                        <i class="bi bi-arrow-repeat me-2"></i>
-                        Procesar con OCR
-                    </button>
-                </form>
-
-                <form method="post" action="{% url 'procesar_ocr' plano.id %}" class="m-0">
-                    {% csrf_token %}
-                    <input type="hidden" name="extractor" value="gpt">
-                    <button type="submit" class="btn dp-btn dp-btn-gpt">
-                        <i class="bi bi-cpu me-2"></i>
-                        Procesar con GPT
-                    </button>
-                </form>
-
-                <form method="post" action="{% url 'cancelar_plano' plano.id %}" class="m-0">
-                    {% csrf_token %}
-                    <button type="submit" class="btn dp-btn dp-btn-soft-danger">
-                        <i class="bi bi-trash me-2"></i>
-                        Cancelar
-                    </button>
-                </form>
-
-                <a href="{% url 'detalle_carpeta' plano.carpeta.id %}" class="btn dp-btn dp-btn-soft">
-                    <i class="bi bi-arrow-left me-2"></i>
-                    Volver
-                </a>
-            </div>
-        </div>
-
-        <div class="row g-4 mb-4">
-            <div class="col-lg-6">
-                <div class="dp-panel h-100">
-                    <div class="dp-panel__head">
-                        <div>
-                            <div class="dp-section-label">Información general</div>
-                            <h5 class="dp-section-title mb-0">Datos del plano</h5>
-                        </div>
-
-                        <div>
-                            {% if plano.estado == "APROBADO" %}
-                                <span class="dp-state dp-state-success">Aprobado</span>
-                            {% elif plano.estado == "RECHAZADO" %}
-                                <span class="dp-state dp-state-danger">Rechazado</span>
-                            {% elif plano.estado == "EN_REVISION" %}
-                                <span class="dp-state dp-state-info">En revisión</span>
-                            {% elif plano.estado == "EN_ESPERA" %}
-                                <span class="dp-state dp-state-muted">En espera</span>
-                            {% else %}
-                                <span class="dp-state dp-state-warning">En verificación</span>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="dp-meta-grid dp-meta-grid--main">
-                        <div class="dp-meta-card">
-                            <div class="dp-meta-label">ID plano</div>
-                            <div class="dp-meta-value">{{ plano.id_plano_deposito|default:plano.id }}</div>
-                        </div>
-
-                        <div class="dp-meta-card">
-                            <div class="dp-meta-label">Carpeta</div>
-                            <div class="dp-meta-value">{{ plano.carpeta.codigo_carpeta|default:"-" }}</div>
-                        </div>
-
-                        <div class="dp-meta-card dp-meta-card--wide">
-                            <div class="dp-meta-label">Fecha de carga</div>
-                            <div class="dp-meta-value">{{ plano.fecha_carga|date:"d/m/Y H:i"|default:"-" }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-3">
-                <div class="dp-panel h-100">
-                    <div class="dp-panel__head">
-                        <div>
-                            <div class="dp-section-label">Resumen de validación</div>
-                            <h5 class="dp-section-title mb-0">Indicadores principales</h5>
-                        </div>
-                    </div>
-
-                    <div class="dp-kpi-grid dp-kpi-grid--compact">
-                        <div class="dp-kpi-card dp-kpi-card--primary">
-                            <span class="dp-kpi-label">NR detectados</span>
-                            <strong class="dp-kpi-value">{{ total_nr|default:0 }}</strong>
-                        </div>
-
-                        <div class="dp-kpi-card dp-kpi-card--success">
-                            <span class="dp-kpi-label">Aprobados</span>
-                            <strong class="dp-kpi-value">{{ total_aprobados|default:0 }}</strong>
-                        </div>
-
-                        <div class="dp-kpi-card dp-kpi-card--danger">
-                            <span class="dp-kpi-label">Rechazados</span>
-                            <strong class="dp-kpi-value">{{ total_rechazados|default:0 }}</strong>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-3">
-                <div class="dp-panel h-100">
-                    <div class="dp-panel__head">
-                        <div>
-                            <div class="dp-section-label">Acciones</div>
-                            <h5 class="dp-section-title mb-0">Gestión rápida</h5>
-                        </div>
-                    </div>
-
-                    <div class="d-grid gap-2">
-                        {% if tiene_preview_plano %}
-                            <button
-                                type="button"
-                                class="btn dp-btn dp-btn-soft w-100"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#vistaPreviaPlano"
-                                aria-expanded="false"
-                                aria-controls="vistaPreviaPlano">
-                                <i class="bi bi-eye me-2"></i>
-                                Vista previa del plano
-                            </button>
+                <div class="dp-hero-board__status-slot">
+                    {% if plano.procesado or puede_guardar_plano or puede_ver_resumen %}
+                        {% if plano.estado == "APROBADO" %}
+                            <span class="dp-master-badge is-success">
+                                <i class="bi bi-patch-check-fill"></i>
+                                APROBADO
+                            </span>
+                        {% elif plano.estado == "RECHAZADO" %}
+                            <span class="dp-master-badge is-danger">
+                                <i class="bi bi-x-circle-fill"></i>
+                                RECHAZADO
+                            </span>
+                        {% elif plano.estado == "EN_REVISION" %}
+                            <span class="dp-master-badge is-info">
+                                <i class="bi bi-search"></i>
+                                EN REVISIÓN
+                            </span>
+                        {% elif plano.estado == "EN_ESPERA" %}
+                            <span class="dp-master-badge is-muted">
+                                <i class="bi bi-pause-circle"></i>
+                                EN ESPERA
+                            </span>
+                        {% else %}
+                            <span class="dp-master-badge is-warning">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                EN VERIFICACIÓN
+                            </span>
                         {% endif %}
+                    {% endif %}
+                </div>
+            </div>
 
-                        <a href="#resultados-nr" class="btn dp-btn dp-btn-soft w-100">
-                            <i class="bi bi-diagram-3 me-2"></i>
-                            Ver resultados
-                        </a>
+            <div class="dp-workboard">
+                <div class="dp-workboard__left">
+                    <div class="dp-data-card">
+                        <div class="dp-data-card__label">Resultado del plano</div>
+
+                        <div class="dp-data-grid">
+                            <div class="dp-data-tile">
+                                <span class="dp-data-tile__title">Id plano</span>
+                                <strong class="dp-data-tile__value">{{ plano.id_plano_deposito|default:plano.id }}</strong>
+                            </div>
+
+                            <div class="dp-data-tile">
+                                <span class="dp-data-tile__title">Carpeta</span>
+                                <strong class="dp-data-tile__value">{{ plano.carpeta.codigo_carpeta|default:"-" }}</strong>
+                            </div>
+
+                            <div class="dp-data-tile">
+                                <span class="dp-data-tile__title">Fecha de carga</span>
+                                <strong class="dp-data-tile__value">{{ plano.fecha_carga|date:"d/m/Y H:i"|default:"-" }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dp-workboard__right">
+                    <div class="dp-counter-grid">
+                        <div class="dp-counter-tile">
+                            <span class="dp-counter-tile__label">NR detectados</span>
+                            <strong class="dp-counter-tile__value">{{ total_nr|default:0 }}</strong>
+                        </div>
+
+                        <div class="dp-counter-tile">
+                            <span class="dp-counter-tile__label">Aprobados</span>
+                            <strong class="dp-counter-tile__value">{{ total_aprobados|default:0 }}</strong>
+                        </div>
+
+                        <div class="dp-counter-tile">
+                            <span class="dp-counter-tile__label">Rechazados</span>
+                            <strong class="dp-counter-tile__value">{{ total_rechazados|default:0 }}</strong>
+                        </div>
+
+                        <div class="dp-counter-tile">
+                            <span class="dp-counter-tile__label">En verificación</span>
+                            <strong class="dp-counter-tile__value">{{ total_en_verificacion|default:0 }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="dp-action-stack">
+                        {% if not plano.procesado %}
+                            <form method="post" action="{% url 'procesar_ocr' plano.id %}" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="extractor" value="gpt">
+                                <button type="submit" class="btn dp-action-btn dp-action-btn--primary dp-action-btn--xl">
+                                    <span class="dp-action-btn__content">
+                                        <span>Procesar</span>
+                                        <small>OCR</small>
+                                    </span>
+                                    <i class="bi bi-stars"></i>
+                                </button>
+                            </form>
+
+                            <a href="{% url 'detalle_carpeta' plano.carpeta.id %}" class="btn dp-action-btn dp-action-btn--secondary">
+                                <i class="bi bi-arrow-left-circle"></i>
+                                <span>Volver</span>
+                            </a>
+                        {% elif puede_guardar_plano %}
+                            <form method="post" action="{% url 'guardar_plano' plano.id %}" class="m-0">
+                                {% csrf_token %}
+                                <button type="submit" class="btn dp-action-btn dp-action-btn--success">
+                                    <i class="bi bi-floppy"></i>
+                                    <span>Guardar</span>
+                                </button>
+                            </form>
+
+                            <form method="post" action="{% url 'cancelar_plano' plano.id %}" class="m-0">
+                                {% csrf_token %}
+                                <button type="submit" class="btn dp-action-btn dp-action-btn--danger">
+                                    <i class="bi bi-ban"></i>
+                                    <span>Cancelar</span>
+                                </button>
+                            </form>
+                        {% elif puede_ver_resumen %}
+                            <a href="{% url 'resumen_plano' plano.id %}" target="_blank" class="btn dp-action-btn dp-action-btn--print dp-action-btn--xl">
+                                <i class="bi bi-printer"></i>
+                                <span>Imprimir</span>
+                            </a>
+                        {% endif %}
 
                         <button
                             type="button"
-                            class="btn dp-btn dp-btn-soft w-100"
+                            class="btn dp-action-btn dp-action-btn--white"
                             data-bs-toggle="collapse"
                             data-bs-target="#bloqueInfoExtra"
                             aria-expanded="false"
                             aria-controls="bloqueInfoExtra">
-                            <i class="bi bi-file-text me-2"></i>
-                            Diagnóstico global / OCR
+                            <i class="bi bi-file-earmark-text"></i>
+                            <span>Extraídos por OCR</span>
                         </button>
-                    </div>
 
-                    <div class="dp-helper-box mt-3">
-                        <div class="dp-helper-box__title">
-                            <i class="bi bi-info-circle me-2"></i>
-                            Motor de extracción
-                        </div>
-                        <div class="dp-helper-box__body">
-                            Usa <strong>OCR</strong> como flujo tradicional o <strong>GPT</strong> para pruebas comparativas sin afectar la validación actual.
-                        </div>
+                        <a href="#resultados-nr" class="btn dp-action-btn dp-action-btn--white">
+                            <i class="bi bi-diagram-3"></i>
+                            <span>Resultados por NR</span>
+                        </a>
                     </div>
                 </div>
             </div>
-        </div>
-
-        {% if tiene_preview_plano %}
+        </section>
+{% if tiene_preview_plano %}
             <div class="collapse mb-4" id="vistaPreviaPlano">
                 <div class="dp-panel dp-preview-panel">
                     <div class="dp-panel__head dp-panel__head--tight">
@@ -234,13 +1496,13 @@
 
                                             <div class="dp-validation-strip">
                                                 <span class="dp-validation-pill {% if r.ciudad_ok %}is-ok{% else %}is-ko{% endif %}">
-                                                    <strong>Ciudad:</strong> {{ r.ciudad_resumen|default:"-" }}
+                                                    <strong>Ciudad:</strong> {{ r.ciudad_ok|yesno:"OK,No coincide" }}
                                                 </span>
                                                 <span class="dp-validation-pill {% if r.zona_ok %}is-ok{% else %}is-ko{% endif %}">
-                                                    <strong>Zona:</strong> {{ r.zona_resumen|default:"-" }}
+                                                    <strong>Zona:</strong> {{ r.zona_ok|yesno:"OK,No coincide" }}
                                                 </span>
                                                 <span class="dp-validation-pill {% if r.fecha_ok %}is-ok{% else %}is-ko{% endif %}">
-                                                    <strong>Fecha:</strong> {{ r.fecha_resumen|default:"-" }}
+                                                    <strong>Fecha:</strong> {{ r.fecha_ok|yesno:"OK,No coincide" }}
                                                 </span>
                                             </div>
                                         </div>
@@ -262,7 +1524,7 @@
                                 <div class="accordion-body dp-accordion-body">
 
                                     <div class="dp-compare-shell mb-4">
-                                        <div class="row g-4">
+                                        <div class="row g-4">                                           
                                             <div class="col-lg-6">
                                                 <div class="dp-form-panel">
                                                     <div class="dp-form-panel__title">
@@ -284,11 +1546,6 @@
                                                         <div class="dp-field">
                                                             <label>Fecha</label>
                                                             <div class="dp-field-value">{{ r.fecha_plano }}</div>
-                                                        </div>
-
-                                                        <div class="dp-field">
-                                                            <label>Resultado OCR</label>
-                                                            <div class="dp-field-value">{{ r.resultado_ocr }}</div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -317,12 +1574,23 @@
                                                             <div class="dp-field-value">{{ r.fecha_reclamo }}</div>
                                                         </div>
 
-                                                        <div class="dp-field">
-                                                            <label>Observación validación</label>
-                                                            <div class="dp-field-value">{{ r.observacion }}</div>
-                                                        </div>
+
                                                     </div>
                                                 </div>
+                                            </div>
+                                        </div>
+                                        <div class="dp-field">
+                                            <label>Observación validación</label>
+                                            <div class="dp-field-value">
+                                                {% if r.observacion and r.observacion != "-" %}
+                                                    {{ r.observacion }}
+                                                {% elif r.estado_resultado == "APROBADO" %}
+                                                    Aprobado porque ciudad, zona y fecha coinciden correctamente con la base de datos.
+                                                {% elif r.estado_resultado == "RECHAZADO" %}
+                                                    Rechazado porque existe inconsistencia entre los datos del plano y la base de datos de reclamos.
+                                                {% else %}
+                                                    En verificación porque ciudad, zona y fecha coinciden, pero la comparación de materiales requiere revisión.
+                                                {% endif %}
                                             </div>
                                         </div>
                                     </div>
@@ -418,13 +1686,19 @@
                                         </div>
 
                                         {% if r.motivo_resultado_limpio and r.motivo_resultado_limpio != "-" %}
-                                            <div class="dp-diagnostic mt-4">
-                                                <div class="dp-diagnostic__title">
-                                                    <i class="bi bi-clipboard2-pulse"></i>
-                                                    Diagnóstico del NR
-                                                </div>
-                                                <div class="dp-diagnostic__body">
-                                                    {{ r.motivo_resultado_limpio|linebreaksbr }}
+                                            <div class="accordion dp-nr-diagnostic-accordion mt-4" id="accDiag{{ forloop.counter }}">
+                                                <div class="accordion-item dp-diagnostic-item">
+                                                    <h2 class="accordion-header" id="headingDiag{{ forloop.counter }}">
+                                                        <button class="accordion-button collapsed dp-diagnostic-button" type="button" data-bs-toggle="collapse" data-bs-target="#diag{{ forloop.counter }}" aria-expanded="false" aria-controls="diag{{ forloop.counter }}">
+                                                            <i class="bi bi-clipboard2-pulse me-2"></i>
+                                                            Ver diagnóstico del NR
+                                                        </button>
+                                                    </h2>
+                                                    <div id="diag{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="headingDiag{{ forloop.counter }}">
+                                                        <div class="accordion-body dp-diagnostic-body">
+                                                            {{ r.motivo_resultado_limpio|linebreaksbr }}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         {% endif %}
@@ -477,700 +1751,5 @@
     </div>
 </div>
 
-<style>
-:root{
-    --dp-bg:#f6f8fc;
-    --dp-surface:#ffffff;
-    --dp-surface-soft:#fbfcff;
-    --dp-border:rgba(15, 23, 42, 0.08);
-    --dp-border-strong:rgba(91, 82, 214, 0.14);
-    --dp-text:#172033;
-    --dp-muted:#64748b;
-    --dp-primary:#5b52d6;
-    --dp-primary-soft:rgba(91,82,214,.08);
-    --dp-success:#059669;
-    --dp-success-soft:rgba(16,185,129,.10);
-    --dp-danger:#dc2626;
-    --dp-danger-soft:rgba(239,68,68,.10);
-    --dp-warning:#d97706;
-    --dp-warning-soft:rgba(245,158,11,.12);
-    --dp-info:#2563eb;
-    --dp-info-soft:rgba(37,99,235,.10);
-    --dp-gpt:#0f766e;
-    --dp-gpt-soft:rgba(15,118,110,.10);
-    --dp-shadow:0 18px 45px rgba(15, 23, 42, .06);
-    --dp-radius-xl:24px;
-    --dp-radius-lg:18px;
-    --dp-radius-md:14px;
-}
 
-.dp-hero,
-.dp-panel,
-.dp-form-panel,
-.dp-diagnostic,
-.dp-accordion-item{
-    position:relative;
-    background:linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
-    border:1px solid var(--dp-border);
-    box-shadow:var(--dp-shadow);
-}
-
-.dp-hero{
-    border-radius:28px;
-    padding:1.4rem 1.5rem;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:1rem;
-    overflow:hidden;
-}
-
-.dp-hero::before{
-    content:"";
-    position:absolute;
-    inset:auto -50px -80px auto;
-    width:180px;
-    height:180px;
-    background:radial-gradient(circle, rgba(91,82,214,.16) 0%, rgba(91,82,214,0) 72%);
-    pointer-events:none;
-}
-
-.dp-hero__main{
-    display:flex;
-    align-items:center;
-    gap:1rem;
-    min-width:0;
-}
-
-.dp-hero__icon{
-    width:62px;
-    height:62px;
-    border-radius:20px;
-    display:grid;
-    place-items:center;
-    font-size:1.5rem;
-    color:var(--dp-primary);
-    background:linear-gradient(180deg, rgba(91,82,214,.12), rgba(91,82,214,.05));
-    border:1px solid rgba(91,82,214,.10);
-    flex:0 0 auto;
-}
-
-.dp-eyebrow{
-    display:inline-flex;
-    align-items:center;
-    gap:.45rem;
-    font-size:.76rem;
-    font-weight:700;
-    letter-spacing:.08em;
-    text-transform:uppercase;
-    color:var(--dp-primary);
-    margin-bottom:.45rem;
-}
-
-.dp-title{
-    font-size:1.8rem;
-    font-weight:800;
-    color:var(--dp-text);
-}
-
-.dp-subtitle{
-    color:var(--dp-muted);
-    font-size:.96rem;
-}
-
-.dp-hero__actions{
-    display:flex;
-    align-items:center;
-    gap:.75rem;
-    flex-wrap:wrap;
-    justify-content:flex-end;
-}
-
-.dp-btn{
-    border-radius:14px;
-    padding:.82rem 1rem;
-    font-weight:700;
-    border:1px solid transparent;
-    transition:all .18s ease;
-}
-
-.dp-btn:hover{
-    transform:translateY(-2px);
-}
-
-.dp-btn-primary{
-    color:#fff;
-    background:linear-gradient(135deg, #5b52d6 0%, #6e63ef 100%);
-    box-shadow:0 12px 24px rgba(91,82,214,.22);
-}
-
-.dp-btn-primary:hover{
-    color:#fff;
-}
-
-.dp-btn-gpt{
-    color:#fff;
-    background:linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
-    box-shadow:0 12px 24px rgba(15,118,110,.22);
-}
-
-.dp-btn-gpt:hover{
-    color:#fff;
-}
-
-.dp-btn-soft{
-    color:var(--dp-text);
-    background:#fff;
-    border-color:var(--dp-border);
-}
-
-.dp-btn-soft-danger{
-    color:var(--dp-danger);
-    background:#fff;
-    border-color:rgba(239,68,68,.16);
-}
-
-.dp-helper-box{
-    border-radius:16px;
-    border:1px solid rgba(15,118,110,.14);
-    background:linear-gradient(180deg, rgba(15,118,110,.06), rgba(15,118,110,.02));
-    padding:.9rem 1rem;
-}
-
-.dp-helper-box__title{
-    color:var(--dp-gpt);
-    font-weight:800;
-    margin-bottom:.35rem;
-}
-
-.dp-helper-box__body{
-    color:var(--dp-muted);
-    font-size:.9rem;
-    line-height:1.55;
-}
-
-.dp-panel{
-    border-radius:var(--dp-radius-xl);
-    padding:1.2rem;
-    height:100%;
-}
-
-.dp-panel-results{
-    height:auto !important;
-    min-height:0 !important;
-    padding-bottom:1rem;
-}
-
-.dp-panel__head{
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap:1rem;
-    margin-bottom:1rem;
-}
-
-.dp-panel__head--tight{
-    margin-bottom:1.1rem;
-}
-
-.dp-section-label{
-    font-size:.74rem;
-    font-weight:800;
-    letter-spacing:.08em;
-    text-transform:uppercase;
-    color:var(--dp-muted);
-    margin-bottom:.25rem;
-}
-
-.dp-section-title{
-    color:var(--dp-text);
-    font-weight:800;
-    font-size:1.08rem;
-}
-
-.dp-state{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    padding:.46rem .82rem;
-    border-radius:999px;
-    font-size:.78rem;
-    font-weight:800;
-    border:1px solid transparent;
-    white-space:nowrap;
-}
-
-.dp-state-success{
-    color:var(--dp-success);
-    background:var(--dp-success-soft);
-    border-color:rgba(16,185,129,.16);
-}
-
-.dp-state-danger{
-    color:var(--dp-danger);
-    background:var(--dp-danger-soft);
-    border-color:rgba(239,68,68,.16);
-}
-
-.dp-state-warning{
-    color:var(--dp-warning);
-    background:var(--dp-warning-soft);
-    border-color:rgba(245,158,11,.16);
-}
-
-.dp-state-info{
-    color:var(--dp-info);
-    background:var(--dp-info-soft);
-    border-color:rgba(37,99,235,.16);
-}
-
-.dp-state-muted{
-    color:#475569;
-    background:rgba(100,116,139,.10);
-    border-color:rgba(100,116,139,.12);
-}
-
-.dp-meta-grid{
-    display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:.8rem;
-}
-
-.dp-meta-grid--main{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-}
-
-.dp-meta-card{
-    border-radius:16px;
-    border:1px solid var(--dp-border);
-    background:linear-gradient(180deg,#fff,#fafbff);
-    padding:.85rem .9rem;
-}
-
-.dp-meta-card--wide{
-    grid-column:1 / -1;
-}
-
-.dp-meta-label{
-    font-size:.74rem;
-    color:var(--dp-muted);
-    font-weight:700;
-    margin-bottom:.32rem;
-    text-transform:uppercase;
-    letter-spacing:.05em;
-}
-
-.dp-meta-value{
-    color:var(--dp-text);
-    font-weight:800;
-    word-break:break-word;
-}
-
-.dp-kpi-grid{
-    display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:.8rem;
-}
-
-.dp-kpi-grid--compact{
-    grid-template-columns:1fr;
-}
-
-.dp-kpi-card{
-    border-radius:18px;
-    padding:1rem .95rem;
-    border:1px solid transparent;
-    display:flex;
-    flex-direction:column;
-    gap:.3rem;
-}
-
-.dp-kpi-card--primary{
-    background:linear-gradient(180deg, rgba(91,82,214,.12), rgba(91,82,214,.05));
-    border-color:rgba(91,82,214,.12);
-}
-.dp-kpi-card--success{
-    background:linear-gradient(180deg, rgba(16,185,129,.12), rgba(16,185,129,.05));
-    border-color:rgba(16,185,129,.12);
-}
-.dp-kpi-card--danger{
-    background:linear-gradient(180deg, rgba(239,68,68,.12), rgba(239,68,68,.05));
-    border-color:rgba(239,68,68,.12);
-}
-.dp-kpi-card--warning{
-    background:linear-gradient(180deg, rgba(245,158,11,.14), rgba(245,158,11,.06));
-    border-color:rgba(245,158,11,.14);
-}
-
-.dp-kpi-label{
-    font-size:.76rem;
-    color:#475569;
-    font-weight:700;
-    text-transform:uppercase;
-    letter-spacing:.05em;
-}
-
-.dp-kpi-value{
-    font-size:1.5rem;
-    line-height:1;
-    color:var(--dp-text);
-    font-weight:900;
-}
-
-.dp-preview-panel{
-    padding:1rem 1rem 1.15rem;
-}
-
-.dp-preview-wrap{
-    border-radius:18px;
-    border:1px solid var(--dp-border);
-    background:linear-gradient(180deg,#ffffff,#fbfcff);
-    padding:1rem;
-    overflow:hidden;
-}
-
-.dp-preview-image{
-    display:block;
-    width:100%;
-    max-height:820px;
-    object-fit:contain;
-    border-radius:14px;
-}
-
-.dp-preview-frame{
-    width:100%;
-    height:720px;
-    border:0;
-    border-radius:14px;
-    background:#fff;
-}
-
-.dp-accordion{
-    display:flex;
-    flex-direction:column;
-    gap:1rem;
-    margin:0;
-    padding:0;
-}
-
-.dp-accordion-item{
-    overflow:hidden;
-    border-radius:22px !important;
-    border:1px solid var(--dp-border-strong) !important;
-    background:linear-gradient(180deg,#ffffff 0%,#fafbff 100%);
-    margin:0 !important;
-}
-
-.dp-accordion-button{
-    background:transparent !important;
-    box-shadow:none !important;
-    padding:1rem 1.15rem !important;
-}
-
-.dp-accordion-button:not(.collapsed){
-    background:linear-gradient(180deg, rgba(91,82,214,.04), rgba(91,82,214,.02)) !important;
-}
-
-.dp-accordion-button::after{
-    margin-left:1rem;
-}
-
-.dp-acc-header{
-    width:100%;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:1rem;
-    padding-right:.35rem;
-}
-
-.dp-acc-left{
-    min-width:0;
-}
-
-.dp-acc-code{
-    font-size:1.02rem;
-    font-weight:900;
-    color:var(--dp-text);
-    margin-bottom:.55rem;
-}
-
-.dp-validation-strip{
-    display:flex;
-    align-items:center;
-    gap:.5rem;
-    flex-wrap:wrap;
-}
-
-.dp-validation-pill{
-    display:inline-flex;
-    align-items:center;
-    gap:.35rem;
-    border-radius:999px;
-    padding:.42rem .7rem;
-    font-size:.75rem;
-    font-weight:800;
-    border:1px solid transparent;
-    line-height:1.1;
-}
-
-.dp-validation-pill strong{
-    font-weight:900;
-}
-
-.dp-validation-pill.is-ok{
-    color:var(--dp-success);
-    background:var(--dp-success-soft);
-    border-color:rgba(16,185,129,.15);
-}
-
-.dp-validation-pill.is-ko{
-    color:var(--dp-danger);
-    background:var(--dp-danger-soft);
-    border-color:rgba(239,68,68,.15);
-}
-
-.dp-accordion-body{
-    padding:1.15rem !important;
-    background:linear-gradient(180deg, rgba(250,251,255,.9), #ffffff);
-}
-
-.dp-compare-shell,
-.dp-materials-shell{
-    border-radius:20px;
-    border:1px solid var(--dp-border);
-    background:linear-gradient(180deg,#ffffff 0%,#fcfdff 100%);
-    padding:1rem;
-}
-
-.dp-form-panel{
-    border-radius:18px;
-    border:1px solid var(--dp-border);
-    background:linear-gradient(180deg,#ffffff 0%,#fbfcff 100%);
-    padding:1rem;
-    height:100%;
-}
-
-.dp-form-panel--materials{
-    padding:0;
-    overflow:hidden;
-}
-
-.dp-form-panel__title{
-    display:flex;
-    align-items:center;
-    gap:.55rem;
-    font-weight:800;
-    color:var(--dp-text);
-    margin-bottom:.95rem;
-}
-
-.dp-form-panel--materials .dp-form-panel__title{
-    padding:1rem 1rem .75rem;
-    margin-bottom:0;
-    border-bottom:1px solid var(--dp-border);
-    background:linear-gradient(180deg, rgba(91,82,214,.05), rgba(91,82,214,.02));
-}
-
-.dp-form-grid{
-    display:grid;
-    gap:.8rem;
-}
-
-.dp-field{
-    border:1px solid var(--dp-border);
-    border-radius:14px;
-    padding:.85rem .9rem;
-    background:#fff;
-}
-
-.dp-field label{
-    display:block;
-    font-size:.72rem;
-    font-weight:800;
-    color:var(--dp-muted);
-    text-transform:uppercase;
-    letter-spacing:.05em;
-    margin-bottom:.38rem;
-}
-
-.dp-field-value{
-    min-height:22px;
-    color:var(--dp-text);
-    font-weight:700;
-    word-break:break-word;
-}
-
-.dp-materials-head{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:1rem;
-    margin-bottom:1rem;
-}
-
-.dp-materials-title{
-    font-size:1rem;
-    font-weight:900;
-    color:var(--dp-text);
-}
-
-.dp-table{
-    margin:0;
-}
-
-.dp-table thead th{
-    background:#f7f9ff;
-    color:#475569;
-    font-size:.72rem;
-    text-transform:uppercase;
-    letter-spacing:.05em;
-    border-bottom:1px solid var(--dp-border) !important;
-    font-weight:800;
-    padding:.9rem 1rem;
-}
-
-.dp-table tbody td{
-    color:var(--dp-text);
-    border-top:1px solid rgba(15,23,42,.05);
-    padding:.86rem 1rem;
-    font-weight:600;
-    vertical-align:middle;
-}
-
-.dp-raw-box,
-.dp-empty-box{
-    margin:1rem;
-    border-radius:16px;
-    border:1px dashed var(--dp-border);
-    padding:1rem;
-    background:#fff;
-    color:var(--dp-text);
-}
-
-.dp-empty-box{
-    color:var(--dp-muted);
-    font-weight:600;
-}
-
-.dp-diagnostic{
-    border-radius:18px;
-    padding:1rem;
-}
-
-.dp-diagnostic__title{
-    display:flex;
-    align-items:center;
-    gap:.5rem;
-    color:var(--dp-text);
-    font-weight:800;
-    margin-bottom:.65rem;
-}
-
-.dp-diagnostic__body{
-    color:var(--dp-muted);
-    line-height:1.7;
-}
-
-.dp-text-block{
-    border-radius:16px;
-    border:1px solid var(--dp-border);
-    background:linear-gradient(180deg,#ffffff,#fbfcff);
-    padding:1rem;
-    color:var(--dp-text);
-    line-height:1.75;
-    min-height:220px;
-    overflow:auto;
-}
-
-.dp-text-block--mono{
-    font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    font-size:.9rem;
-    white-space:pre-wrap;
-}
-
-.dp-empty-main{
-    border-radius:18px;
-    border:1px dashed var(--dp-border);
-    padding:1rem;
-    color:var(--dp-muted);
-    display:flex;
-    align-items:center;
-    gap:.9rem;
-    background:linear-gradient(180deg,#ffffff,#fbfcff);
-}
-
-.dp-empty-main i{
-    font-size:1.3rem;
-    color:var(--dp-primary);
-}
-
-@media (max-width: 991.98px){
-    .dp-hero{
-        flex-direction:column;
-        align-items:flex-start;
-    }
-
-    .dp-hero__actions{
-        width:100%;
-        justify-content:flex-start;
-    }
-
-    .dp-meta-grid,
-    .dp-kpi-grid{
-        grid-template-columns:1fr 1fr;
-    }
-
-    .dp-meta-card--wide{
-        grid-column:auto;
-    }
-
-    .dp-kpi-grid--compact{
-        grid-template-columns:1fr;
-    }
-
-    .dp-preview-frame{
-        height:560px;
-    }
-}
-
-@media (max-width: 767.98px){
-    .dp-title{
-        font-size:1.45rem;
-    }
-
-    .dp-hero,
-    .dp-panel{
-        padding:1rem;
-        border-radius:22px;
-    }
-
-    .dp-acc-header{
-        flex-direction:column;
-        align-items:flex-start;
-    }
-
-    .dp-meta-grid,
-    .dp-kpi-grid,
-    .dp-meta-grid--main,
-    .dp-kpi-grid--compact{
-        grid-template-columns:1fr;
-    }
-
-    .dp-hero__main{
-        align-items:flex-start;
-    }
-
-    .dp-hero__icon{
-        width:54px;
-        height:54px;
-        border-radius:18px;
-        font-size:1.25rem;
-    }
-
-    .dp-preview-frame{
-        height:420px;
-    }
-}
-</style>
 {% endblock %}
