@@ -1280,7 +1280,94 @@
     .dp-counter-grid{
         grid-template-columns:1fr;
     }
+
+.dp-acc-right{
+    display:flex;
+    align-items:center;
+    gap:.55rem;
+    flex-wrap:wrap;
+    justify-content:flex-end;
 }
+
+.dp-admin-toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:1rem;
+    padding:.9rem 1rem;
+    border:1px solid var(--dp-border);
+    border-radius:16px;
+    background:linear-gradient(180deg,#ffffff,#f9f9fd);
+}
+
+.dp-admin-toolbar__label{
+    font-size:.78rem;
+    font-weight:800;
+    color:var(--dp-muted);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+}
+
+.dp-estado-manual-form{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:.45rem;
+    min-width:150px;
+}
+
+.dp-estado-manual-select{
+    min-width:150px;
+    border-radius:12px;
+}
+
+.dp-estado-manual-actions{
+    display:flex;
+    gap:.4rem;
+}
+
+
+@media (max-width: 767.98px){
+    .dp-admin-toolbar{
+        flex-direction:column;
+        align-items:flex-start;
+    }
+
+    .dp-estado-manual-form{
+        align-items:flex-start;
+    }
+}
+.dp-form-panel__title--editable{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:.75rem;
+}
+
+inline-edit-
+.dp-match-ok{
+    background: #e6f9ec;
+    border-left: 4px solid #28a745;
+}
+
+.dp-table tbody tr td.dp-cell-ok{
+    background:#eaf8ef !important;
+}
+
+.dp-table tbody tr td.dp-cell-warning{
+    background:#fff8e6 !important;
+}
+
+.dp-table tbody tr td.dp-cell-first-ok{
+    border-left:4px solid #28a745 !important;
+}
+
+.dp-table tbody tr td.dp-cell-first-warning{
+    border-left:4px solid #ffc107 !important;
+}
+
+}
+
     </style>
     <div class="dp-shell">
 
@@ -1493,27 +1580,43 @@
                                     <div class="dp-acc-header">
                                         <div class="dp-acc-left">
                                             <div class="dp-acc-code">{{ r.nr_detectado|default:"NR no identificado" }}</div>
-
                                             <div class="dp-validation-strip">
                                                 <span class="dp-validation-pill {% if r.ciudad_ok %}is-ok{% else %}is-ko{% endif %}">
                                                     <strong>Ciudad:</strong> {{ r.ciudad_ok|yesno:"OK,No coincide" }}
                                                 </span>
+
                                                 <span class="dp-validation-pill {% if r.zona_ok %}is-ok{% else %}is-ko{% endif %}">
                                                     <strong>Zona:</strong> {{ r.zona_ok|yesno:"OK,No coincide" }}
                                                 </span>
+
                                                 <span class="dp-validation-pill {% if r.fecha_ok %}is-ok{% else %}is-ko{% endif %}">
                                                     <strong>Fecha:</strong> {{ r.fecha_ok|yesno:"OK,No coincide" }}
+                                                </span>
+
+                                                <span class="dp-validation-pill {% if r.materiales_ok %}is-ok{% else %}is-ko{% endif %}">
+                                                    <strong>Materiales:</strong>
+                                                    {% if r.materiales_ok %}
+                                                        OK
+                                                    {% else %}
+                                                        En verificación
+                                                    {% endif %}
                                                 </span>
                                             </div>
                                         </div>
 
                                         <div class="dp-acc-right">
-                                            {% if r.estado_resultado == "APROBADO" %}
+                                            {% if r.estado_resultado_final == "APROBADO" %}
                                                 <span class="dp-state dp-state-success">Aprobado</span>
-                                            {% elif r.estado_resultado == "RECHAZADO" %}
+                                            {% elif r.estado_resultado_final == "RECHAZADO" %}
                                                 <span class="dp-state dp-state-danger">Rechazado</span>
                                             {% else %}
                                                 <span class="dp-state dp-state-warning">En verificación</span>
+                                            {% endif %}
+
+                                            {% if r.fue_editado %}
+                                                <span class="badge bg-warning text-dark ms-2">
+                                                    ✏ Editado
+                                                </span>
                                             {% endif %}
                                         </div>
                                     </div>
@@ -1522,32 +1625,168 @@
 
                             <div id="nr{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#accResultadosPlano">
                                 <div class="accordion-body dp-accordion-body">
+                                    {% if puede_cambiar_estado_nr %}
+                                    <div class="dp-admin-toolbar mb-4">
+                                        <div class="dp-admin-toolbar__label">
+                                            Cambio manual de estado
+                                        </div>
 
+                                        <form method="post"
+                                            action="{% url 'cambiar_estado_nr_manual' r.id_resultado %}"
+                                            class="dp-estado-manual-form"
+                                            data-estado-form>
+
+                                            {% csrf_token %}
+
+                                            <select name="estado_resultado_manual"
+                                                    class="form-select form-select-sm dp-estado-manual-select"
+                                                    data-estado-select
+                                                    data-inicial="{% if r.estado_resultado_manual %}{{ r.estado_resultado_manual }}{% else %}AUTO{% endif %}">
+                                                <option value="AUTO"
+                                                    {% if not r.estado_resultado_manual %}selected{% endif %}>
+                                                    Auto
+                                                </option>
+
+                                                <option value="APROBADO"
+                                                    {% if r.estado_resultado_manual == "APROBADO" %}selected{% endif %}>
+                                                    Aprobado
+                                                </option>
+
+                                                <option value="RECHAZADO"
+                                                    {% if r.estado_resultado_manual == "RECHAZADO" %}selected{% endif %}>
+                                                    Rechazado
+                                                </option>
+
+                                                <option value="EN_VERIFICACION"
+                                                    {% if r.estado_resultado_manual == "EN_VERIFICACION" %}selected{% endif %}>
+                                                    En verificación
+                                                </option>
+                                            </select>
+
+                                            <div class="dp-estado-manual-actions d-none" data-estado-actions>
+                                                <button type="submit"
+                                                        class="btn btn-success btn-sm"
+                                                        title="Guardar cambio">
+                                                    <i class="bi bi-check"></i>
+                                                </button>
+
+                                                <button type="button"
+                                                        class="btn btn-outline-secondary btn-sm"
+                                                        title="Cancelar cambio"
+                                                        data-estado-cancelar>
+                                                    <i class="bi bi-x"></i>
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    {% endif %}
                                     <div class="dp-compare-shell mb-4">
-                                        <div class="row g-4">                                           
+                                        <div class="row g-4">
                                             <div class="col-lg-6">
                                                 <div class="dp-form-panel">
-                                                    <div class="dp-form-panel__title">
-                                                        <i class="bi bi-file-earmark-text"></i>
-                                                        Datos detectados en el plano
+                                                    <div class="dp-form-panel__title dp-form-panel__title--editable">
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <i class="bi bi-file-earmark-text"></i>
+                                                            <span>Datos detectados en el plano</span>
+                                                        </div>
+
+                                                        {% if puede_editar_materiales %}
+                                                        <button
+                                                            type="button"
+                                                            class="btn btn-sm btn-light border"
+                                                            data-bs-toggle="collapse"
+                                                            data-bs-target="#editDatosNr{{ r.id_resultado }}"
+                                                            aria-expanded="false"
+                                                            aria-controls="editDatosNr{{ r.id_resultado }}">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        {% endif %}
                                                     </div>
 
                                                     <div class="dp-form-grid">
                                                         <div class="dp-field">
                                                             <label>Ciudad</label>
                                                             <div class="dp-field-value">{{ r.ciudad_plano }}</div>
+
+                                                            {% if r.fue_editado_manual %}
+                                                                <div class="small text-muted mt-2">
+                                                                    <div><strong>Original:</strong> {{ r.ciudad_plano_original }}</div>
+                                                                    <div><strong>Editado:</strong> {{ r.ciudad_plano_editada }}</div>
+                                                                </div>
+                                                            {% endif %}
                                                         </div>
 
                                                         <div class="dp-field">
                                                             <label>Zona</label>
                                                             <div class="dp-field-value">{{ r.zona_plano }}</div>
+
+                                                            {% if r.fue_editado_manual %}
+                                                                <div class="small text-muted mt-2">
+                                                                    <div><strong>Original:</strong> {{ r.zona_plano_original }}</div>
+                                                                    <div><strong>Editado:</strong> {{ r.zona_plano_editada }}</div>
+                                                                </div>
+                                                            {% endif %}
                                                         </div>
 
                                                         <div class="dp-field">
                                                             <label>Fecha</label>
                                                             <div class="dp-field-value">{{ r.fecha_plano }}</div>
+
+                                                            {% if r.fue_editado_manual %}
+                                                                <div class="small text-muted mt-2">
+                                                                    <div><strong>Original:</strong> {{ r.fecha_plano_original }}</div>
+                                                                    <div><strong>Editado:</strong> {{ r.fecha_plano_editada }}</div>
+                                                                </div>
+                                                            {% endif %}
                                                         </div>
                                                     </div>
+
+                                                    {% if r.fue_editado_manual %}
+                                                    <div class="mt-2 text-warning small fw-semibold">
+                                                        ✏ Datos corregidos manualmente
+                                                    </div>
+                                                    {% endif %}
+
+                                                    {% if puede_editar_materiales %}
+                                                    <div class="collapse mt-3" id="editDatosNr{{ r.id_resultado }}">
+                                                        <form method="post" action="{% url 'editar_datos_nr' r.id_resultado %}" class="dp-inline-edit-form">
+                                                            {% csrf_token %}
+
+                                                            <div class="row g-2">
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-semibold">Ciudad</label>
+                                                                    <input type="text" name="ciudad" class="form-control"
+                                                                        value="{% if r.ciudad_plano_editada != '-' %}{{ r.ciudad_plano_editada }}{% elif r.ciudad_plano != '-' %}{{ r.ciudad_plano }}{% endif %}">
+                                                                </div>
+
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-semibold">Zona</label>
+                                                                    <input type="text" name="zona" class="form-control"
+                                                                        value="{% if r.zona_plano_editada != '-' %}{{ r.zona_plano_editada }}{% elif r.zona_plano != '-' %}{{ r.zona_plano }}{% endif %}">
+                                                                </div>
+
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-semibold">Fecha</label>
+                                                                    <input type="date" name="fecha" class="form-control"
+                                                                        value="{% if r.obj.fecha_plano_editada %}{{ r.obj.fecha_plano_editada|date:'Y-m-d' }}{% elif r.obj.fecha_plano_original %}{{ r.obj.fecha_plano_original|date:'Y-m-d' }}{% endif %}">
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="d-flex justify-content-end gap-2 mt-3">
+                                                                <button type="submit" class="btn btn-success btn-sm">
+                                                                    <i class="bi bi-check"></i>
+                                                                </button>
+
+                                                                <button type="button"
+                                                                        class="btn btn-outline-secondary btn-sm"
+                                                                        data-bs-toggle="collapse"
+                                                                        data-bs-target="#editDatosNr{{ r.id_resultado }}">
+                                                                    <i class="bi bi-x"></i>
+                                                                </button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                    {% endif %}
                                                 </div>
                                             </div>
 
@@ -1573,8 +1812,6 @@
                                                             <label>Fecha reclamo / trabajo</label>
                                                             <div class="dp-field-value">{{ r.fecha_reclamo }}</div>
                                                         </div>
-
-
                                                     </div>
                                                 </div>
                                             </div>
@@ -1582,14 +1819,38 @@
                                         <div class="dp-field">
                                             <label>Observación validación</label>
                                             <div class="dp-field-value">
-                                                {% if r.observacion and r.observacion != "-" %}
+                                                {% if r.motivo_revision_manual and r.motivo_revision_manual != "-" %}
+                                                    {{ r.motivo_revision_manual }}
+
+                                                {% elif r.observacion and r.observacion != "-" %}
                                                     {{ r.observacion }}
-                                                {% elif r.estado_resultado == "APROBADO" %}
-                                                    Aprobado porque ciudad, zona y fecha coinciden correctamente con la base de datos.
+
+                                                {% elif r.estado_resultado_manual == "APROBADO" %}
+                                                    El administrador cambió manualmente el estado a APROBADO.
+
+                                                {% elif r.estado_resultado_manual == "RECHAZADO" %}
+                                                    El administrador cambió manualmente el estado a RECHAZADO.
+
+                                                {% elif r.estado_resultado_manual == "EN_VERIFICACION" %}
+                                                    El administrador cambió manualmente el estado a EN VERIFICACIÓN.
+
                                                 {% elif r.estado_resultado == "RECHAZADO" %}
                                                     Rechazado porque existe inconsistencia entre los datos del plano y la base de datos de reclamos.
+
+                                                {% elif r.estado_resultado == "APROBADO" and r.materiales_ok %}
+                                                    Aprobado porque ciudad, zona, fecha y materiales coinciden correctamente con la base de datos.
+
+                                                {% elif r.materiales_ok and r.fue_editado %}
+                                                    Los materiales fueron corregidos y ahora coinciden con la base de datos. El NR permanece en verificación hasta aprobación manual del administrador.
+
+                                                {% elif r.materiales_ok %}
+                                                    Ciudad, zona, fecha y materiales coinciden correctamente con la base de datos.
+
+                                                {% elif r.materiales_requieren_revision %}
+                                                    En verificación porque los materiales presentan inconsistencias respecto a la base de datos y requieren revisión manual.
+
                                                 {% else %}
-                                                    En verificación porque ciudad, zona y fecha coinciden, pero la comparación de materiales requiere revisión.
+                                                    En verificación porque la validación requiere revisión adicional.
                                                 {% endif %}
                                             </div>
                                         </div>
@@ -1619,17 +1880,97 @@
                                                                         <th>Cantidad</th>
                                                                         <th>Unidad</th>
                                                                         <th>Descripción</th>
+                                                                        {% if puede_editar_materiales %}
+                                                                            <th class="text-center">Acción</th>
+                                                                        {% endif %}
                                                                     </tr>
                                                                 </thead>
-                                                                <tbody>
-                                                                    {% for item in r.materiales_plano_tabla %}
-                                                                        <tr>
-                                                                            <td>{{ item.cantidad|default:"-" }}</td>
-                                                                            <td>{{ item.unidad|default:"unidad" }}</td>
-                                                                            <td>{{ item.descripcion|default:"-" }}</td>
-                                                                        </tr>
-                                                                    {% endfor %}
-                                                                </tbody>
+                                                                
+                                                                    <tbody>
+                                                                        {% for item in r.materiales_plano_tabla %}
+                                                                            <tr>
+                                                                                <td class="{% if item.ui_match %}dp-cell-ok dp-cell-first-ok{% else %}dp-cell-warning dp-cell-first-warning{% endif %}">
+                                                                                    {{ item.cantidad|default:"-" }}
+                                                                                </td>
+
+                                                                                <td class="{% if item.ui_match %}dp-cell-ok{% else %}dp-cell-warning{% endif %}">
+                                                                                    {{ item.unidad|default:"unidad" }}
+                                                                                </td>
+
+                                                                                <td class="{% if item.ui_match %}dp-cell-ok{% else %}dp-cell-warning{% endif %}">
+                                                                                    <div class="fw-semibold">{{ item.descripcion|default:"-" }}</div>
+
+                                                                                    {% if item.fue_editado %}
+                                                                                        <div class="small text-muted mt-1">
+                                                                                            <div>
+                                                                                                <strong>Original:</strong>
+                                                                                                {{ item.cantidad_original|default:"-" }}
+                                                                                                {{ item.unidad_original|default:"unidad" }}
+                                                                                                {{ item.descripcion_original|default:"-" }}
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <strong>Editado:</strong>
+                                                                                                {{ item.cantidad|default:"-" }}
+                                                                                                {{ item.unidad|default:"unidad" }}
+                                                                                                {{ item.descripcion|default:"-" }}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    {% endif %}
+                                                                                </td>
+
+                                                                                {% if puede_editar_materiales %}
+                                                                                <td class="text-center {% if item.ui_match %}dp-cell-ok{% else %}dp-cell-warning{% endif %}">
+                                                                                    {% if item.id %}
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        class="btn btn-sm btn-light border"
+                                                                                        data-bs-toggle="collapse"
+                                                                                        data-bs-target="#editMat{{ item.id }}"
+                                                                                        aria-expanded="false"
+                                                                                        aria-controls="editMat{{ item.id }}">
+                                                                                        <i class="bi bi-pencil"></i>
+                                                                                    </button>
+                                                                                    {% else %}
+                                                                                    <span class="text-muted">-</span>
+                                                                                    {% endif %}
+                                                                                </td>
+                                                                                {% endif %}
+                                                                            </tr>
+
+                                                                            {% if puede_editar_materiales and item.id %}
+                                                                            <tr class="collapse" id="editMat{{ item.id }}">
+                                                                                <td colspan="4">
+                                                                                    <form method="post" action="{% url 'editar_material_detectado' item.id %}">
+                                                                                        {% csrf_token %}
+
+                                                                                        <div class="row g-2">
+                                                                                            <div class="col-md-3">
+                                                                                                <input type="text" name="cantidad" class="form-control"
+                                                                                                    value="{{ item.cantidad }}">
+                                                                                            </div>
+
+                                                                                            <div class="col-md-3">
+                                                                                                <input type="text" name="unidad" class="form-control"
+                                                                                                    value="{{ item.unidad }}">
+                                                                                            </div>
+
+                                                                                            <div class="col-md-4">
+                                                                                                <input type="text" name="descripcion" class="form-control"
+                                                                                                    value="{{ item.descripcion }}">
+                                                                                            </div>
+
+                                                                                            <div class="col-md-2">
+                                                                                                <button type="submit" class="btn btn-success w-100">
+                                                                                                    <i class="bi bi-check"></i>
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </form>
+                                                                                </td>
+                                                                            </tr>
+                                                                            {% endif %}
+                                                                        {% endfor %}
+                                                                    </tbody>
                                                             </table>
                                                         </div>
                                                     {% elif r.materiales_plano %}
@@ -1750,6 +2091,38 @@
 
     </div>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const forms = document.querySelectorAll("[data-estado-form]");
 
+    forms.forEach((form) => {
+        const select = form.querySelector("[data-estado-select]");
+        const actions = form.querySelector("[data-estado-actions]");
+        const cancelBtn = form.querySelector("[data-estado-cancelar]");
+
+        if (!select || !actions || !cancelBtn) return;
+
+        const initialValue = select.dataset.inicial || "AUTO";
+
+        function syncActions() {
+            const currentValue = select.value;
+            if (currentValue !== initialValue) {
+                actions.classList.remove("d-none");
+            } else {
+                actions.classList.add("d-none");
+            }
+        }
+
+        select.addEventListener("change", syncActions);
+
+        cancelBtn.addEventListener("click", function () {
+            select.value = initialValue;
+            syncActions();
+        });
+
+        syncActions();
+    });
+});
+</script>
 
 {% endblock %}

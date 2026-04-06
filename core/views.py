@@ -6,12 +6,26 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q, Count
 from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
+from datetime import datetime
+
 import re
 
 from .forms import UsuarioCrearForm, UsuarioEditarForm
-from .models import Carpeta, EmpresaContratista, Plano, Auditoria, PerfilUsuario
+from .models import (
+    Carpeta,
+    EmpresaContratista,
+    Plano,
+    Auditoria,
+    PerfilUsuario,
+    MaterialDetectadoPlano,
+    ResultadoValidacionPlano,
+)
 from .services import procesar_plano_completo
-
+from .validator import (
+    recalcular_estado_plano_desde_resultados,
+    compare_text_fuzzy,
+    compare_dates,
+)
 
 def get_or_create_perfil(user):
     if user.is_superuser:
@@ -61,6 +75,16 @@ def _set_plano_en_edicion(request, plano_id, value):
     else:
         request.session.pop(key, None)
     request.session.modified = True
+
+
+def _user_can_edit_materiales(user):
+    return user_is_admin(user) or user_is_funcionario(user)
+
+def _user_can_edit_datos_nr(user):
+    return user_is_admin(user) or user_is_funcionario(user)
+
+def _user_can_change_nr_estado(user):
+    return user_is_admin(user)
 
 
 # =========================================================
@@ -288,6 +312,43 @@ def _merge_material_rows(*groups):
 
     return rows
 
+def _normalize_ui_material_text(value):
+    text = str(value or "").strip().lower()
+    text = " ".join(text.split())
+
+    replacements = {
+        "á": "a",
+        "é": "e",
+        "í": "i",
+        "ó": "o",
+        "ú": "u",
+        "ü": "u",
+    }
+    for src, dst in replacements.items():
+        text = text.replace(src, dst)
+
+    return text
+
+
+def _material_matches_for_ui(descripcion_plano, materiales_bd_tabla):
+    desc_plano = _normalize_ui_material_text(descripcion_plano)
+
+    if not desc_plano:
+        return False
+
+    for item_bd in materiales_bd_tabla or []:
+        desc_bd = _normalize_ui_material_text(item_bd.get("descripcion", ""))
+
+        if not desc_bd:
+            continue
+
+        if desc_plano == desc_bd:
+            return True
+
+        if desc_plano in desc_bd or desc_bd in desc_plano:
+            return True
+
+    return False
 
 def _build_resultado_detalle(resultado):
     nr_obj = _safe_getattr(resultado, "nr_materiales_encontrado", None)
@@ -298,23 +359,11 @@ def _build_resultado_detalle(resultado):
     )
     parsed = _extract_ocr_data_from_motivo(motivo_resultado)
 
-    ciudad_plano = _first_value(
-        resultado,
-        ["ciudad_plano", "ciudad_detectada", "ciudad_extraida", "ciudad_ocr"],
-        None,
-    ) or parsed["ciudad_plano"]
+    valores_detectados = _resolver_valores_detectados_resultado(resultado)
 
-    zona_plano = _first_value(
-        resultado,
-        ["zona_plano", "zona_detectada", "zona_extraida", "zona_ocr"],
-        None,
-    ) or parsed["zona_plano"]
-
-    fecha_plano = _first_value(
-        resultado,
-        ["fecha_plano", "fecha_detectada", "fecha_extraida", "fecha_ocr"],
-        None,
-    ) or parsed["fecha_nr"]
+    ciudad_plano = valores_detectados["ciudad"]
+    zona_plano = valores_detectados["zona"]
+    fecha_plano = valores_detectados["fecha"]
 
     if ciudad_plano in (None, ""):
         ciudad_plano = _first_value(nr_obj, ["ciudad"], None)
@@ -340,23 +389,74 @@ def _build_resultado_detalle(resultado):
     )
 
     materiales_plano_tabla = _parse_material_text_to_rows(materiales_plano_texto)
+
+    materiales_editables = []
+    materiales_detectados_qs = []
+    try:
+        materiales_detectados_qs = resultado.materiales_detectados.all().order_by("orden", "id")
+        for material in materiales_detectados_qs:
+            materiales_editables.append({
+                "id": material.id,
+                "cantidad": material.cantidad_final or "-",
+                "unidad": material.unidad_final or "unidad",
+                "descripcion": material.descripcion_final or "-",
+                "cantidad_original": material.cantidad_original or "-",
+                "unidad_original": material.unidad_original or "unidad",
+                "descripcion_original": material.descripcion_original or "-",
+                "fue_editado": material.fue_editado,
+                "coincide_con_bd": material.coincide_con_bd,
+            })
+    except Exception:
+        materiales_editables = []
+        materiales_detectados_qs = []
+
+    if materiales_editables:
+        materiales_plano_tabla = [
+            {
+                "id": item["id"],
+                "cantidad": item["cantidad"],
+                "unidad": item["unidad"],
+                "descripcion": item["descripcion"],
+                "cantidad_original": item["cantidad_original"],
+                "unidad_original": item["unidad_original"],
+                "descripcion_original": item["descripcion_original"],
+                "fue_editado": item["fue_editado"],
+                "coincide_con_bd": item["coincide_con_bd"],
+            }
+            for item in materiales_editables
+        ]
+
     materiales_bd_tabla_rel = _extract_material_rows_from_related(nr_obj)
     materiales_bd_tabla_text = _parse_material_text_to_rows(materiales_bd_texto)
     materiales_bd_tabla = _merge_material_rows(materiales_bd_tabla_rel, materiales_bd_tabla_text)
 
+    for item in materiales_plano_tabla:
+        item["ui_match"] = _material_matches_for_ui(
+            item.get("descripcion"),
+            materiales_bd_tabla,
+        )
+
     estado_resultado = _first_value(resultado, ["estado_resultado"], "EN_VERIFICACION")
+    estado_resultado_final = _first_value(resultado, ["estado_resultado_final"], None) or _first_value(resultado, ["estado_resultado_manual"], None) or estado_resultado
 
     return {
         "obj": resultado,
+        "id_resultado": resultado.id,
         "nr_detectado": _first_value(
             resultado,
             ["nr_detectado", "numero_nr", "nr", "codigo_nr"],
             None,
         ) or _first_value(nr_obj, ["numero_nr"], "NR no identificado"),
         "estado_resultado": estado_resultado,
+        "estado_resultado_final": estado_resultado_final,
+        "estado_resultado_manual": _first_value(resultado, ["estado_resultado_manual"], None),
+        "fue_revisado_manual": bool(_first_value(resultado, ["fue_revisado_manual"], False)),
+        "motivo_revision_manual": _format_value(_first_value(resultado, ["motivo_revision_manual"], None)),
         "ciudad_ok": bool(_first_value(resultado, ["ciudad_ok"], False)),
         "zona_ok": bool(_first_value(resultado, ["zona_ok"], False)),
         "fecha_ok": bool(_first_value(resultado, ["fecha_ok"], False)),
+        "materiales_ok": bool(_first_value(resultado, ["materiales_ok"], False)),
+        "materiales_requieren_revision": bool(_first_value(resultado, ["materiales_requieren_revision"], False)),
         "ciudad_plano": _format_value(ciudad_plano),
         "zona_plano": _format_value(zona_plano),
         "fecha_plano": _format_value(fecha_plano),
@@ -375,8 +475,247 @@ def _build_resultado_detalle(resultado):
         "materiales_plano_tabla": materiales_plano_tabla,
         "materiales_bd": None if str(materiales_bd_texto).strip().lower() in {"ninguno", "-", "none", ""} else materiales_bd_texto,
         "materiales_bd_tabla": materiales_bd_tabla,
+        "fue_editado": any(m.fue_editado for m in materiales_detectados_qs),
+                "ciudad_plano_original": _format_value(_first_value(resultado, ["ciudad_plano_original"], None)),
+        "zona_plano_original": _format_value(_first_value(resultado, ["zona_plano_original"], None)),
+        "fecha_plano_original": _format_value(_first_value(resultado, ["fecha_plano_original"], None)),
+        "ciudad_plano_editada": _format_value(_first_value(resultado, ["ciudad_plano_editada"], None)),
+        "zona_plano_editada": _format_value(_first_value(resultado, ["zona_plano_editada"], None)),
+        "fecha_plano_editada": _format_value(_first_value(resultado, ["fecha_plano_editada"], None)),
+        "fue_editado_manual": bool(_first_value(resultado, ["fue_editado_manual"], False)),
+        "motivo_edicion_manual": _format_value(_first_value(resultado, ["motivo_edicion_manual"], None)),
     }
 
+def _parse_input_date(value):
+    text = str(value or "").strip()
+    if not text:
+        return None
+
+    formatos = ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y")
+    for fmt in formatos:
+        try:
+            return datetime.strptime(text, fmt).date()
+        except Exception:
+            continue
+    return None
+
+
+def _resolver_valores_detectados_resultado(resultado):
+    motivo_resultado = _format_value(
+        _first_value(resultado, ["motivo_resultado", "diagnostico", "detalle"], None)
+    )
+    parsed = _extract_ocr_data_from_motivo(motivo_resultado)
+
+    nr_obj = _safe_getattr(resultado, "nr_materiales_encontrado", None)
+
+    ciudad = (
+        _first_value(resultado, ["ciudad_plano_editada"], None)
+        or _first_value(resultado, ["ciudad_plano_original"], None)
+        or _first_value(resultado, ["ciudad_plano", "ciudad_detectada", "ciudad_extraida", "ciudad_ocr"], None)
+        or parsed["ciudad_plano"]
+        or _first_value(nr_obj, ["ciudad"], None)
+    )
+
+    zona = (
+        _first_value(resultado, ["zona_plano_editada"], None)
+        or _first_value(resultado, ["zona_plano_original"], None)
+        or _first_value(resultado, ["zona_plano", "zona_detectada", "zona_extraida", "zona_ocr", "zona"], None)
+        or parsed["zona_plano"]
+        or _first_value(nr_obj, ["zona"], None)
+    )
+
+    fecha = (
+        _first_value(resultado, ["fecha_plano_editada"], None)
+        or _first_value(resultado, ["fecha_plano_original"], None)
+        or _first_value(resultado, ["fecha_plano", "fecha_detectada", "fecha_extraida", "fecha_ocr"], None)
+        or parsed["fecha_nr"]
+        or _first_value(nr_obj, ["fecha_trabajo"], None)
+    )
+
+    if isinstance(fecha, str):
+        fecha = _parse_input_date(fecha)
+
+    return {
+        "ciudad": ciudad,
+        "zona": zona,
+        "fecha": fecha,
+    }
+
+
+def _normalize_material_text_simple(value):
+    text = str(value or "").strip().lower()
+    text = " ".join(text.split())
+    replacements = {
+        "í": "i",
+        "ó": "o",
+        "á": "a",
+        "é": "e",
+        "ú": "u",
+        "ü": "u",
+    }
+    for src, dst in replacements.items():
+        text = text.replace(src, dst)
+
+    equivalencias = {
+        "ife": "ife",
+        "1fe": "ife",
+        "fe": "ife",
+        "1f": "ife",
+    }
+    return equivalencias.get(text, text)
+
+
+def _material_signature_final(cantidad, unidad, descripcion):
+    return (
+        _normalize_material_text_simple(cantidad),
+        _normalize_material_text_simple(unidad),
+        _normalize_material_text_simple(descripcion),
+    )
+
+
+def _materiales_finales_resultado(resultado):
+    rows = []
+    try:
+        for item in resultado.materiales_detectados.all().order_by("orden", "id"):
+            rows.append({
+                "cantidad": item.cantidad_final or "-",
+                "unidad": item.unidad_final or "unidad",
+                "descripcion": item.descripcion_final or "-",
+                "obj": item,
+            })
+    except Exception:
+        pass
+    return rows
+
+
+def _materiales_bd_resultado(resultado):
+    nr_obj = resultado.nr_materiales_encontrado
+    if not nr_obj:
+        return []
+
+    rows = _extract_material_rows_from_related(nr_obj)
+
+    normalizados = []
+    for item in rows:
+        normalizados.append({
+            "cantidad": _normalize_decimal_text(item.get("cantidad", "-")),
+            "unidad": item.get("unidad", "unidad") or "unidad",
+            "descripcion": item.get("descripcion", "-") or "-",
+        })
+
+    return normalizados
+
+
+def _comparar_materiales_resultado(resultado):
+    materiales_plano = _materiales_finales_resultado(resultado)
+    materiales_bd = _materiales_bd_resultado(resultado)
+
+    if not materiales_plano and not materiales_bd:
+        return True, ["No hay materiales en plano ni en BD."]
+
+    if not materiales_plano and materiales_bd:
+        return False, ["No se detectaron materiales en el plano, pero sí existen materiales en la BD."]
+
+    if materiales_plano and not materiales_bd:
+        return False, ["Se detectaron materiales en el plano, pero no existen materiales cargados en la BD para ese NR."]
+
+    plano_signatures = [
+        _material_signature_final(x["cantidad"], x["unidad"], x["descripcion"])
+        for x in materiales_plano
+    ]
+    bd_signatures = [
+        _material_signature_final(x["cantidad"], x["unidad"], x["descripcion"])
+        for x in materiales_bd
+    ]
+
+    faltantes_en_plano = [sig for sig in bd_signatures if sig not in plano_signatures]
+    sobrantes_en_plano = [sig for sig in plano_signatures if sig not in bd_signatures]
+
+    motivos = []
+    if faltantes_en_plano:
+        motivos.append("Existen materiales de BD que no coinciden con los detectados/corregidos del plano.")
+    if sobrantes_en_plano:
+        motivos.append("Existen materiales detectados/corregidos del plano que no coinciden con la BD.")
+
+    coincide = not (faltantes_en_plano or sobrantes_en_plano)
+
+    for material in materiales_plano:
+        material["obj"].coincide_con_bd = _material_signature_final(
+            material["cantidad"], material["unidad"], material["descripcion"]
+        ) in bd_signatures
+        material["obj"].save(update_fields=["coincide_con_bd"])
+
+    return coincide, motivos
+
+def _recalcular_resultado_por_materiales(resultado):
+    materiales_ok, motivos_materiales = _comparar_materiales_resultado(resultado)
+
+    resultado.materiales_ok = materiales_ok
+    resultado.materiales_requieren_revision = not materiales_ok
+
+    hubo_edicion_materiales = resultado.materiales_detectados.filter(fue_editado=True).exists()
+    hubo_edicion_datos = bool(resultado.fue_editado_manual)
+    hubo_edicion_manual = hubo_edicion_materiales or hubo_edicion_datos
+
+    if hubo_edicion_manual:
+        resultado.estado_resultado = "EN_VERIFICACION"
+    else:
+        if not resultado.ciudad_ok or not resultado.zona_ok or not resultado.fecha_ok:
+            resultado.estado_resultado = "RECHAZADO"
+        else:
+            if materiales_ok:
+                resultado.estado_resultado = "APROBADO"
+            else:
+                resultado.estado_resultado = "EN_VERIFICACION"
+
+    resultado.save(update_fields=[
+        "estado_resultado",
+        "materiales_ok",
+        "materiales_requieren_revision",
+    ])
+
+    recalcular_estado_plano_desde_resultados(resultado.plano)
+    return resultado
+
+def _recalcular_resultado_por_datos(resultado):
+    reclamo = resultado.reclamo_encontrado
+    if not reclamo:
+        resultado.estado_resultado = "EN_VERIFICACION"
+        resultado.ciudad_ok = False
+        resultado.zona_ok = False
+        resultado.fecha_ok = False
+        resultado.save(update_fields=["estado_resultado", "ciudad_ok", "zona_ok", "fecha_ok"])
+        recalcular_estado_plano_desde_resultados(resultado.plano)
+        return resultado
+
+    valores = _resolver_valores_detectados_resultado(resultado)
+
+    ciudad_cmp = compare_text_fuzzy(valores["ciudad"], reclamo.ciudad)
+    zona_cmp = compare_text_fuzzy(valores["zona"], reclamo.zona)
+    fecha_cmp = compare_dates(valores["fecha"], reclamo.fecha_reclamo)
+
+    resultado.ciudad_ok = bool(ciudad_cmp["comparable"] and ciudad_cmp["matched"])
+    resultado.zona_ok = bool(zona_cmp["comparable"] and zona_cmp["matched"])
+    resultado.fecha_ok = bool(fecha_cmp["comparable"] and fecha_cmp["matched"])
+
+    hubo_edicion_materiales = resultado.materiales_detectados.filter(fue_editado=True).exists()
+    hubo_edicion_datos = bool(resultado.fue_editado_manual)
+    hubo_edicion_manual = hubo_edicion_materiales or hubo_edicion_datos
+
+    if hubo_edicion_manual:
+        resultado.estado_resultado = "EN_VERIFICACION"
+    else:
+        if not resultado.ciudad_ok or not resultado.zona_ok or not resultado.fecha_ok:
+            resultado.estado_resultado = "RECHAZADO"
+        else:
+            if resultado.materiales_ok:
+                resultado.estado_resultado = "APROBADO"
+            else:
+                resultado.estado_resultado = "EN_VERIFICACION"
+
+    resultado.save(update_fields=["ciudad_ok", "zona_ok", "fecha_ok", "estado_resultado"])
+    recalcular_estado_plano_desde_resultados(resultado.plano)
+    return resultado
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -777,15 +1116,16 @@ def detalle_plano_view(request, plano_id):
     resultados_qs = (
         plano.resultados_validacion
         .select_related("nr_materiales_encontrado", "reclamo_encontrado")
+        .prefetch_related("materiales_detectados")
         .all()
     )
 
     resultados = [_build_resultado_detalle(r) for r in resultados_qs]
 
     total_nr = len(resultados)
-    total_aprobados = sum(1 for r in resultados if r["estado_resultado"] == "APROBADO")
-    total_rechazados = sum(1 for r in resultados if r["estado_resultado"] == "RECHAZADO")
-    total_en_verificacion = sum(1 for r in resultados if r["estado_resultado"] == "EN_VERIFICACION")
+    total_aprobados = sum(1 for r in resultados if r["estado_resultado_final"] == "APROBADO")
+    total_rechazados = sum(1 for r in resultados if r["estado_resultado_final"] == "RECHAZADO")
+    total_en_verificacion = sum(1 for r in resultados if r["estado_resultado_final"] == "EN_VERIFICACION")
     plano_en_edicion = _plano_en_edicion(request, plano.id)
     puede_guardar_plano = bool(plano.procesado and plano_en_edicion and not user_is_contratista(request.user))
     puede_ver_resumen = bool(plano.procesado and not plano_en_edicion)
@@ -802,6 +1142,8 @@ def detalle_plano_view(request, plano_id):
         "plano_en_edicion": plano_en_edicion,
         "puede_guardar_plano": puede_guardar_plano,
         "puede_ver_resumen": puede_ver_resumen,
+        "puede_editar_materiales": _user_can_edit_materiales(request.user),
+        "puede_cambiar_estado_nr": _user_can_change_nr_estado(request.user),
     }
 
     if user_is_contratista(request.user):
@@ -809,6 +1151,222 @@ def detalle_plano_view(request, plano_id):
 
     return render(request, "detalle_plano.html", contexto)
 
+
+@login_required
+def editar_material_detectado_view(request, material_id):
+    if not _user_can_edit_materiales(request.user):
+        raise PermissionDenied("No tienes permisos para editar materiales detectados.")
+
+    material = get_object_or_404(
+        MaterialDetectadoPlano.objects.select_related(
+            "resultado_validacion",
+            "resultado_validacion__plano",
+            "resultado_validacion__plano__carpeta",
+        ),
+        id=material_id,
+    )
+
+    resultado = material.resultado_validacion
+    plano = resultado.plano
+
+    if request.method == "POST":
+        material.cantidad_editada = (request.POST.get("cantidad") or "").strip() or None
+        material.unidad_editada = (request.POST.get("unidad") or "").strip() or None
+        material.descripcion_editada = (request.POST.get("descripcion") or "").strip() or None
+        material.fue_editado = True
+        material.editado_por = str(request.user)
+        material.fecha_edicion = timezone.now()
+        material.save(
+            update_fields=[
+                "cantidad_editada",
+                "unidad_editada",
+                "descripcion_editada",
+                "fue_editado",
+                "editado_por",
+                "fecha_edicion",
+            ]
+        )
+        _recalcular_resultado_por_datos(resultado)
+        _recalcular_resultado_por_materiales(resultado)
+        
+
+        if "Corrección manual aplicada en materiales" not in str(resultado.motivo_resultado or ""):
+            resultado.motivo_resultado = (
+                (resultado.motivo_resultado or "").strip() +
+                " | Corrección manual aplicada en materiales"
+            ).strip(" |")
+            resultado.save(update_fields=["motivo_resultado"])
+
+        Auditoria.objects.create(
+            plano=plano,
+            carpeta=plano.carpeta,
+            usuario=str(request.user),
+            accion="EDITAR_MATERIAL_DETECTADO",
+            descripcion=(
+                f"Se editó material detectado del NR {resultado.nr_detectado} "
+                f"en el plano {plano.id_plano_deposito}"
+            ),
+            entidad="MaterialDetectadoPlano",
+            entidad_id=str(material.id),
+        )
+
+        messages.success(request, "Material detectado actualizado correctamente.")
+
+    return redirect("detalle_plano", plano_id=plano.id)
+
+@login_required
+def editar_datos_nr_view(request, resultado_id):
+    if not _user_can_edit_datos_nr(request.user):
+        raise PermissionDenied("No tienes permisos para editar los datos detectados del NR.")
+
+    resultado = get_object_or_404(
+        ResultadoValidacionPlano.objects.select_related(
+            "plano",
+            "plano__carpeta",
+            "reclamo_encontrado",
+            "nr_materiales_encontrado",
+        ),
+        id=resultado_id,
+    )
+
+    if request.method == "POST":
+        valores_actuales = _resolver_valores_detectados_resultado(resultado)
+
+        if not resultado.ciudad_plano_original and valores_actuales["ciudad"] not in (None, "", "-"):
+            resultado.ciudad_plano_original = valores_actuales["ciudad"]
+
+        if not resultado.zona_plano_original and valores_actuales["zona"] not in (None, "", "-"):
+            resultado.zona_plano_original = valores_actuales["zona"]
+
+        if not resultado.fecha_plano_original and valores_actuales["fecha"]:
+            resultado.fecha_plano_original = valores_actuales["fecha"]
+
+        ciudad_editada = (request.POST.get("ciudad") or "").strip() or None
+        zona_editada = (request.POST.get("zona") or "").strip() or None
+        fecha_editada = _parse_input_date(request.POST.get("fecha"))
+
+        resultado.ciudad_plano_editada = ciudad_editada
+        resultado.zona_plano_editada = zona_editada
+        resultado.fecha_plano_editada = fecha_editada
+        resultado.fue_editado_manual = True
+        resultado.editado_manual_por = str(request.user)
+        resultado.fecha_edicion_manual = timezone.now()
+        resultado.motivo_edicion_manual = "Corrección manual aplicada en ciudad, zona o fecha."
+
+        resultado.save(
+            update_fields=[
+                "ciudad_plano_original",
+                "zona_plano_original",
+                "fecha_plano_original",
+                "ciudad_plano_editada",
+                "zona_plano_editada",
+                "fecha_plano_editada",
+                "fue_editado_manual",
+                "editado_manual_por",
+                "fecha_edicion_manual",
+                "motivo_edicion_manual",
+            ]
+        )
+
+        _recalcular_resultado_por_datos(resultado)
+
+        resultado.estado_resultado = "EN_VERIFICACION"
+        resultado.motivo_resultado = (
+            (resultado.motivo_resultado or "") +
+            " | Corrección manual aplicada en ciudad/zona/fecha"
+        )
+        resultado.save(update_fields=["estado_resultado", "motivo_resultado"])
+
+        Auditoria.objects.create(
+            plano=resultado.plano,
+            carpeta=resultado.plano.carpeta,
+            usuario=str(request.user),
+            accion="EDITAR_DATOS_NR",
+            descripcion=(
+                f"Se editaron ciudad/zona/fecha del NR {resultado.nr_detectado} "
+                f"en el plano {resultado.plano.id_plano_deposito}"
+            ),
+            entidad="ResultadoValidacionPlano",
+            entidad_id=str(resultado.id),
+        )
+
+        messages.success(request, "Datos del NR actualizados correctamente.")
+
+    return redirect("detalle_plano", plano_id=resultado.plano.id)
+
+@login_required
+def cambiar_estado_nr_manual_view(request, resultado_id):
+    if not _user_can_change_nr_estado(request.user):
+        raise PermissionDenied("Solo el administrador puede cambiar manualmente el estado del NR.")
+
+    resultado = get_object_or_404(
+        ResultadoValidacionPlano.objects.select_related("plano", "plano__carpeta"),
+        id=resultado_id,
+    )
+
+    if request.method == "POST":
+        nuevo_estado = (request.POST.get("estado_resultado_manual") or "").strip().upper()
+        motivo = (request.POST.get("motivo_revision_manual") or "").strip()
+
+        estados_validos = {"APROBADO", "RECHAZADO", "EN_VERIFICACION", "AUTO"}
+
+        if nuevo_estado not in estados_validos:
+            messages.error(request, "Estado manual inválido.")
+            return redirect("detalle_plano", plano_id=resultado.plano.id)
+
+        if nuevo_estado == "AUTO":
+            resultado.estado_resultado_manual = None
+            resultado.fue_revisado_manual = False
+            resultado.revisado_por = None
+            resultado.fecha_revision_manual = None
+            resultado.motivo_revision_manual = None
+            accion = "LIMPIAR_ESTADO_MANUAL_NR"
+            descripcion = (
+                f"Se eliminó el estado manual del NR {resultado.nr_detectado} "
+                f"del plano {resultado.plano.id_plano_deposito}"
+            )
+        else:
+            resultado.estado_resultado_manual = nuevo_estado
+            resultado.fue_revisado_manual = True
+            resultado.revisado_por = str(request.user)
+            resultado.fecha_revision_manual = timezone.now()
+            if motivo:
+                resultado.motivo_revision_manual = motivo
+            else:
+                resultado.motivo_revision_manual = (
+                    f"El administrador cambió manualmente el estado del NR a {nuevo_estado}."
+                )
+            accion = "CAMBIAR_ESTADO_MANUAL_NR"
+            descripcion = (
+                f"Se cambió manualmente el estado del NR {resultado.nr_detectado} "
+                f"a {nuevo_estado} en el plano {resultado.plano.id_plano_deposito}"
+            )
+
+        resultado.save(
+            update_fields=[
+                "estado_resultado_manual",
+                "fue_revisado_manual",
+                "revisado_por",
+                "fecha_revision_manual",
+                "motivo_revision_manual",
+            ]
+        )
+
+        recalcular_estado_plano_desde_resultados(resultado.plano)
+
+        Auditoria.objects.create(
+            plano=resultado.plano,
+            carpeta=resultado.plano.carpeta,
+            usuario=str(request.user),
+            accion=accion,
+            descripcion=descripcion,
+            entidad="ResultadoValidacionPlano",
+            entidad_id=str(resultado.id),
+        )
+
+        messages.success(request, "Estado del NR actualizado correctamente.")
+
+    return redirect("detalle_plano", plano_id=resultado.plano.id)
 
 @login_required
 def procesar_plano_view(request, plano_id):
@@ -893,15 +1451,16 @@ def resumen_plano_view(request, plano_id):
     resultados_qs = (
         plano.resultados_validacion
         .select_related("nr_materiales_encontrado", "reclamo_encontrado")
+        .prefetch_related("materiales_detectados")
         .all()
     )
 
     resultados = [_build_resultado_detalle(r) for r in resultados_qs]
 
     total_nr = len(resultados)
-    total_aprobados = sum(1 for r in resultados if r["estado_resultado"] == "APROBADO")
-    total_rechazados = sum(1 for r in resultados if r["estado_resultado"] == "RECHAZADO")
-    total_en_verificacion = sum(1 for r in resultados if r["estado_resultado"] == "EN_VERIFICACION")
+    total_aprobados = sum(1 for r in resultados if r["estado_resultado_final"] == "APROBADO")
+    total_rechazados = sum(1 for r in resultados if r["estado_resultado_final"] == "RECHAZADO")
+    total_en_verificacion = sum(1 for r in resultados if r["estado_resultado_final"] == "EN_VERIFICACION")
 
     return render(request, "resumen_plano.html", {
         "app_name": "Shadow",
@@ -913,7 +1472,6 @@ def resumen_plano_view(request, plano_id):
         "total_rechazados": total_rechazados,
         "total_en_verificacion": total_en_verificacion,
     })
-
 
 @login_required
 def cancelar_plano_view(request, plano_id):

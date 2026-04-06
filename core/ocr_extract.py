@@ -1174,7 +1174,7 @@ def extract_ordered_details_from_block(block_lines: List[str]) -> Dict[str, Any]
         start_material_idx = zona_idx + 1
 
     material_chunk = detail_lines[start_material_idx:]
-    materiales = extract_materiales_from_lines(material_chunk)
+    materiales_chunk = extract_materiales_from_lines(material_chunk)
 
     if not zona:
         zona = extract_zona_from_lines(block_lines)
@@ -1182,8 +1182,19 @@ def extract_ordered_details_from_block(block_lines: List[str]) -> Dict[str, Any]
     if not fecha:
         fecha = extract_fecha_from_lines(block_lines)
 
-    if not materiales:
-        materiales = extract_materiales_from_lines(block_lines)
+    materiales_full = extract_materiales_from_lines(block_lines)
+
+    materiales = []
+    vistos = set()
+
+    for item in (materiales_chunk + materiales_full):
+        key = (
+            item.get("cantidad_mostrar"),
+            normalize_material_text(item.get("descripcion", "")),
+        )
+        if key not in vistos:
+            materiales.append(item)
+            vistos.add(key)
 
     return {
         "zona": zona,

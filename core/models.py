@@ -251,6 +251,37 @@ class ResultadoValidacionPlano(models.Model):
     zona_ok = models.BooleanField(default=False)
     fecha_ok = models.BooleanField(default=False)
 
+    # Valores detectados originalmente en el plano / OCR
+    ciudad_plano_original = models.CharField(max_length=150, blank=True, null=True)
+    zona_plano_original = models.CharField(max_length=150, blank=True, null=True)
+    fecha_plano_original = models.DateField(blank=True, null=True)
+
+    # Valores corregidos manualmente
+    ciudad_plano_editada = models.CharField(max_length=150, blank=True, null=True)
+    zona_plano_editada = models.CharField(max_length=150, blank=True, null=True)
+    fecha_plano_editada = models.DateField(blank=True, null=True)
+
+    fue_editado_manual = models.BooleanField(default=False)
+    editado_manual_por = models.CharField(max_length=150, blank=True, null=True)
+    fecha_edicion_manual = models.DateTimeField(blank=True, null=True)
+    motivo_edicion_manual = models.TextField(blank=True, null=True)
+
+    # Validación específica de materiales
+    materiales_ok = models.BooleanField(default=False)
+    materiales_requieren_revision = models.BooleanField(default=False)
+
+    # Resultado final manual opcional
+    estado_resultado_manual = models.CharField(
+        max_length=30,
+        choices=ESTADO_RESULTADO_CHOICES,
+        blank=True,
+        null=True,
+    )
+    fue_revisado_manual = models.BooleanField(default=False)
+    revisado_por = models.CharField(max_length=150, blank=True, null=True)
+    fecha_revision_manual = models.DateTimeField(blank=True, null=True)
+    motivo_revision_manual = models.TextField(blank=True, null=True)
+
     motivo_resultado = models.TextField(blank=True, null=True)
     observacion = models.TextField(blank=True, null=True)
 
@@ -261,6 +292,75 @@ class ResultadoValidacionPlano(models.Model):
 
     def __str__(self):
         return f"{self.nr_detectado} - {self.estado_resultado}"
+
+    @property
+    def estado_resultado_final(self):
+        return self.estado_resultado_manual or self.estado_resultado
+
+    @property
+    def ciudad_plano_final(self):
+        return self.ciudad_plano_editada if self.ciudad_plano_editada not in (None, "") else self.ciudad_plano_original
+
+    @property
+    def zona_plano_final(self):
+        return self.zona_plano_editada if self.zona_plano_editada not in (None, "") else self.zona_plano_original
+
+    @property
+    def fecha_plano_final(self):
+        return self.fecha_plano_editada or self.fecha_plano_original
+
+class MaterialDetectadoPlano(models.Model):
+    """
+    Materiales detectados por OCR/GPT para un NR del plano.
+    Permite edición manual sin alterar la BD oficial de NRMateriales.
+    """
+
+    resultado_validacion = models.ForeignKey(
+        ResultadoValidacionPlano,
+        on_delete=models.CASCADE,
+        related_name="materiales_detectados",
+    )
+
+    orden = models.PositiveIntegerField(default=0)
+
+    # Valores originales detectados
+    cantidad_original = models.CharField(max_length=50, blank=True, null=True)
+    unidad_original = models.CharField(max_length=50, blank=True, null=True)
+    descripcion_original = models.CharField(max_length=200, blank=True, null=True)
+
+    # Valores corregidos manualmente
+    cantidad_editada = models.CharField(max_length=50, blank=True, null=True)
+    unidad_editada = models.CharField(max_length=50, blank=True, null=True)
+    descripcion_editada = models.CharField(max_length=200, blank=True, null=True)
+
+    fue_editado = models.BooleanField(default=False)
+    editado_por = models.CharField(max_length=150, blank=True, null=True)
+    fecha_edicion = models.DateTimeField(blank=True, null=True)
+
+    # Comparación con BD
+    coincide_con_bd = models.BooleanField(default=False)
+    observacion_revision = models.TextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Material detectado del plano"
+        verbose_name_plural = "Materiales detectados del plano"
+        ordering = ["resultado_validacion", "orden", "id"]
+
+    def __str__(self):
+        base = self.descripcion_final or self.descripcion_original or "Material sin descripción"
+        return f"{self.resultado_validacion.nr_detectado} - {base}"
+
+    @property
+    def cantidad_final(self):
+        return self.cantidad_editada if self.cantidad_editada not in (None, "") else self.cantidad_original
+
+    @property
+    def unidad_final(self):
+        return self.unidad_editada if self.unidad_editada not in (None, "") else self.unidad_original
+
+    @property
+    def descripcion_final(self):
+        return self.descripcion_editada if self.descripcion_editada not in (None, "") else self.descripcion_original
 
 
 class Auditoria(models.Model):

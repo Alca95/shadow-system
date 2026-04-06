@@ -48,8 +48,18 @@ urlpatterns = [
     # 🔍 OCR Y VALIDACIÓN
     # =========================
     path('planos/<int:plano_id>/procesar/', views.procesar_plano_view, name='procesar_ocr'),
-    # path('planos/<int:plano_id>/validar/', views.validar_plano_view, name='validar_plano'),
 
+    # NUEVAS RUTAS: edición de materiales y cambio manual de estado del NR
+    path(
+        'materiales-detectados/<int:material_id>/editar/',
+        views.editar_material_detectado_view,
+        name='editar_material_detectado'
+    ),
+    path(
+        'resultados-validacion/<int:resultado_id>/estado-manual/',
+        views.cambiar_estado_nr_manual_view,
+        name='cambiar_estado_nr_manual'
+    ),
 
     # =========================
     # 🏢 EMPRESAS CONTRATISTAS
@@ -67,6 +77,15 @@ urlpatterns = [
     path('estadisticas/', views.estadisticas_view, name='estadisticas'),
 
     # =========================
+    #  resultado validaciones
+    # =========================
+    path(
+        'resultados-validacion/<int:resultado_id>/editar-datos/',
+        views.editar_datos_nr_view,
+        name='editar_datos_nr'
+    ),
+    
+    # =========================
     # 🛡️ AUDITORÍA
     # =========================
     path('auditoria/', views.auditoria_view, name='auditoria'),
@@ -79,5 +98,6 @@ urlpatterns = [
     path('usuarios/<int:user_id>/editar/', views.editar_usuario_view, name='editar_usuario'),
     path('usuarios/<int:user_id>/toggle/', views.toggle_usuario_activo_view, name='toggle_usuario'),
 ]
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

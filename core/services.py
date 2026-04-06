@@ -2,13 +2,15 @@ from django.utils import timezone
 import json
 import re
 from datetime import date, datetime
+from core.ocr_extract import extract_detalles_por_nr
 
-from .models import NRMateriales, Plano, Auditoria, Reclamo
+from .models import NRMateriales, Plano, Auditoria, Reclamo, MaterialDetectadoPlano
 from .validator import (
     parse_csv,
     compare_text_fuzzy,
     compare_dates,
     validar_plano_contra_bd,
+    evaluar_resultado_nr,
 )
 from .ocr_extract import (
     ocr_text_from_file,
@@ -506,11 +508,74 @@ def _normalize_gpt_detalles_to_internal(payload):
 
     return nrs, detalles
 
+def sincronizar_materiales_detectados(plano):
+    detalles_por_nr = extract_detalles_por_nr(plano.texto_ocr or "")
+
+    for resultado in plano.resultados_validacion.all():
+        nr = resultado.nr_detectado
+        detalle = detalles_por_nr.get(nr, {})
+
+        materiales = detalle.get("materiales", [])
+
+        # 🔥 limpiar anteriores (reproceso)
+        MaterialDetectadoPlano.objects.filter(resultado=resultado).delete()
+
+        orden = 1
+
+        for mat in materiales:
+            MaterialDetectadoPlano.objects.create(
+                resultado=resultado,
+                orden=orden,
+                cantidad_original=mat.get("cantidad"),
+                unidad_original=mat.get("unidad_medida"),
+                descripcion_original=mat.get("descripcion"),
+
+                cantidad_final=mat.get("cantidad"),
+                unidad_final=mat.get("unidad_medida"),
+                descripcion_final=mat.get("descripcion"),
+
+                fue_editado=False,
+                coincide_con_bd=True,
+            )
+            orden += 1
+
+def sincronizar_materiales_detectados_desde_detalles(plano, detalles_por_nr):
+    for resultado in plano.resultados_validacion.all():
+        nr = resultado.nr_detectado
+        detalle = (detalles_por_nr or {}).get(nr, {}) or {}
+        materiales = detalle.get("materiales", []) or []
+
+        # limpiar anteriores del mismo resultado
+        resultado.materiales_detectados.all().delete()
+
+        nuevos = []
+        for orden, mat in enumerate(materiales, start=1):
+            cantidad = mat.get("cantidad_mostrar") or mat.get("cantidad") or "-"
+            unidad = mat.get("unidad_medida") or "unidad"
+            descripcion = mat.get("descripcion") or "-"
+
+            nuevos.append(
+                MaterialDetectadoPlano(
+                    resultado_validacion=resultado,
+                    orden=orden,
+                    cantidad_original=str(cantidad),
+                    unidad_original=str(unidad),
+                    descripcion_original=str(descripcion),
+                    fue_editado=False,
+                    coincide_con_bd=False,
+                )
+            )
+
+        if nuevos:
+            MaterialDetectadoPlano.objects.bulk_create(nuevos)
 
 def validar_plano_completo(plano: Plano):
     nr_validos = normalize_nr_list(parse_csv(plano.nr_validos))
     nr_desconocidos = normalize_nr_list(parse_csv(plano.nr_desconocidos))
+
     detalles_ocr_por_nr = extract_detalles_por_nr(plano.texto_ocr or "")
+    
+    sincronizar_materiales_detectados_desde_detalles(plano, detalles_ocr_por_nr)
 
     detalles_nr = []
     resumen_general = []
@@ -554,33 +619,42 @@ def validar_plano_completo(plano: Plano):
                 continue
 
             nr_obj = nr_materiales_map.get(nr)
-            detalle_ocr = detalles_ocr_por_nr.get(nr, {})
-            resultado = validar_nr_contra_reclamo(
-                plano=plano,
-                reclamo=reclamo,
-                nr_obj=nr_obj,
-                detalle_ocr=detalle_ocr,
+            detalle_ocr = detalles_ocr_por_nr.get(nr, {}) or {}
+
+            zona_ocr = detalle_ocr.get("zona")
+            fecha_ocr = detalle_ocr.get("fecha")
+            materiales_ocr = detalle_ocr.get("materiales", []) or []
+
+            materiales_plano_texto = ", ".join(
+                f"{m.get('cantidad_mostrar') or m.get('cantidad') or '-'} {m.get('descripcion', '')}".strip()
+                for m in materiales_ocr
+                if (m.get("descripcion") or "").strip()
             )
 
-            detalles_nr.append(f"NR {resultado['nr']} -> {resultado['estado']}")
-            for detalle in resultado["detalles"]:
-                detalles_nr.append(f" - {detalle}")
+            resultado_plano = plano.resultados_validacion.filter(nr_detectado=nr).first()
+            if not resultado_plano:
+                continue
 
-            resultado_plano = plano.resultados_validacion.filter(nr_detectado=resultado["nr"]).first()
+            resultado_plano.reclamo_encontrado = reclamo
+            resultado_plano.nr_materiales_encontrado = nr_obj
+            resultado_plano.save(update_fields=["reclamo_encontrado", "nr_materiales_encontrado"])
 
-            if resultado_plano:
-                resultado_plano.estado_resultado = resultado["estado"]
-                resultado_plano.ciudad_ok = resultado["ciudad_ok"]
-                resultado_plano.zona_ok = resultado["zona_ok"]
-                resultado_plano.fecha_ok = resultado["fecha_ok"]
-                resultado_plano.motivo_resultado = resultado["motivo_resultado"]
-                resultado_plano.reclamo_encontrado = reclamo
-                resultado_plano.nr_materiales_encontrado = nr_obj
-                resultado_plano.save()
+            evaluar_resultado_nr(
+                resultado=resultado_plano,
+                ciudad_plano=reclamo.ciudad,   # mantienes tu lógica actual de ciudad confiable
+                zona_plano=zona_ocr,
+                fecha_plano=fecha_ocr,
+                materiales_plano_texto=materiales_plano_texto,
+            )
 
-            if resultado["estado"] == ESTADO_RECHAZADO:
+            detalles_nr.append(f"NR {nr} -> {resultado_plano.estado_resultado}")
+            if resultado_plano.motivo_resultado:
+                for detalle in str(resultado_plano.motivo_resultado).split(" | "):
+                    detalles_nr.append(f" - {detalle}")
+
+            if resultado_plano.estado_resultado == ESTADO_RECHAZADO:
                 estado_final = ESTADO_RECHAZADO
-            elif resultado["estado"] == ESTADO_EN_VERIFICACION and estado_final != ESTADO_RECHAZADO:
+            elif resultado_plano.estado_resultado == ESTADO_EN_VERIFICACION and estado_final != ESTADO_RECHAZADO:
                 estado_final = ESTADO_EN_VERIFICACION
 
     if nr_desconocidos:
@@ -774,6 +848,7 @@ def procesar_plano_completo(plano: Plano, usuario: str = "sistema", extractor: s
         )
 
         res_final = validar_plano_completo(plano)
+        
         Auditoria.objects.create(
             plano=plano,
             carpeta=plano.carpeta,
