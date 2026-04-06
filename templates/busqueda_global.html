@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block page_title %}
+Resultado de búsqueda
+{% endblock %}
+
+{% block content %}
+
+<div class="shadow-card p-4">
+
+    <h5 class="mb-3">
+        Resultados para: <strong>{{ query }}</strong>
+    </h5>
+
+    {% if resultados %}
+
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>NR</th>
+                        <th>Plano</th>
+                        <th>Carpeta</th>
+                        <th>Empresa</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    {% for r in resultados %}
+                    <tr>
+                        <td><strong>{{ r.nr_detectado }}</strong></td>
+                        <td>{{ r.plano.id_plano_deposito }}</td>
+                        <td>{{ r.plano.carpeta.codigo_carpeta }}</td>
+                        <td>{{ r.plano.carpeta.empresa.nombre }}</td>
+                        <td>
+                            <span class="badge bg-secondary">
+                                {{ r.estado_resultado }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'detalle_plano' r.plano.id %}" class="btn btn-sm btn-shadow">
+                                Ver
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                </tbody>
+            </table>
+        </div>
+
+    {% else %}
+        <div class="text-center text-muted">
+            No se encontraron resultados
+        </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}

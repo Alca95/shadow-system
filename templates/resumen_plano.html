@@ -1,299 +1,568 @@
-
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Resumen del plano{% endblock %}
 {% block show_page_header %}{% endblock %}
 
 {% block content %}
-<div class="pdf-page-wrap">
-    <div class="pdf-page-toolbar">
-        <div>
-            <div class="pdf-toolbar-eyebrow">Shadow · Documento imprimible</div>
-            <h1 class="pdf-toolbar-title">Resumen del plano</h1>
-        </div>
-        <div class="pdf-toolbar-actions">
-            <button type="button" class="btn pdf-btn pdf-btn-light" onclick="window.print()">
+<div class="print-report-wrap">
+
+    <div class="print-toolbar no-print">
+        <div class="print-toolbar-actions">
+            <button type="button" class="btn print-btn" onclick="window.print()">
                 <i class="bi bi-printer me-2"></i>Imprimir
             </button>
-            <button type="button" class="btn pdf-btn pdf-btn-light" onclick="window.close()">
+            <button type="button" class="btn print-btn" onclick="window.close()">
                 <i class="bi bi-x-lg me-2"></i>Cerrar
             </button>
         </div>
     </div>
 
-    <section class="pdf-sheet">
-        <header class="pdf-sheet-head">
-            <div>
-                <div class="pdf-sheet-kicker">Descripción Detallada de Validación</div>
-                <h2 class="pdf-sheet-title">Resumen técnico del plano</h2>
+    <section class="report-sheet">
+        <header class="report-header">
+            <div class="report-header-top">
+                <div class="report-brand">
+                    <img src="{% static 'img/logo_shadow3.png' %}" alt="Shadow" class="report-brand-logo-img">
+                    <div class="report-brand-subtitle">Sistema de validación de planos</div>
+                </div>
+
+                <div>
+                    {% if total_rechazados > 0 or plano.estado == "RECHAZADO" %}
+                        <span class="report-status report-status-danger">RECHAZADO</span>
+                    {% else %}
+                        <span class="report-status report-status-success">APROBADO</span>
+                    {% endif %}
+                </div>
             </div>
-            <div>
-                {% if plano.estado == "APROBADO" %}
-                    <span class="pdf-state pdf-state-success">APROBADO</span>
-                {% elif plano.estado == "RECHAZADO" %}
-                    <span class="pdf-state pdf-state-danger">RECHAZADO</span>
-                {% else %}
-                    <span class="pdf-state pdf-state-warning">EN VERIFICACIÓN</span>
-                {% endif %}
+
+            <div class="report-title-block">
+                <h1 class="report-title">Resumen del plano</h1>
+                <p class="report-subtitle">
+                    Documento de validación generado a partir del procesamiento OCR y la comparación con la base de datos.
+                </p>
             </div>
         </header>
 
-        <section class="pdf-section">
-            <h3 class="pdf-section-title">1. Datos generales del plano</h3>
-            <div class="pdf-info-grid">
-                <div><strong>ID plano:</strong> {{ plano.id_plano_deposito|default:plano.id }}</div>
-                <div><strong>Carpeta:</strong> {{ plano.carpeta.codigo_carpeta|default:"-" }}</div>
-                <div><strong>Fecha de carga:</strong> {{ plano.fecha_carga|date:"d/m/Y H:i"|default:"-" }}</div>
-                <div><strong>Empresa:</strong> {{ plano.carpeta.empresa.nombre|default:"-" }}</div>
+        <section class="report-section">
+            <h2 class="report-section-title">1. Datos generales del plano</h2>
+
+            <div class="report-info-grid-simple">
+                <div class="report-info-line">
+                    <span class="report-info-label-inline">ID plano</span>
+                    <span class="report-info-value-inline">{{ plano.id_plano_deposito|default:plano.id }}</span>
+                </div>
+
+                <div class="report-info-line">
+                    <span class="report-info-label-inline">Carpeta</span>
+                    <span class="report-info-value-inline">{{ plano.carpeta.codigo_carpeta|default:"-" }}</span>
+                </div>
+
+                <div class="report-info-line">
+                    <span class="report-info-label-inline">Fecha de carga</span>
+                    <span class="report-info-value-inline">{{ plano.fecha_carga|date:"d/m/Y H:i"|default:"-" }}</span>
+                </div>
+
+                <div class="report-info-line">
+                    <span class="report-info-label-inline">Empresa</span>
+                    <span class="report-info-value-inline">{{ plano.carpeta.empresa.nombre|default:"-" }}</span>
+                </div>
             </div>
         </section>
 
-        <section class="pdf-section">
-            <h3 class="pdf-section-title">2. Resumen de validación</h3>
-            <ul class="pdf-bullet-list">
-                <li><strong>NR detectados:</strong> {{ total_nr|default:0 }}</li>
-                <li><strong>NR aprobados:</strong> {{ total_aprobados|default:0 }}</li>
-                <li><strong>NR rechazados:</strong> {{ total_rechazados|default:0 }}</li>
-                <li><strong>NR en verificación:</strong> {{ total_en_verificacion|default:0 }}</li>
-            </ul>
+        <section class="report-section">
+            <h2 class="report-section-title">2. Resumen de validación</h2>
 
-            <div class="pdf-note-block">
-                {% if plano.motivo and plano.motivo != "-" %}
-                    {{ plano.motivo|linebreaksbr }}
+            <div class="report-metrics-simple">
+                <div class="report-metric-simple">
+                    <span class="report-metric-simple-label">NR detectados</span>
+                    <span class="report-metric-simple-value">{{ total_nr|default:0 }}</span>
+                </div>
+
+                <div class="report-metric-simple">
+                    <span class="report-metric-simple-label">NR aprobados</span>
+                    <span class="report-metric-simple-value">{{ total_aprobados|default:0 }}</span>
+                </div>
+
+                <div class="report-metric-simple">
+                    <span class="report-metric-simple-label">NR rechazados</span>
+                    <span class="report-metric-simple-value">{{ total_rechazados|default:0 }}</span>
+                </div>
+
+                <div class="report-metric-simple">
+                    <span class="report-metric-simple-label">NR en verificación</span>
+                    <span class="report-metric-simple-value">{{ total_en_verificacion|default:0 }}</span>
+                </div>
+            </div>
+
+            <div class="report-note">
+                {% if total_rechazados > 0 %}
+                    El plano presenta observaciones y su resultado final es <strong>RECHAZADO</strong>.
                 {% else %}
-                    Resumen generado automáticamente a partir del procesamiento del plano y la comparación con la base de datos.
+                    El plano cumple con las validaciones definidas por el sistema y su resultado final es <strong>APROBADO</strong>.
                 {% endif %}
             </div>
         </section>
     </section>
 
-    {% for r in resultados %}
-        <section class="pdf-sheet">
-            <header class="pdf-subhead">
-                <div>
-                    <div class="pdf-sheet-kicker">3. Resultado por NR</div>
-                    <h3 class="pdf-section-title">NR {{ r.nr_detectado|default:"NR no identificado" }}</h3>
+    <section class="report-sheet report-sheet-tight">
+        <section class="report-section">
+            <h2 class="report-section-title">3. Resultado por NR</h2>
+
+            {% if resultados %}
+                <div class="report-nr-list">
+                    {% for r in resultados %}
+                        <article class="report-nr-card">
+                            <div class="report-nr-card-header">
+                                <div>
+                                    <div class="report-nr-code">{{ r.nr_detectado|default:"NR no identificado" }}</div>
+                                    <div class="report-nr-pills">
+                                        <span class="report-pill {% if r.ciudad_ok %}is-ok{% else %}is-bad{% endif %}">
+                                            Ciudad: {{ r.ciudad_ok|yesno:"OK,No coincide" }}
+                                        </span>
+                                        <span class="report-pill {% if r.zona_ok %}is-ok{% else %}is-bad{% endif %}">
+                                            Zona: {{ r.zona_ok|yesno:"OK,No coincide" }}
+                                        </span>
+                                        <span class="report-pill {% if r.fecha_ok %}is-ok{% else %}is-bad{% endif %}">
+                                            Fecha: {{ r.fecha_ok|yesno:"OK,No coincide" }}
+                                        </span>
+                                        <span class="report-pill {% if r.materiales_ok %}is-ok{% else %}is-warn{% endif %}">
+                                            Materiales:
+                                            {% if r.materiales_ok %}
+                                                OK
+                                            {% else %}
+                                                En verificación
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    {% if r.estado_resultado_final == "APROBADO" %}
+                                        <span class="report-status report-status-success">Aprobado</span>
+                                    {% elif r.estado_resultado_final == "RECHAZADO" %}
+                                        <span class="report-status report-status-danger">Rechazado</span>
+                                    {% else %}
+                                        <span class="report-status report-status-warning">En verificación</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="report-nr-grid">
+                                <div class="report-nr-box">
+                                    <div class="report-nr-box-title">Datos del plano</div>
+                                    <div class="report-nr-line"><strong>Ciudad:</strong> {{ r.ciudad_plano }}</div>
+                                    <div class="report-nr-line"><strong>Zona:</strong> {{ r.zona_plano }}</div>
+                                    <div class="report-nr-line"><strong>Fecha:</strong> {{ r.fecha_plano }}</div>
+                                </div>
+
+                                <div class="report-nr-box">
+                                    <div class="report-nr-box-title">Base de datos</div>
+                                    <div class="report-nr-line"><strong>Ciudad:</strong> {{ r.ciudad_reclamo }}</div>
+                                    <div class="report-nr-line"><strong>Zona:</strong> {{ r.zona_reclamo }}</div>
+                                    <div class="report-nr-line"><strong>Fecha:</strong> {{ r.fecha_reclamo }}</div>
+                                </div>
+                            </div>
+
+                            <div class="report-nr-observation">
+                                {% if r.estado_resultado_final == "APROBADO" %}
+                                    El NR cumple con las validaciones principales del sistema.
+                                {% elif r.estado_resultado_final == "RECHAZADO" %}
+                                    El NR presenta inconsistencias respecto a la base de datos.
+                                {% else %}
+                                    El NR requiere revisión administrativa antes de su aprobación final.
+                                {% endif %}
+                            </div>
+                        </article>
+                    {% endfor %}
                 </div>
-                <div>
-                    {% if r.estado_resultado == "APROBADO" %}
-                        <span class="pdf-state pdf-state-success">Aprobado</span>
-                    {% elif r.estado_resultado == "RECHAZADO" %}
-                        <span class="pdf-state pdf-state-danger">Rechazado</span>
-                    {% else %}
-                        <span class="pdf-state pdf-state-warning">En verificación</span>
-                    {% endif %}
+            {% else %}
+                <div class="report-note">
+                    No hay resultados disponibles para este plano.
                 </div>
-            </header>
-
-            <section class="pdf-section">
-                <h4 class="pdf-subtitle">3.1 Validaciones principales</h4>
-                <ul class="pdf-bullet-list">
-                    <li><strong>Ciudad:</strong> {{ r.ciudad_ok|yesno:"OK,No coincide" }}</li>
-                    <li><strong>Zona:</strong> {{ r.zona_ok|yesno:"OK,No coincide" }}</li>
-                    <li><strong>Fecha:</strong> {{ r.fecha_ok|yesno:"OK,No coincide" }}</li>
-                </ul>
-            </section>
-
-            <section class="pdf-section">
-                <h4 class="pdf-subtitle">3.2 Comparación de datos</h4>
-                <div class="pdf-compare-grid">
-                    <div class="pdf-box">
-                        <div class="pdf-box-title">Datos detectados en el plano</div>
-                        <ul class="pdf-bullet-list pdf-bullet-list-tight">
-                            <li><strong>Ciudad:</strong> {{ r.ciudad_plano }}</li>
-                            <li><strong>Zona:</strong> {{ r.zona_plano }}</li>
-                            <li><strong>Fecha:</strong> {{ r.fecha_plano }}</li>
-                        </ul>
-                    </div>
-
-                    <div class="pdf-box">
-                        <div class="pdf-box-title">Datos registrados en base de datos</div>
-                        <ul class="pdf-bullet-list pdf-bullet-list-tight">
-                            <li><strong>Ciudad reclamo / BD:</strong> {{ r.ciudad_reclamo }}</li>
-                            <li><strong>Zona reclamo / BD:</strong> {{ r.zona_reclamo }}</li>
-                            <li><strong>Fecha reclamo / trabajo:</strong> {{ r.fecha_reclamo }}</li>
-                        </ul>
-                    </div>
-                </div>
-            </section>
-
-            <section class="pdf-section">
-                <h4 class="pdf-subtitle">3.3 Observación de validación</h4>
-                <div class="pdf-note-block">
-                    {% if r.observacion and r.observacion != "-" %}
-                        {{ r.observacion }}
-                    {% elif r.estado_resultado == "APROBADO" %}
-                        Aprobado porque ciudad, zona y fecha coinciden correctamente con la base de datos.
-                    {% elif r.estado_resultado == "RECHAZADO" %}
-                        Rechazado porque existe inconsistencia entre los datos del plano y la base de datos de reclamos.
-                    {% else %}
-                        En verificación porque ciudad, zona y fecha coinciden, pero la comparación de materiales requiere revisión.
-                    {% endif %}
-                </div>
-            </section>
-
-            <section class="pdf-section">
-                <h4 class="pdf-subtitle">3.4 Materiales</h4>
-                <div class="pdf-compare-grid">
-                    <div class="pdf-box">
-                        <div class="pdf-box-title">Materiales detectados en el plano</div>
-                        {% if r.materiales_plano_tabla %}
-                            <table class="pdf-table">
-                                <thead>
-                                    <tr>
-                                        <th>Cantidad</th>
-                                        <th>Unidad</th>
-                                        <th>Descripción</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in r.materiales_plano_tabla %}
-                                        <tr>
-                                            <td>{{ item.cantidad|default:"-" }}</td>
-                                            <td>{{ item.unidad|default:"unidad" }}</td>
-                                            <td>{{ item.descripcion|default:"-" }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        {% else %}
-                            <div class="pdf-empty">Sin materiales detectados para este NR.</div>
-                        {% endif %}
-                    </div>
-
-                    <div class="pdf-box">
-                        <div class="pdf-box-title">Materiales registrados en base de datos</div>
-                        {% if r.materiales_bd_tabla %}
-                            <table class="pdf-table">
-                                <thead>
-                                    <tr>
-                                        <th>Cantidad</th>
-                                        <th>Unidad</th>
-                                        <th>Descripción</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in r.materiales_bd_tabla %}
-                                        <tr>
-                                            <td>{{ item.cantidad|default:"-" }}</td>
-                                            <td>{{ item.unidad|default:"unidad" }}</td>
-                                            <td>{{ item.descripcion|default:"-" }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        {% else %}
-                            <div class="pdf-empty">Sin materiales registrados en base de datos para este NR.</div>
-                        {% endif %}
-                    </div>
-                </div>
-            </section>
+            {% endif %}
         </section>
-    {% empty %}
-        <section class="pdf-sheet">
-            <section class="pdf-section">
-                <h3 class="pdf-section-title">Resultados</h3>
-                <div class="pdf-note-block">No hay comparaciones disponibles para mostrar en este plano.</div>
-            </section>
-        </section>
-    {% endfor %}
+    </section>
 </div>
 
 <style>
 :root{
-    --pdf-bg:#eceef2;
-    --pdf-paper:#ffffff;
-    --pdf-paper-border:#d9dde5;
-    --pdf-text:#1e1f22;
-    --pdf-muted:#5c6270;
-    --pdf-primary:#1c1c1c;
-    --pdf-success:#18794e;
-    --pdf-danger:#bf3145;
-    --pdf-warning:#a66a05;
+    --report-bg:#eef1f5;
+    --report-paper:#ffffff;
+    --report-border:#d9dee7;
+    --report-text:#1f2430;
+    --report-muted:#6b7280;
+    --report-success:#1f7a4d;
+    --report-success-bg:#edf8f1;
+    --report-danger:#b9384f;
+    --report-danger-bg:#fdf0f2;
+    --report-warning:#a96b08;
+    --report-warning-bg:#fff8e8;
+    --report-shadow:0 10px 24px rgba(15,23,42,.08);
 }
-body{ background:var(--pdf-bg); }
-.pdf-page-wrap{ max-width:1160px; margin:0 auto; padding:1.2rem 1rem 3rem; }
-.pdf-page-toolbar{
-    display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin-bottom:1rem;
+
+body{
+    background:linear-gradient(135deg, #22314f 0%, #3d4a66 100%);
 }
-.pdf-toolbar-eyebrow{
-    font-size:.75rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#4f596d; margin-bottom:.2rem;
+
+.print-report-wrap{
+    max-width:210mm;
+    margin:0 auto;
+    padding:1rem 0 2rem;
 }
-.pdf-toolbar-title{
-    margin:0; font-size:1.7rem; font-weight:800; color:var(--pdf-text);
-}
-.pdf-toolbar-actions{ display:flex; gap:.6rem; flex-wrap:wrap; }
-.pdf-btn{
-    border-radius:10px; padding:.72rem .95rem; font-weight:700; border:1px solid var(--pdf-paper-border); background:#fff; color:var(--pdf-text);
-}
-.pdf-sheet{
+
+.print-toolbar{
     width:210mm;
-    min-height:297mm;
     max-width:100%;
-    margin:0 auto 18px;
-    background:var(--pdf-paper);
-    border:1px solid var(--pdf-paper-border);
-    box-shadow:0 8px 24px rgba(0,0,0,.08);
-    padding:22mm 18mm 18mm;
-    color:var(--pdf-text);
+    margin:0 auto 12px;
+    display:flex;
+    justify-content:flex-end;
 }
-.pdf-sheet-head,.pdf-subhead{
-    display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin-bottom:14px;
+
+.print-toolbar-actions{
+    display:flex;
+    gap:.75rem;
+    flex-wrap:wrap;
 }
-.pdf-sheet-kicker{
-    font-size:.78rem; color:var(--pdf-muted); margin-bottom:8px;
+
+.print-btn{
+    border-radius:12px;
+    padding:.8rem 1.05rem;
+    font-weight:700;
+    background:#fff;
+    border:1px solid var(--report-border);
+    color:var(--report-text);
+    box-shadow:var(--report-shadow);
 }
-.pdf-sheet-title{
-    margin:0; font-size:1.35rem; font-weight:700;
+
+.report-sheet{
+    width:210mm;
+    min-height:auto;
+    max-width:100%;
+    margin:0 auto 12px;
+    background:var(--report-paper);
+    border:1px solid var(--report-border);
+    box-shadow:var(--report-shadow);
+    padding:16mm 16mm 14mm;
+    color:var(--report-text);
 }
-.pdf-state{
-    display:inline-flex; align-items:center; justify-content:center; padding:.38rem .8rem; border-radius:999px; font-size:.78rem; font-weight:800; border:1px solid transparent;
+
+.report-sheet-tight{
+    margin-top:0;
 }
-.pdf-state-success{ color:var(--pdf-success); background:#edf8f2; border-color:#cbe8d7; }
-.pdf-state-danger{ color:var(--pdf-danger); background:#fdf0f2; border-color:#f0c5cd; }
-.pdf-state-warning{ color:var(--pdf-warning); background:#fff8e8; border-color:#edd69f; }
-.pdf-section{ margin-bottom:18px; }
-.pdf-section-title{ margin:0 0 10px; font-size:1.1rem; font-weight:700; }
-.pdf-subtitle{ margin:0 0 10px; font-size:.98rem; font-weight:700; }
-.pdf-info-grid{
-    display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 18px; font-size:.95rem; line-height:1.6;
+
+.report-header{
+    margin-bottom:1.4rem;
+    padding-bottom:1rem;
+    border-bottom:1px solid var(--report-border);
 }
-.pdf-bullet-list{
-    margin:0; padding-left:20px; line-height:1.8;
+
+.report-header-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:1rem;
+    margin-bottom:1rem;
 }
-.pdf-bullet-list-tight{ line-height:1.6; }
-.pdf-note-block,.pdf-box{
-    border:1px solid var(--pdf-paper-border);
+
+.report-brand{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+}
+
+.report-brand-logo-img{
+    height:46px;
+    width:auto;
+    object-fit:contain;
+    display:block;
+}
+
+.report-brand-subtitle{
+    font-size:.85rem;
+    color:var(--report-muted);
+    margin-top:.2rem;
+}
+
+.report-title-block{
+    display:flex;
+    flex-direction:column;
+    gap:.35rem;
+}
+
+.report-title{
+    margin:0;
+    font-size:1.85rem;
+    line-height:1.1;
+    font-weight:800;
+}
+
+.report-subtitle{
+    margin:0;
+    font-size:.95rem;
+    line-height:1.6;
+    color:var(--report-muted);
+    max-width:720px;
+}
+
+.report-section{
+    margin-bottom:1.35rem;
+}
+
+.report-section-title{
+    margin:0 0 .9rem;
+    font-size:1.2rem;
+    font-weight:800;
+    color:var(--report-text);
+}
+
+.report-info-grid-simple{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:12px 28px;
+}
+
+.report-info-line{
+    display:flex;
+    flex-direction:column;
+    gap:.25rem;
+    padding:0;
+}
+
+.report-info-label-inline{
+    font-size:.8rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--report-muted);
+    font-weight:800;
+}
+
+.report-info-value-inline{
+    font-size:1rem;
+    font-weight:700;
+    color:var(--report-text);
+}
+
+.report-metrics-simple{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    gap:18px;
+    margin-bottom:1rem;
+}
+
+.report-metric-simple{
+    text-align:center;
+    padding:0;
+}
+
+.report-metric-simple-label{
+    display:block;
+    font-size:.8rem;
+    font-weight:800;
+    color:var(--report-muted);
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    margin-bottom:.45rem;
+}
+
+.report-metric-simple-value{
+    display:block;
+    font-size:2rem;
+    line-height:1;
+    font-weight:800;
+    color:var(--report-text);
+}
+
+.report-note{
+    border:1px solid var(--report-border);
     background:#fafafa;
-    padding:12px 14px;
+    padding:1rem 1.1rem;
+    font-size:1rem;
+    line-height:1.8;
 }
-.pdf-note-block{ line-height:1.7; }
-.pdf-compare-grid{
-    display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px;
+
+.report-status{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:.42rem .95rem;
+    border-radius:999px;
+    border:1px solid transparent;
+    font-size:.8rem;
+    font-weight:800;
+    white-space:nowrap;
 }
-.pdf-box-title{
-    font-weight:700; margin-bottom:10px;
+
+.report-status-success{
+    color:var(--report-success);
+    background:var(--report-success-bg);
+    border-color:#cfe5d7;
 }
-.pdf-table{
-    width:100%; border-collapse:collapse; font-size:.92rem;
+
+.report-status-danger{
+    color:var(--report-danger);
+    background:var(--report-danger-bg);
+    border-color:#efc8cf;
 }
-.pdf-table th,.pdf-table td{
-    border:1px solid var(--pdf-paper-border);
-    padding:8px 10px; text-align:left; vertical-align:top;
+
+.report-status-warning{
+    color:var(--report-warning);
+    background:var(--report-warning-bg);
+    border-color:#ecd8a7;
 }
-.pdf-table th{ background:#f3f5f8; }
-.pdf-empty{ color:var(--pdf-muted); }
+
+.report-nr-list{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+}
+
+.report-nr-card{
+    border:1px solid var(--report-border);
+    background:#fff;
+    padding:1rem 1rem 1.05rem;
+}
+
+.report-nr-card-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:1rem;
+    margin-bottom:1rem;
+}
+
+.report-nr-code{
+    font-size:1.05rem;
+    font-weight:800;
+    color:var(--report-text);
+    margin-bottom:.55rem;
+}
+
+.report-nr-pills{
+    display:flex;
+    flex-wrap:wrap;
+    gap:.45rem;
+}
+
+.report-pill{
+    display:inline-flex;
+    align-items:center;
+    border-radius:999px;
+    padding:.34rem .7rem;
+    font-size:.74rem;
+    font-weight:700;
+    border:1px solid transparent;
+}
+
+.report-pill.is-ok{
+    color:var(--report-success);
+    background:var(--report-success-bg);
+    border-color:#cfe5d7;
+}
+
+.report-pill.is-bad{
+    color:var(--report-danger);
+    background:var(--report-danger-bg);
+    border-color:#efc8cf;
+}
+
+.report-pill.is-warn{
+    color:var(--report-warning);
+    background:var(--report-warning-bg);
+    border-color:#ecd8a7;
+}
+
+.report-nr-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:12px;
+    margin-bottom:1rem;
+}
+
+.report-nr-box{
+    border:1px solid var(--report-border);
+    background:#fafbfd;
+    padding:.95rem 1rem;
+}
+
+.report-nr-box-title{
+    font-size:.82rem;
+    font-weight:800;
+    color:var(--report-muted);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    margin-bottom:.7rem;
+}
+
+.report-nr-line{
+    font-size:.95rem;
+    line-height:1.7;
+    color:var(--report-text);
+}
+
+.report-nr-observation{
+    border:1px solid var(--report-border);
+    background:#fafafa;
+    padding:.85rem 1rem;
+    font-size:.95rem;
+    line-height:1.7;
+}
+
 @media (max-width: 991.98px){
-    .pdf-page-toolbar,.pdf-sheet-head,.pdf-subhead{ flex-direction:column; align-items:flex-start; }
-    .pdf-info-grid,.pdf-compare-grid{ grid-template-columns:1fr; }
-}
-@media print{
-    body{ background:#fff !important; }
-    .pdf-page-toolbar,.navbar,.sidebar,footer{ display:none !important; }
-    .pdf-page-wrap{ padding:0; max-width:none; }
-    .pdf-sheet{
-        width:auto; min-height:auto; max-width:none; margin:0; border:0; box-shadow:none; padding:14mm 12mm; page-break-after:always;
+    .print-report-wrap{
+        max-width:100%;
+        padding:1rem .75rem 2rem;
     }
-    .pdf-sheet:last-child{ page-break-after:auto; }
+
+    .print-toolbar{
+        width:100%;
+    }
+
+    .report-header-top,
+    .report-nr-card-header{
+        flex-direction:column;
+        align-items:flex-start;
+    }
+
+    .report-info-grid-simple,
+    .report-metrics-simple,
+    .report-nr-grid{
+        grid-template-columns:1fr;
+    }
+}
+
+@media print{
+    body{
+        background:#fff !important;
+    }
+
+    .no-print,
+    .navbar,
+    .sidebar,
+    footer{
+        display:none !important;
+    }
+
+    .print-report-wrap{
+        padding:0;
+        max-width:none;
+    }
+
+    .report-sheet{
+        width:auto;
+        max-width:none;
+        margin:0;
+        border:0;
+        box-shadow:none;
+        padding:12mm 12mm 10mm;
+        page-break-after:always;
+    }
+
+    .report-sheet:last-child{
+        page-break-after:auto;
+    }
+
+    .report-nr-card{
+        page-break-inside:avoid;
+    }
 }
 </style>
 {% endblock %}

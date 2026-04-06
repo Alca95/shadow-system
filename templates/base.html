@@ -18,8 +18,8 @@
             --shadow-primary: #0f172a;
             --shadow-primary-soft: #1e293b;
             --shadow-secondary: #334155;
-            --shadow-accent: #38bdf8;
-            --shadow-accent-soft: rgba(56, 189, 248, 0.18);
+            --shadow-accent: #4f46e5;
+            --shadow-accent-soft: rgba(79, 70, 229, 0.16);
             --shadow-surface: rgba(255, 255, 255, 0.94);
             --shadow-surface-strong: rgba(255, 255, 255, 0.98);
             --shadow-border: rgba(255, 255, 255, 0.10);
@@ -83,6 +83,9 @@
         .navbar-shadow .container {
             min-height: 62px;
             max-width: 1220px;
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
         }
 
         .navbar-shadow .navbar-brand {
@@ -124,6 +127,7 @@
             gap: 0.65rem;
             margin-left: 0;
             padding-left: 0;
+            flex-shrink: 0;
         }
 
         .navbar-shadow .navbar-toggler {
@@ -162,15 +166,6 @@
             color: #0f172a;
         }
 
-        .nav-group-main,
-        .nav-group-user {
-            align-items: center;
-        }
-
-        .nav-group-main {
-            gap: 0.15rem;
-        }
-
         .home-pill-nav {
             display: inline-flex;
             align-items: center;
@@ -192,6 +187,139 @@
             color: #0f172a;
             transform: translateY(-1px);
             box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
+        }
+
+        .navbar-search-zone {
+            flex: 1 1 auto;
+            min-width: 280px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .navbar-search-shell {
+            width: 100%;
+            max-width: 700px;
+            position: relative;
+        }
+
+        .navbar-search-form {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.34rem;
+            border-radius: 999px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(246,248,252,0.96));
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow:
+                0 12px 26px rgba(15, 23, 42, 0.08),
+                inset 0 1px 0 rgba(255,255,255,0.75);
+            transition: var(--shadow-transition);
+        }
+
+        .navbar-search-form:focus-within {
+            border-color: rgba(79, 70, 229, 0.22);
+            box-shadow:
+                0 14px 30px rgba(15, 23, 42, 0.10),
+                0 0 0 4px rgba(79, 70, 229, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .search-icon-badge {
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #4f46e5;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.12), rgba(99, 102, 241, 0.05));
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+
+        .navbar-search-input {
+            flex: 1 1 auto;
+            border: none;
+            background: transparent;
+            outline: none;
+            box-shadow: none;
+            font-size: 0.93rem;
+            font-weight: 500;
+            color: #0f172a;
+            min-width: 120px;
+            padding: 0 0.15rem;
+        }
+
+        .navbar-search-input::placeholder {
+            color: #94a3b8;
+            font-weight: 400;
+        }
+
+        .navbar-search-divider {
+            width: 1px;
+            align-self: stretch;
+            background: linear-gradient(to bottom, transparent, rgba(148, 163, 184, 0.45), transparent);
+        }
+
+        .navbar-search-filter {
+            border: none;
+            background: transparent;
+            outline: none;
+            box-shadow: none;
+            color: #475569;
+            font-size: 0.88rem;
+            font-weight: 600;
+            padding: 0.55rem 0.75rem;
+            border-radius: 999px;
+            min-width: 130px;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: none;
+        }
+
+        .navbar-search-filter:hover {
+            background: rgba(15, 23, 42, 0.04);
+        }
+
+        .search-filter-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .search-filter-wrap::after {
+            content: "\f282";
+            font-family: "bootstrap-icons";
+            position: absolute;
+            right: 12px;
+            font-size: 0.74rem;
+            color: #64748b;
+            pointer-events: none;
+        }
+
+        .navbar-search-btn {
+            border: none;
+            border-radius: 999px;
+            padding: 0.8rem 1.15rem;
+            background: linear-gradient(135deg, #4338ca, #6366f1);
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.88rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            box-shadow: 0 12px 22px rgba(79, 70, 229, 0.22);
+            transition: var(--shadow-transition);
+            white-space: nowrap;
+        }
+
+        .navbar-search-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 28px rgba(79, 70, 229, 0.28);
+            background: linear-gradient(135deg, #372fb2, #5458ea);
         }
 
         .user-area {
@@ -441,6 +569,20 @@
             height: 18px;
         }
 
+        @media (max-width: 1199.98px) {
+            .navbar-search-shell {
+                max-width: 100%;
+            }
+
+            .navbar-search-filter {
+                min-width: 112px;
+            }
+
+            .navbar-search-btn span {
+                display: none;
+            }
+        }
+
         @media (max-width: 991.98px) {
             .navbar-shadow {
                 padding: 0.45rem 0;
@@ -459,14 +601,46 @@
                 box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
             }
 
-            .navbar-shadow .nav-link {
+            .navbar-search-zone {
                 width: 100%;
-                justify-content: flex-start;
+                margin-top: 0.5rem;
             }
 
-            .nav-group-main,
-            .nav-group-user {
+            .navbar-search-form {
+                border-radius: 22px;
+                flex-wrap: wrap;
+                padding: 0.55rem;
+            }
+
+            .search-icon-badge {
+                width: 40px;
+                height: 40px;
+            }
+
+            .navbar-search-input {
+                min-width: 0;
+                width: calc(100% - 50px);
+                padding-right: 0.5rem;
+            }
+
+            .navbar-search-divider {
+                display: none;
+            }
+
+            .search-filter-wrap {
+                flex: 1 1 100%;
+            }
+
+            .navbar-search-filter {
                 width: 100%;
+                background: rgba(15, 23, 42, 0.04);
+                padding-right: 2rem;
+            }
+
+            .navbar-search-btn {
+                width: 100%;
+                justify-content: center;
+                border-radius: 16px;
             }
 
             .user-area {
@@ -526,6 +700,10 @@
             .brand-mark img {
                 height: 27px;
             }
+
+            .navbar-shadow .container {
+                gap: 0.65rem;
+            }
         }
     </style>
 
@@ -562,6 +740,12 @@
                         </a>
                     {% endif %}
 
+                    {% if request.user.is_authenticated and request.user.is_superuser %}
+                        <a href="{% url 'dashboard' %}" class="home-pill-nav" title="Inicio">
+                            <i class="bi bi-house-door"></i>
+                        </a>
+                    {% endif %}
+
                 {% endif %}
 
             </div>
@@ -570,77 +754,50 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <div class="collapse navbar-collapse" id="menu">
-
-                <ul class="navbar-nav ms-3 nav-group-main">
-                    {% if request.user.is_authenticated %}
-
-                        {% if request.user.is_superuser %}
-
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'dashboard' %}">
-                                    <i class="bi bi-house-door me-1"></i> Inicio
-                                </a>
-                            </li>
-
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'carpetas' %}">
-                                    <i class="bi bi-folder2-open me-1"></i> Carpetas
-                                </a>
-                            </li>
-
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'crear_carpeta' %}">
-                                    <i class="bi bi-folder-plus me-1"></i> Crear carpeta
-                                </a>
-                            </li>
-
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'subir_plano' %}">
-                                    <i class="bi bi-upload me-1"></i> Subir plano
-                                </a>
-                            </li>
-
-                        {% else %}
-                            {% with perfil=request.user.perfil %}
-
-                                {% if perfil.rol == "FUNCIONARIO" %}
-
-                                    <li class="nav-item">
-                                        <a class="nav-link" href="{% url 'carpetas' %}">
-                                            <i class="bi bi-folder2-open me-1"></i> Carpetas
-                                        </a>
-                                    </li>
-
-                                    <li class="nav-item">
-                                        <a class="nav-link" href="{% url 'crear_carpeta' %}">
-                                            <i class="bi bi-folder-plus me-1"></i> Crear carpeta
-                                        </a>
-                                    </li>
-
-                                    <li class="nav-item">
-                                        <a class="nav-link" href="{% url 'subir_plano' %}">
-                                            <i class="bi bi-upload me-1"></i> Subir plano
-                                        </a>
-                                    </li>
-
-                                {% elif perfil.rol == "CONTRATISTA" %}
-
-                                    <li class="nav-item">
-                                        <a class="nav-link" href="{% url 'carpetas' %}">
-                                            <i class="bi bi-folder2-open me-1"></i> Carpetas
-                                        </a>
-                                    </li>
-
-                                {% endif %}
-
-                            {% endwith %}
-                        {% endif %}
-                    {% endif %}
-                </ul>
+            <div class="collapse navbar-collapse align-items-lg-center gap-lg-3" id="menu">
 
                 {% if request.user.is_authenticated %}
-                <ul class="navbar-nav align-items-lg-center gap-lg-2 ms-auto nav-group-user">
+                <div class="navbar-search-zone">
+                    <div class="navbar-search-shell">
+                        <form class="navbar-search-form" method="get" action="{% url 'buscar_nr_global' %}">
+                            <span class="search-icon-badge">
+                                <i class="bi bi-search"></i>
+                            </span>
+
+                            <input
+                                type="text"
+                                name="q"
+                                class="navbar-search-input"
+                                placeholder="Buscar NR globalmente... Ej: 5068773-24"
+                                value="{{ request.GET.q|default:'' }}"
+                                autocomplete="off"
+                            >
+
+                            <div class="navbar-search-divider"></div>
+
+                            <div class="search-filter-wrap">
+                                <select name="filtro" class="navbar-search-filter">
+                                    <option value="">Filtrar por</option>
+                                    <option value="todos" {% if request.GET.filtro == "todos" %}selected{% endif %}>Todos</option>
+                                    <option value="aprobado" {% if request.GET.filtro == "aprobado" %}selected{% endif %}>Aprobados</option>
+                                    <option value="rechazado" {% if request.GET.filtro == "rechazado" %}selected{% endif %}>Rechazados</option>
+                                    <option value="verificacion" {% if request.GET.filtro == "verificacion" %}selected{% endif %}>En verificación</option>
+                                    <option value="empresa" {% if request.GET.filtro == "empresa" %}selected{% endif %}>Por empresa</option>
+                                    <option value="carpeta" {% if request.GET.filtro == "carpeta" %}selected{% endif %}>Por carpeta</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="navbar-search-btn">
+                                <i class="bi bi-stars"></i>
+                                <span>Buscar</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if request.user.is_authenticated %}
+                <ul class="navbar-nav align-items-lg-center gap-lg-2 ms-lg-auto nav-group-user">
                     <li class="nav-item">
                         <div class="user-area">
                             <span class="user-pill">

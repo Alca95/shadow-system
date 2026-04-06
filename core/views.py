@@ -7,8 +7,10 @@ from django.db.models import Q, Count
 from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
 from datetime import datetime
-
+from collections import Counter
+from django.db.models.functions import TruncMonth
 import re
+import json
 
 from .forms import UsuarioCrearForm, UsuarioEditarForm
 from .models import (
@@ -25,6 +27,14 @@ from .validator import (
     recalcular_estado_plano_desde_resultados,
     compare_text_fuzzy,
     compare_dates,
+)
+
+from core.models import (
+    Plano,
+    Carpeta,
+    ResultadoValidacionPlano,
+    Reclamo,
+    MaterialDetectadoPlano
 )
 
 def get_or_create_perfil(user):
@@ -1808,3 +1818,386 @@ def reportes_view(request):
             "plano_procesado": plano_procesado,
         }
     })
+@login_required
+def buscar_nr_global_view(request):
+    query = request.GET.get("q", "").strip()
+    filtro = request.GET.get("filtro", "").strip()
+
+    resultados = []
+
+    if query:
+        resultados = ResultadoValidacionPlano.objects.select_related(
+            "plano",
+            "plano__carpeta",
+            "plano__carpeta__empresa"
+        ).filter(
+            Q(nr_detectado__icontains=query)
+        )
+
+        # Filtros
+        if filtro == "aprobado":
+            resultados = resultados.filter(estado_resultado="APROBADO")
+
+        elif filtro == "rechazado":
+            resultados = resultados.filter(estado_resultado="RECHAZADO")
+
+        elif filtro == "verificacion":
+            resultados = resultados.filter(estado_resultado="EN_VERIFICACION")
+
+        elif filtro == "empresa":
+            resultados = resultados.filter(
+                plano__carpeta__empresa__nombre__icontains=query
+            )
+
+        elif filtro == "carpeta":
+            resultados = resultados.filter(
+                plano__carpeta__codigo_carpeta__icontains=query
+            )
+
+        resultados = resultados.order_by("-id")
+
+    return render(request, "busqueda_global.html", {
+        "query": query,
+        "filtro": filtro,
+        "resultados": resultados,
+    })
+@login_required
+def estadisticas_view(request):
+    require_admin_or_funcionario(request)
+
+    # =========================
+    # BASES
+    # =========================
+    planos_qs = Plano.objects.filter(eliminado=False)
+    carpetas_qs = Carpeta.objects.filter(eliminada=False)
+    resultados_qs = ResultadoValidacionPlano.objects.select_related(
+        "plano",
+        "plano__carpeta",
+        "plano__carpeta__empresa",
+        "reclamo_encontrado",
+    )
+    reclamos_qs = Reclamo.objects.all()
+
+    # =========================
+    # KPIs PRINCIPALES
+    # =========================
+    total_carpetas = carpetas_qs.count()
+    total_planos = planos_qs.count()
+    total_planos_procesados = planos_qs.filter(procesado=True).count()
+    total_planos_aprobados = planos_qs.filter(estado="APROBADO").count()
+    total_planos_rechazados = planos_qs.filter(estado="RECHAZADO").count()
+    total_planos_en_verificacion = planos_qs.filter(estado="EN_VERIFICACION").count()
+    total_nr_analizados = resultados_qs.count()
+    total_usuarios_activos = User.objects.filter(is_active=True).count()
+
+    # =========================
+    # PLANOS POR ESTADO
+    # =========================
+    estados_orden = [
+        "APROBADO",
+        "RECHAZADO",
+        "EN_VERIFICACION",
+        "EN_REVISION",
+        "EN_ESPERA",
+    ]
+
+    planos_estado_map = {
+        item["estado"]: item["total"]
+        for item in (
+            planos_qs
+            .values("estado")
+            .annotate(total=Count("id"))
+        )
+    }
+
+    planos_por_estado_labels = []
+    planos_por_estado_values = []
+
+    for estado in estados_orden:
+        if estado in planos_estado_map:
+            planos_por_estado_labels.append(estado.replace("_", " ").title())
+            planos_por_estado_values.append(planos_estado_map[estado])
+
+    # =========================
+    # PLANOS POR EMPRESA
+    # =========================
+    planos_por_empresa_qs = (
+        planos_qs
+        .values("carpeta__empresa__nombre")
+        .annotate(total=Count("id"))
+        .order_by("-total", "carpeta__empresa__nombre")
+    )
+
+    planos_por_empresa = []
+    empresas_labels = []
+    empresas_values = []
+
+    for item in planos_por_empresa_qs:
+        empresa = item["carpeta__empresa__nombre"] or "Sin empresa"
+        total = item["total"]
+
+        planos_por_empresa.append({
+            "empresa": empresa,
+            "total": total,
+        })
+        empresas_labels.append(empresa)
+        empresas_values.append(total)
+
+    # =========================
+    # RENDIMIENTO POR EMPRESA
+    # =========================
+    empresas_rendimiento = []
+    empresas_base_qs = (
+        planos_qs
+        .exclude(carpeta__empresa__isnull=True)
+        .values("carpeta__empresa__id", "carpeta__empresa__nombre")
+        .annotate(total=Count("id"))
+        .order_by("carpeta__empresa__nombre")
+    )
+
+    for item in empresas_base_qs:
+        empresa_id = item["carpeta__empresa__id"]
+        empresa_nombre = item["carpeta__empresa__nombre"] or "Sin empresa"
+        total = item["total"]
+
+        aprobados = planos_qs.filter(carpeta__empresa_id=empresa_id, estado="APROBADO").count()
+        rechazados = planos_qs.filter(carpeta__empresa_id=empresa_id, estado="RECHAZADO").count()
+        verificacion = planos_qs.filter(carpeta__empresa_id=empresa_id, estado="EN_VERIFICACION").count()
+
+        efectividad = round((aprobados / total) * 100, 2) if total > 0 else 0
+
+        empresas_rendimiento.append({
+            "empresa": empresa_nombre,
+            "total": total,
+            "aprobados": aprobados,
+            "rechazados": rechazados,
+            "verificacion": verificacion,
+            "efectividad": efectividad,
+        })
+
+    empresas_rendimiento = sorted(
+        empresas_rendimiento,
+        key=lambda x: (-x["efectividad"], -x["aprobados"], x["empresa"])
+    )
+
+    mejor_empresa = empresas_rendimiento[0] if empresas_rendimiento else None
+    empresa_mas_rechazos = (
+        max(empresas_rendimiento, key=lambda x: x["rechazados"])
+        if empresas_rendimiento else None
+    )
+
+    # =========================
+    # TRABAJOS POR MES
+    # =========================
+    trabajos_por_mes_qs = (
+        planos_qs
+        .annotate(mes=TruncMonth("fecha_carga"))
+        .values("mes")
+        .annotate(total=Count("id"))
+        .order_by("mes")
+    )
+
+    meses_labels = []
+    meses_values = []
+    meses_nombres = {
+        1: "Ene", 2: "Feb", 3: "Mar", 4: "Abr",
+        5: "May", 6: "Jun", 7: "Jul", 8: "Ago",
+        9: "Sep", 10: "Oct", 11: "Nov", 12: "Dic",
+    }
+
+    for item in trabajos_por_mes_qs:
+        mes = item["mes"]
+        total = item["total"]
+        if mes:
+            etiqueta = f"{meses_nombres.get(mes.month, mes.month)} {mes.year}"
+            meses_labels.append(etiqueta)
+            meses_values.append(total)
+
+    mes_mas_activo = None
+    if meses_labels and meses_values:
+        idx_mes_max = meses_values.index(max(meses_values))
+        mes_mas_activo = {
+            "label": meses_labels[idx_mes_max],
+            "total": meses_values[idx_mes_max],
+        }
+
+    # =========================
+    # ZONAS CON MÁS RECLAMOS
+    # =========================
+    zonas_qs = (
+        reclamos_qs
+        .exclude(zona__isnull=True)
+        .exclude(zona__exact="")
+        .values("zona")
+        .annotate(total=Count("id"))
+        .order_by("-total", "zona")[:10]
+    )
+
+    zonas_labels = [item["zona"] for item in zonas_qs]
+    zonas_values = [item["total"] for item in zonas_qs]
+    top_zonas = [{"zona": item["zona"], "total": item["total"]} for item in zonas_qs]
+    zona_mas_reclamos = top_zonas[0] if top_zonas else None
+
+    # =========================
+    # CIUDADES CON MÁS RECLAMOS
+    # =========================
+    ciudades_qs = (
+        reclamos_qs
+        .exclude(ciudad__isnull=True)
+        .exclude(ciudad__exact="")
+        .values("ciudad")
+        .annotate(total=Count("id"))
+        .order_by("-total", "ciudad")[:10]
+    )
+
+    top_ciudades = [{"ciudad": item["ciudad"], "total": item["total"]} for item in ciudades_qs]
+
+    # =========================
+    # MATERIALES MÁS UTILIZADOS
+    # =========================
+    materiales_counter = Counter()
+
+    materiales_qs = MaterialDetectadoPlano.objects.select_related("resultado_validacion").all()
+
+    for material in materiales_qs:
+        descripcion = (
+            material.descripcion_editada
+            if material.descripcion_editada not in (None, "")
+            else material.descripcion_original
+        )
+
+        if descripcion:
+            clave = str(descripcion).strip()
+            if clave:
+                materiales_counter[clave] += 1
+
+    materiales_top = [
+        {"material": nombre, "total": total}
+        for nombre, total in materiales_counter.most_common(10)
+    ]
+
+    materiales_labels = [item["material"] for item in materiales_top]
+    materiales_values = [item["total"] for item in materiales_top]
+    material_mas_utilizado = materiales_top[0] if materiales_top else None
+
+    # =========================
+    # MOTIVOS FRECUENTES DE RECHAZO / VERIFICACIÓN
+    # =========================
+    motivos_counter = Counter()
+
+    resultados_motivos_qs = resultados_qs.exclude(motivo_resultado__isnull=True).exclude(motivo_resultado__exact="")
+
+    for resultado in resultados_motivos_qs:
+        texto = str(resultado.motivo_resultado or "").lower()
+
+        if "ciudad" in texto and ("no coincide" in texto or "incorrecta" in texto):
+            motivos_counter["Ciudad no coincide"] += 1
+
+        if "zona" in texto and ("no coincide" in texto or "incorrecta" in texto):
+            motivos_counter["Zona no coincide"] += 1
+
+        if "fecha" in texto and ("no coincide" in texto or "incorrecta" in texto or "invalida" in texto):
+            motivos_counter["Fecha inconsistente"] += 1
+
+        if "material" in texto:
+            motivos_counter["Materiales en revisión"] += 1
+
+        if "desconocido" in texto:
+            motivos_counter["NR desconocido"] += 1
+
+        if "corrección manual" in texto or "correccion manual" in texto:
+            motivos_counter["Edición manual"] += 1
+
+    motivos_top = [
+        {"motivo": nombre, "total": total}
+        for nombre, total in motivos_counter.most_common(8)
+    ]
+
+    motivos_labels = [item["motivo"] for item in motivos_top]
+    motivos_values = [item["total"] for item in motivos_top]
+
+    # =========================
+    # ANÁLISIS INTELIGENTE (REGLAS)
+    # =========================
+    analisis_inteligente = []
+
+    analisis_inteligente.append(
+        f"El sistema registra {total_planos_procesados} planos procesados y {total_nr_analizados} NR analizados en total."
+    )
+
+    if mejor_empresa:
+        analisis_inteligente.append(
+            f"La empresa con mejor rendimiento actual es {mejor_empresa['empresa']}, con una efectividad de {mejor_empresa['efectividad']}%."
+        )
+
+    if empresa_mas_rechazos and empresa_mas_rechazos["rechazados"] > 0:
+        analisis_inteligente.append(
+            f"La empresa con mayor cantidad de rechazos es {empresa_mas_rechazos['empresa']}, con {empresa_mas_rechazos['rechazados']} planos rechazados."
+        )
+
+    if material_mas_utilizado:
+        analisis_inteligente.append(
+            f"El material más utilizado es {material_mas_utilizado['material']}, con {material_mas_utilizado['total']} apariciones registradas."
+        )
+
+    if zona_mas_reclamos:
+        analisis_inteligente.append(
+            f"La zona con mayor índice de reclamos es {zona_mas_reclamos['zona']}, con {zona_mas_reclamos['total']} registros."
+        )
+
+    if mes_mas_activo:
+        analisis_inteligente.append(
+            f"El período con mayor actividad fue {mes_mas_activo['label']}, con {mes_mas_activo['total']} planos cargados."
+        )
+
+    if not analisis_inteligente:
+        analisis_inteligente.append(
+            "Aún no hay suficientes datos para generar conclusiones automáticas."
+        )
+
+    # =========================
+    # CONTEXTO
+    # =========================
+    contexto = {
+        "app_name": "Shadow",
+        "titulo_pantalla": "Estadísticas",
+        "resumen": {
+            "total_carpetas": total_carpetas,
+            "total_planos": total_planos,
+            "total_planos_procesados": total_planos_procesados,
+            "total_planos_aprobados": total_planos_aprobados,
+            "total_planos_rechazados": total_planos_rechazados,
+            "total_planos_en_verificacion": total_planos_en_verificacion,
+            "total_nr_analizados": total_nr_analizados,
+            "total_usuarios_activos": total_usuarios_activos,
+        },
+        "planos_por_empresa": planos_por_empresa,
+        "empresas_rendimiento": empresas_rendimiento[:10],
+        "top_zonas": top_zonas,
+        "top_ciudades": top_ciudades,
+        "materiales_top": materiales_top,
+        "motivos_top": motivos_top,
+        "mejor_empresa": mejor_empresa,
+        "empresa_mas_rechazos": empresa_mas_rechazos,
+        "material_mas_utilizado": material_mas_utilizado,
+        "zona_mas_reclamos": zona_mas_reclamos,
+        "mes_mas_activo": mes_mas_activo,
+        "analisis_inteligente": analisis_inteligente,
+
+        # Datos para gráficos
+        "planos_por_estado": json.dumps(planos_por_estado_labels),
+        "planos_por_estado_values": json.dumps(planos_por_estado_values),
+        "empresas_labels": json.dumps(empresas_labels[:10]),
+        "empresas_values": json.dumps(empresas_values[:10]),
+        "meses_labels": json.dumps(meses_labels),
+        "meses_values": json.dumps(meses_values),
+        "zonas_labels": json.dumps(zonas_labels),
+        "zonas_values": json.dumps(zonas_values),
+        "materiales_labels": json.dumps(materiales_labels),
+        "materiales_values": json.dumps(materiales_values),
+        "motivos_labels": json.dumps(motivos_labels),
+        "motivos_values": json.dumps(motivos_values),
+    }
+
+    return render(request, "estadisticas/listado.html", contexto)
+

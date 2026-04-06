@@ -49,7 +49,6 @@ urlpatterns = [
     # =========================
     path('planos/<int:plano_id>/procesar/', views.procesar_plano_view, name='procesar_ocr'),
 
-    # NUEVAS RUTAS: edición de materiales y cambio manual de estado del NR
     path(
         'materiales-detectados/<int:material_id>/editar/',
         views.editar_material_detectado_view,
@@ -71,20 +70,26 @@ urlpatterns = [
     # =========================
     path('reportes/', views.reportes_view, name='reportes'),
 
+
+    # =========================
+    # 🔍 BÚSQUEDA GLOBAL
+    # =========================
+    path('buscar/', views.buscar_nr_global_view, name='buscar_nr_global'),
+
     # =========================
     # 📈 ESTADÍSTICAS
     # =========================
     path('estadisticas/', views.estadisticas_view, name='estadisticas'),
 
     # =========================
-    #  resultado validaciones
+    # RESULTADO VALIDACIONES
     # =========================
     path(
         'resultados-validacion/<int:resultado_id>/editar-datos/',
         views.editar_datos_nr_view,
         name='editar_datos_nr'
     ),
-    
+
     # =========================
     # 🛡️ AUDITORÍA
     # =========================

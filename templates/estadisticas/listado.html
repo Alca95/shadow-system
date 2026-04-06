@@ -1,199 +1,541 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Estadísticas{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/estadisticas.css' %}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
 {% block page_title %}
-Estadísticas
+Centro de estadísticas
+{% endblock %}
+
+{% block page_subtitle %}
+Inteligencia operativa, rendimiento de empresas y patrones de trabajo del sistema Shadow
 {% endblock %}
 
 {% block content %}
+<div class="stats-v2">
 
-<div class="row g-4">
+    <!-- HERO / RESUMEN EJECUTIVO -->
+    <section class="stats-hero">
+        <div class="stats-hero__content">
+            <span class="stats-badge">
+                <i class="bi bi-stars"></i>
+                Shadow Analytics
+            </span>
 
-    <div class="col-12">
-        <div class="card shadow-card p-4">
-            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+            <h2 class="stats-hero__title">
+                Visión estratégica del comportamiento operativo del sistema
+            </h2>
+
+            <p class="stats-hero__text">
+                Esta vista concentra indicadores clave, tendencias de carga, desempeño por empresa,
+                zonas con mayor actividad y hallazgos relevantes para apoyar decisiones dentro de ANDE.
+            </p>
+        </div>
+
+        <div class="stats-hero__spotlight">
+            <div class="spotlight-card">
+                <div class="spotlight-label">Mejor rendimiento</div>
+                <div class="spotlight-value">
+                    {% if mejor_empresa %}
+                        {{ mejor_empresa.empresa }}
+                    {% else %}
+                        Sin datos
+                    {% endif %}
+                </div>
+                <div class="spotlight-subvalue">
+                    {% if mejor_empresa %}
+                        {{ mejor_empresa.efectividad }}% de efectividad
+                    {% else %}
+                        Aún no hay suficiente información
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="spotlight-card">
+                <div class="spotlight-label">Mes más activo</div>
+                <div class="spotlight-value">
+                    {% if mes_mas_activo %}
+                        {{ mes_mas_activo.label }}
+                    {% else %}
+                        Sin datos
+                    {% endif %}
+                </div>
+                <div class="spotlight-subvalue">
+                    {% if mes_mas_activo %}
+                        {{ mes_mas_activo.total }} planos cargados
+                    {% else %}
+                        Aún no hay suficiente información
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- KPIS -->
+    <section class="kpi-grid-v2">
+        <article class="kpi-card-v2 kpi-card-v2--dark">
+            <div class="kpi-card-v2__top">
+                <span class="kpi-icon"><i class="bi bi-file-earmark-bar-graph"></i></span>
+                <span class="kpi-label">Planos totales</span>
+            </div>
+            <div class="kpi-value">{{ resumen.total_planos }}</div>
+            <div class="kpi-meta">Base global de planos registrados</div>
+        </article>
+
+        <article class="kpi-card-v2 kpi-card-v2--indigo">
+            <div class="kpi-card-v2__top">
+                <span class="kpi-icon"><i class="bi bi-check2-circle"></i></span>
+                <span class="kpi-label">Aprobados</span>
+            </div>
+            <div class="kpi-value">{{ resumen.total_planos_aprobados }}</div>
+            <div class="kpi-meta">Planos validados exitosamente</div>
+        </article>
+
+        <article class="kpi-card-v2 kpi-card-v2--violet">
+            <div class="kpi-card-v2__top">
+                <span class="kpi-icon"><i class="bi bi-search"></i></span>
+                <span class="kpi-label">En verificación</span>
+            </div>
+            <div class="kpi-value">{{ resumen.total_planos_en_verificacion }}</div>
+            <div class="kpi-meta">Casos que requieren revisión</div>
+        </article>
+
+        <article class="kpi-card-v2 kpi-card-v2--soft">
+            <div class="kpi-card-v2__top">
+                <span class="kpi-icon"><i class="bi bi-x-octagon"></i></span>
+                <span class="kpi-label">Rechazados</span>
+            </div>
+            <div class="kpi-value">{{ resumen.total_planos_rechazados }}</div>
+            <div class="kpi-meta">Inconsistencias detectadas</div>
+        </article>
+
+        <article class="kpi-card-v2 kpi-card-v2--glass">
+            <div class="kpi-card-v2__top">
+                <span class="kpi-icon"><i class="bi bi-diagram-3"></i></span>
+                <span class="kpi-label">NR analizados</span>
+            </div>
+            <div class="kpi-value">{{ resumen.total_nr_analizados }}</div>
+            <div class="kpi-meta">Resultados procesados por reclamo</div>
+        </article>
+
+        <article class="kpi-card-v2 kpi-card-v2--glass">
+            <div class="kpi-card-v2__top">
+                <span class="kpi-icon"><i class="bi bi-folder2-open"></i></span>
+                <span class="kpi-label">Carpetas</span>
+            </div>
+            <div class="kpi-value">{{ resumen.total_carpetas }}</div>
+            <div class="kpi-meta">Estructura documental disponible</div>
+        </article>
+    </section>
+
+    <!-- GRAFICOS -->
+    <section class="charts-grid-v2">
+        <article class="stats-panel stats-panel--large">
+            <div class="panel-head">
                 <div>
-                    <h5 class="mb-1">Resumen general del sistema</h5>
-                    <p class="text-muted mb-0">
-                        Vista rápida del estado operativo actual del sistema.
-                    </p>
+                    <h3>Distribución de planos por estado</h3>
+                    <p>Lectura general del comportamiento operativo del sistema</p>
+                </div>
+                <span class="panel-chip">Estado</span>
+            </div>
+            <div class="chart-wrap chart-wrap--donut">
+                <canvas id="chartEstados"></canvas>
+            </div>
+        </article>
+
+        <article class="stats-panel stats-panel--large">
+            <div class="panel-head">
+                <div>
+                    <h3>Planos por empresa</h3>
+                    <p>Comparativa de volumen operativo por empresa contratista</p>
+                </div>
+                <span class="panel-chip">Empresas</span>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="chartEmpresas"></canvas>
+            </div>
+        </article>
+
+        <article class="stats-panel">
+            <div class="panel-head">
+                <div>
+                    <h3>Actividad por mes</h3>
+                    <p>Evolución temporal de carga de planos</p>
+                </div>
+                <span class="panel-chip">Tiempo</span>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="chartMeses"></canvas>
+            </div>
+        </article>
+
+        <article class="stats-panel">
+            <div class="panel-head">
+                <div>
+                    <h3>Zonas con más reclamos</h3>
+                    <p>Áreas con mayor concentración de incidencias</p>
+                </div>
+                <span class="panel-chip">Zonas</span>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="chartZonas"></canvas>
+            </div>
+        </article>
+
+        <article class="stats-panel">
+            <div class="panel-head">
+                <div>
+                    <h3>Materiales más utilizados</h3>
+                    <p>Frecuencia de materiales detectados en los trabajos</p>
+                </div>
+                <span class="panel-chip">Materiales</span>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="chartMateriales"></canvas>
+            </div>
+        </article>
+
+        <article class="stats-panel">
+            <div class="panel-head">
+                <div>
+                    <h3>Motivos más frecuentes</h3>
+                    <p>Principales causas de revisión o rechazo</p>
+                </div>
+                <span class="panel-chip">Motivos</span>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="chartMotivos"></canvas>
+            </div>
+        </article>
+    </section>
+
+    <!-- RANKINGS -->
+    <section class="insights-grid-v2">
+        <article class="stats-panel">
+            <div class="panel-head">
+                <div>
+                    <h3>Rendimiento por empresa</h3>
+                    <p>Comparación integral de efectividad y volumen</p>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <div class="col-md-6 col-xl">
-        <div class="card shadow-card p-4 h-100">
-            <div class="text-muted small mb-2">Total de carpetas</div>
-            <div class="display-6 fw-bold">{{ resumen.total_carpetas }}</div>
-        </div>
-    </div>
+            <div class="table-responsive">
+                <table class="table stats-table-v2 align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Empresa</th>
+                            <th>Total</th>
+                            <th>Aprobados</th>
+                            <th>Rechazados</th>
+                            <th>Verificación</th>
+                            <th>Efectividad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in empresas_rendimiento %}
+                        <tr>
+                            <td class="fw-semibold">{{ item.empresa }}</td>
+                            <td>{{ item.total }}</td>
+                            <td>{{ item.aprobados }}</td>
+                            <td>{{ item.rechazados }}</td>
+                            <td>{{ item.verificacion }}</td>
+                            <td>
+                                <span class="effect-pill">
+                                    {{ item.efectividad }}%
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                No hay datos de rendimiento por empresa.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
 
-    <div class="col-md-6 col-xl">
-        <div class="card shadow-card p-4 h-100">
-            <div class="text-muted small mb-2">Total de planos</div>
-            <div class="display-6 fw-bold">{{ resumen.total_planos }}</div>
-        </div>
-    </div>
-
-    <div class="col-md-6 col-xl">
-        <div class="card shadow-card p-4 h-100">
-            <div class="text-muted small mb-2">Planos procesados</div>
-            <div class="display-6 fw-bold">{{ resumen.total_planos_procesados }}</div>
-        </div>
-    </div>
-
-    <div class="col-md-6 col-xl">
-        <div class="card shadow-card p-4 h-100">
-            <div class="text-muted small mb-2">Planos pendientes</div>
-            <div class="display-6 fw-bold">{{ resumen.total_planos_pendientes }}</div>
-        </div>
-    </div>
-
-    <div class="col-md-6 col-xl">
-        <div class="card shadow-card p-4 h-100">
-            <div class="text-muted small mb-2">Usuarios activos</div>
-            <div class="display-6 fw-bold">{{ resumen.total_usuarios_activos }}</div>
-        </div>
-    </div>
-
-    <div class="col-12 col-xl-6">
-        <div class="card shadow-card p-4 h-100">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="mb-0">Carpetas por estado</h5>
-                <span class="text-muted small">Distribución actual</span>
+        <article class="stats-panel">
+            <div class="panel-head">
+                <div>
+                    <h3>Resumen de hallazgos</h3>
+                    <p>Indicadores destacados del sistema</p>
+                </div>
             </div>
 
-            {% if carpetas_por_estado %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Estado</th>
-                                <th class="text-end">Cantidad</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in carpetas_por_estado %}
-                                <tr>
-                                    <td>{{ item.estado|default:"Sin estado" }}</td>
-                                    <td class="text-end fw-semibold">{{ item.total }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <div class="mini-insights">
+                <div class="mini-insight">
+                    <span class="mini-insight__label">Empresa con mejor rendimiento</span>
+                    <strong class="mini-insight__value">
+                        {% if mejor_empresa %}{{ mejor_empresa.empresa }}{% else %}Sin datos{% endif %}
+                    </strong>
                 </div>
-            {% else %}
-                <div class="alert alert-secondary mb-0">
-                    No hay datos de carpetas para mostrar.
-                </div>
-            {% endif %}
-        </div>
-    </div>
 
-    <div class="col-12 col-xl-6">
-        <div class="card shadow-card p-4 h-100">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="mb-0">Planos por estado</h5>
-                <span class="text-muted small">Distribución actual</span>
+                <div class="mini-insight">
+                    <span class="mini-insight__label">Empresa con más rechazos</span>
+                    <strong class="mini-insight__value">
+                        {% if empresa_mas_rechazos %}{{ empresa_mas_rechazos.empresa }}{% else %}Sin datos{% endif %}
+                    </strong>
+                </div>
+
+                <div class="mini-insight">
+                    <span class="mini-insight__label">Material más utilizado</span>
+                    <strong class="mini-insight__value">
+                        {% if material_mas_utilizado %}{{ material_mas_utilizado.material }}{% else %}Sin datos{% endif %}
+                    </strong>
+                </div>
+
+                <div class="mini-insight">
+                    <span class="mini-insight__label">Zona con más reclamos</span>
+                    <strong class="mini-insight__value">
+                        {% if zona_mas_reclamos %}{{ zona_mas_reclamos.zona }}{% else %}Sin datos{% endif %}
+                    </strong>
+                </div>
+
+                <div class="mini-insight">
+                    <span class="mini-insight__label">Mes más activo</span>
+                    <strong class="mini-insight__value">
+                        {% if mes_mas_activo %}{{ mes_mas_activo.label }}{% else %}Sin datos{% endif %}
+                    </strong>
+                </div>
             </div>
+        </article>
+    </section>
 
-            {% if planos_por_estado %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Estado</th>
-                                <th class="text-end">Cantidad</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in planos_por_estado %}
-                                <tr>
-                                    <td>{{ item.estado|default:"Sin estado" }}</td>
-                                    <td class="text-end fw-semibold">{{ item.total }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="alert alert-secondary mb-0">
-                    No hay datos de planos para mostrar.
-                </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <div class="col-12 col-xl-5">
-        <div class="card shadow-card p-4 h-100">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="mb-0">Usuarios por rol</h5>
-                <span class="text-muted small">Composición actual</span>
+    <!-- ANALISIS INTELIGENTE -->
+    <section class="ai-panel-v2">
+        <div class="ai-panel-v2__header">
+            <div class="ai-icon">
+                <i class="bi bi-cpu"></i>
             </div>
-
-            {% if usuarios_por_rol %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Rol</th>
-                                <th class="text-end">Cantidad</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in usuarios_por_rol %}
-                                <tr>
-                                    <td>{{ item.rol }}</td>
-                                    <td class="text-end fw-semibold">{{ item.total }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="alert alert-secondary mb-0">
-                    No hay usuarios registrados para mostrar.
-                </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <div class="col-12 col-xl-7">
-        <div class="card shadow-card p-4 h-100">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="mb-0">Planos por empresa contratista</h5>
-                <span class="text-muted small">Distribución simple</span>
+            <div>
+                <h3>Análisis inteligente del sistema</h3>
+                <p>Conclusiones automáticas generadas a partir de los datos operativos actuales</p>
             </div>
-
-            {% if planos_por_empresa %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Empresa</th>
-                                <th class="text-end">Cantidad de planos</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in planos_por_empresa %}
-                                <tr>
-                                    <td>{{ item.empresa }}</td>
-                                    <td class="text-end fw-semibold">{{ item.total }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="alert alert-secondary mb-0">
-                    No hay datos de empresas contratistas para mostrar.
-                </div>
-            {% endif %}
         </div>
-    </div>
+
+        <div class="ai-panel-v2__body">
+            <ul class="ai-list-v2">
+                {% for item in analisis_inteligente %}
+                    <li>{{ item }}</li>
+                {% empty %}
+                    <li>Aún no hay suficiente información para generar conclusiones.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </section>
 
 </div>
+{% endblock %}
 
+{% block extra_js %}
+{{ planos_por_estado|json_script:"estados_labels" }}
+{{ planos_por_estado_values|json_script:"estados_values" }}
+{{ empresas_labels|json_script:"empresas_labels" }}
+{{ empresas_values|json_script:"empresas_values" }}
+{{ meses_labels|json_script:"meses_labels" }}
+{{ meses_values|json_script:"meses_values" }}
+{{ zonas_labels|json_script:"zonas_labels" }}
+{{ zonas_values|json_script:"zonas_values" }}
+{{ materiales_labels|json_script:"materiales_labels" }}
+{{ materiales_values|json_script:"materiales_values" }}
+{{ motivos_labels|json_script:"motivos_labels" }}
+{{ motivos_values|json_script:"motivos_values" }}
+
+<script>
+const labelsEstados = JSON.parse(document.getElementById('estados_labels').textContent);
+const valuesEstados = JSON.parse(document.getElementById('estados_values').textContent);
+
+const labelsEmpresas = JSON.parse(document.getElementById('empresas_labels').textContent);
+const valuesEmpresas = JSON.parse(document.getElementById('empresas_values').textContent);
+
+const labelsMeses = JSON.parse(document.getElementById('meses_labels').textContent);
+const valuesMeses = JSON.parse(document.getElementById('meses_values').textContent);
+
+const labelsZonas = JSON.parse(document.getElementById('zonas_labels').textContent);
+const valuesZonas = JSON.parse(document.getElementById('zonas_values').textContent);
+
+const labelsMateriales = JSON.parse(document.getElementById('materiales_labels').textContent);
+const valuesMateriales = JSON.parse(document.getElementById('materiales_values').textContent);
+
+const labelsMotivos = JSON.parse(document.getElementById('motivos_labels').textContent);
+const valuesMotivos = JSON.parse(document.getElementById('motivos_values').textContent);
+
+function baseOptions() {
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#334155',
+                    font: {
+                        family: 'Poppins',
+                        size: 12
+                    }
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                titleFont: {
+                    family: 'Poppins'
+                },
+                bodyFont: {
+                    family: 'Poppins'
+                },
+                padding: 12,
+                cornerRadius: 10
+            }
+        },
+        scales: {
+            x: {
+                ticks: {
+                    color: '#64748b',
+                    font: {
+                        family: 'Poppins'
+                    }
+                },
+                grid: {
+                    display: false
+                }
+            },
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    color: '#64748b',
+                    font: {
+                        family: 'Poppins'
+                    }
+                },
+                grid: {
+                    color: 'rgba(148, 163, 184, 0.15)'
+                }
+            }
+        }
+    };
+}
+
+new Chart(document.getElementById('chartEstados'), {
+    type: 'doughnut',
+    data: {
+        labels: labelsEstados,
+        datasets: [{
+            data: valuesEstados,
+            backgroundColor: ['#0b0b0f', '#2a2758', '#433b8f', '#6156d6', '#cfcfdb'],
+            borderWidth: 0,
+            hoverOffset: 10
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '68%',
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    color: '#334155',
+                    font: {
+                        family: 'Poppins',
+                        size: 12
+                    },
+                    padding: 16
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                titleFont: { family: 'Poppins' },
+                bodyFont: { family: 'Poppins' },
+                padding: 12,
+                cornerRadius: 10
+            }
+        }
+    }
+});
+
+new Chart(document.getElementById('chartEmpresas'), {
+    type: 'bar',
+    data: {
+        labels: labelsEmpresas,
+        datasets: [{
+            label: 'Planos',
+            data: valuesEmpresas,
+            backgroundColor: '#433b8f',
+            borderRadius: 10,
+            borderSkipped: false
+        }]
+    },
+    options: baseOptions()
+});
+
+new Chart(document.getElementById('chartMeses'), {
+    type: 'line',
+    data: {
+        labels: labelsMeses,
+        datasets: [{
+            label: 'Planos cargados',
+            data: valuesMeses,
+            borderColor: '#6156d6',
+            backgroundColor: 'rgba(97, 86, 214, 0.12)',
+            fill: true,
+            tension: 0.35,
+            pointRadius: 4,
+            pointHoverRadius: 6
+        }]
+    },
+    options: baseOptions()
+});
+
+new Chart(document.getElementById('chartZonas'), {
+    type: 'bar',
+    data: {
+        labels: labelsZonas,
+        datasets: [{
+            label: 'Reclamos',
+            data: valuesZonas,
+            backgroundColor: '#2a2758',
+            borderRadius: 10,
+            borderSkipped: false
+        }]
+    },
+    options: baseOptions()
+});
+
+new Chart(document.getElementById('chartMateriales'), {
+    type: 'bar',
+    data: {
+        labels: labelsMateriales,
+        datasets: [{
+            label: 'Frecuencia',
+            data: valuesMateriales,
+            backgroundColor: '#6156d6',
+            borderRadius: 10,
+            borderSkipped: false
+        }]
+    },
+    options: baseOptions()
+});
+
+new Chart(document.getElementById('chartMotivos'), {
+    type: 'bar',
+    data: {
+        labels: labelsMotivos,
+        datasets: [{
+            label: 'Casos',
+            data: valuesMotivos,
+            backgroundColor: '#cfcfdb',
+            borderRadius: 10,
+            borderSkipped: false
+        }]
+    },
+    options: baseOptions()
+});
+</script>
 {% endblock %}
