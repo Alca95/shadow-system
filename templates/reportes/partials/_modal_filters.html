@@ -1,0 +1,76 @@
+<form method="get" class="report-modal-filters">
+
+    <input type="hidden" name="tab" value="{{ tab_value }}">
+
+    <input type="hidden" name="fecha_desde" class="fecha-desde-input" value="{{ filtros.fecha_desde }}">
+    <input type="hidden" name="fecha_hasta" class="fecha-hasta-input" value="{{ filtros.fecha_hasta }}">
+
+    <div class="modal-filter-grid">
+
+        <div class="modal-filter-item modal-filter-wide">
+            <label>
+                <i class="bi bi-calendar2-range"></i>
+                Rango de fechas
+            </label>
+
+            <input
+                type="text"
+                class="form-control report-date-range"
+                placeholder="Seleccionar periodo"
+                autocomplete="off"
+                value="{% if filtros.fecha_desde and filtros.fecha_hasta %}{{ filtros.fecha_desde }} a {{ filtros.fecha_hasta }}{% endif %}"
+            >
+        </div>
+
+        <div class="modal-filter-item">
+            <label>
+                <i class="bi bi-buildings"></i>
+                Empresa
+            </label>
+
+            <select name="empresa" class="form-select">
+                <option value="">Todas las empresas</option>
+                {% for empresa in empresas %}
+                    <option value="{{ empresa.id }}"
+                        {% if filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
+                        {{ empresa.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="modal-filter-item">
+            <label>
+                <i class="bi bi-check2-square"></i>
+                Estado
+            </label>
+
+            <select name="estado" class="form-select">
+                <option value="">Todos los estados</option>
+                {% for value, label in plano_estado_choices %}
+                    <option value="{{ value }}"
+                        {% if filtros.estado == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+    </div>
+
+    <div class="modal-filter-actions">
+
+        <button type="submit" class="btn btn-shadow">
+            <i class="bi bi-funnel"></i>
+            Generar reporte
+        </button>
+
+        <a href="{% url 'reportes' %}?tab={{ tab_value }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-clockwise"></i>
+            Limpiar
+        </a>
+
+
+    </div>
+
+</form>

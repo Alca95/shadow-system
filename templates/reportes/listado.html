@@ -1,274 +1,895 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Reportes{% endblock %}
 
-{% block page_title %}
-Reportes
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260505">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 {% endblock %}
+
+{% block page_title %}Reportes institucionales{% endblock %}
+
+{% block page_subtitle %}{% endblock %}
 
 {% block content %}
 
-<div class="row g-4">
-
-    <div class="col-12">
-        <div class="card shadow-card p-4">
-            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-                <div>
-                    <h5 class="mb-1">Reportes operativos</h5>
-                    <p class="text-muted mb-0">
-                        Consulta información de carpetas y planos con filtros simples.
-                    </p>
-                </div>
-            </div>
-
-            <ul class="nav nav-pills gap-2">
-                <li class="nav-item">
-                    <a class="btn {% if tab == 'carpetas' %}btn-shadow{% else %}btn-outline-secondary{% endif %}"
-                       href="{% url 'reportes' %}?tab=carpetas">
-                        <i class="bi bi-folder2-open me-2"></i>Reporte de carpetas
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="btn {% if tab == 'planos' %}btn-shadow{% else %}btn-outline-secondary{% endif %}"
-                       href="{% url 'reportes' %}?tab=planos">
-                        <i class="bi bi-file-earmark-text me-2"></i>Reporte de planos
-                    </a>
-                </li>
-            </ul>
-        </div>
+<div class="print-header">
+    <div class="print-header-left">
+        <img src="{% static 'img/logo_shadow.png' %}" alt="Logo" />
     </div>
+    <div class="print-header-center">
+        <h2>Informe Operativo</h2>
+        <p>Shadow OCR · ANDE</p>
+        <span>
+            {% if filtros.fecha_desde and filtros.fecha_hasta %}
+                Periodo: {{ filtros.fecha_desde }} a {{ filtros.fecha_hasta }}
+            {% else %}
+                Periodo completo
+            {% endif %}
+        </span>
+    </div>
+    <div class="print-header-right">
+        <span>Fecha emisión:</span>
+        <strong>{% now "d/m/Y" %}</strong>
+    </div>
+</div>
 
-    {% if tab == 'carpetas' %}
-    <div class="col-12">
-        <div class="card shadow-card p-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="mb-0">Filtros de carpetas</h5>
-                <span class="text-muted">Total: {{ carpetas|length }}</span>
-            </div>
+<div class="reports-dashboard">
 
-            <form method="get" class="row g-3">
-                <input type="hidden" name="tab" value="carpetas">
+    <section class="reports-hero-modern">
+        <div class="reports-hero-content">
+            <span class="hero-eyebrow">
+                <i class="bi bi-file-earmark-bar-graph"></i>
+                Shadow Reports
+            </span>
 
-                <div class="col-md-6 col-lg-3">
-                    <label for="carpeta_q" class="form-label">Código</label>
-                    <input type="text" class="form-control" id="carpeta_q" name="carpeta_q"
-                           value="{{ filtros.carpeta_q }}" placeholder="Ej: CARP001">
+            <h2>Panel institucional de reportes</h2>
+
+            <p>
+                Genera reportes operativos por empresa, carpeta, localidad, estado, rechazo y tiempo de respuesta.
+                Cada reporte responde directamente a los objetivos específicos definidos para el módulo de reportes.
+            </p>
+
+            <form method="get" class="hero-general-filters">
+
+                <input type="hidden" name="fecha_desde" class="fecha-desde-input" value="{{ filtros.fecha_desde }}">
+                <input type="hidden" name="fecha_hasta" class="fecha-hasta-input" value="{{ filtros.fecha_hasta }}">
+
+                <div class="hero-filter-item hero-filter-date">
+                    <label>
+                        <i class="bi bi-calendar2-range"></i>
+                        Periodo
+                    </label>
+                    <input
+                        type="text"
+                        class="form-control report-date-range"
+                        placeholder="Seleccionar rango"
+                        autocomplete="off"
+                        value="{% if filtros.fecha_desde and filtros.fecha_hasta %}{{ filtros.fecha_desde }} a {{ filtros.fecha_hasta }}{% endif %}"
+                    >
                 </div>
 
-                <div class="col-md-6 col-lg-2">
-                    <label for="carpeta_estado" class="form-label">Estado</label>
-                    <select id="carpeta_estado" name="carpeta_estado" class="form-select">
-                        <option value="">Todos</option>
-                        {% for value, label in carpeta_estado_choices %}
-                            <option value="{{ value }}" {% if filtros.carpeta_estado == value %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-md-6 col-lg-3">
-                    <label for="carpeta_empresa" class="form-label">Empresa</label>
-                    <select id="carpeta_empresa" name="carpeta_empresa" class="form-select">
+                <div class="hero-filter-item">
+                    <label>
+                        <i class="bi bi-buildings"></i>
+                        Empresa
+                    </label>
+                    <select name="empresa" class="form-select">
                         <option value="">Todas</option>
                         {% for empresa in empresas %}
-                            <option value="{{ empresa.id }}" {% if filtros.carpeta_empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
+                            <option value="{{ empresa.id }}"
+                                {% if filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
                                 {{ empresa.nombre }}
                             </option>
                         {% endfor %}
                     </select>
                 </div>
 
-                <div class="col-md-3 col-lg-2">
-                    <label for="carpeta_mes" class="form-label">Mes</label>
-                    <input type="number" class="form-control" id="carpeta_mes" name="carpeta_mes"
-                           min="1" max="12" value="{{ filtros.carpeta_mes }}" placeholder="3">
-                </div>
-
-                <div class="col-md-3 col-lg-2">
-                    <label for="carpeta_anio" class="form-label">Año</label>
-                    <input type="number" class="form-control" id="carpeta_anio" name="carpeta_anio"
-                           value="{{ filtros.carpeta_anio }}" placeholder="2026">
-                </div>
-
-                <div class="col-12 d-flex gap-2 flex-wrap">
-                    <button type="submit" class="btn btn-shadow">
-                        <i class="bi bi-search me-2"></i>Aplicar filtros
-                    </button>
-                    <a href="{% url 'reportes' %}?tab=carpetas" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-clockwise me-2"></i>Limpiar
-                    </a>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="col-12">
-        <div class="card shadow-card p-4">
-            <h5 class="mb-4">Resultado del reporte de carpetas</h5>
-
-            {% if carpetas %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Código</th>
-                                <th>Empresa</th>
-                                <th>Período</th>
-                                <th>Estado</th>
-                                <th>Fecha de creación</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for carpeta in carpetas %}
-                                <tr>
-                                    <td><strong>{{ carpeta.codigo_carpeta }}</strong></td>
-                                    <td>
-                                        {% if carpeta.empresa %}
-                                            {{ carpeta.empresa.nombre }}
-                                        {% else %}
-                                            <span class="text-muted">Sin empresa</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ carpeta.mes }}/{{ carpeta.anio }}</td>
-                                    <td>{{ carpeta.get_estado_display }}</td>
-                                    <td>{{ carpeta.fecha_creacion|date:"d/m/Y H:i" }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="alert alert-secondary mb-0">
-                    No se encontraron carpetas con los filtros actuales.
-                </div>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
-
-    {% if tab == 'planos' %}
-    <div class="col-12">
-        <div class="card shadow-card p-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="mb-0">Filtros de planos</h5>
-                <span class="text-muted">Total: {{ planos|length }}</span>
-            </div>
-
-            <form method="get" class="row g-3">
-                <input type="hidden" name="tab" value="planos">
-
-                <div class="col-md-6 col-lg-3">
-                    <label for="plano_q" class="form-label">Plano o carpeta</label>
-                    <input type="text" class="form-control" id="plano_q" name="plano_q"
-                           value="{{ filtros.plano_q }}" placeholder="ID depósito o carpeta">
-                </div>
-
-                <div class="col-md-6 col-lg-2">
-                    <label for="plano_estado" class="form-label">Estado</label>
-                    <select id="plano_estado" name="plano_estado" class="form-select">
+                <div class="hero-filter-item">
+                    <label>
+                        <i class="bi bi-check2-square"></i>
+                        Estado
+                    </label>
+                    <select name="estado" class="form-select">
                         <option value="">Todos</option>
                         {% for value, label in plano_estado_choices %}
-                            <option value="{{ value }}" {% if filtros.plano_estado == value %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-md-6 col-lg-3">
-                    <label for="plano_empresa" class="form-label">Empresa</label>
-                    <select id="plano_empresa" name="plano_empresa" class="form-select">
-                        <option value="">Todas</option>
-                        {% for empresa in empresas %}
-                            <option value="{{ empresa.id }}" {% if filtros.plano_empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
-                                {{ empresa.nombre }}
+                            <option value="{{ value }}"
+                                {% if filtros.estado == value %}selected{% endif %}>
+                                {{ label }}
                             </option>
                         {% endfor %}
                     </select>
                 </div>
 
-                <div class="col-md-6 col-lg-2">
-                    <label for="plano_procesado" class="form-label">Procesado</label>
-                    <select id="plano_procesado" name="plano_procesado" class="form-select">
-                        <option value="">Todos</option>
-                        <option value="si" {% if filtros.plano_procesado == 'si' %}selected{% endif %}>Sí</option>
-                        <option value="no" {% if filtros.plano_procesado == 'no' %}selected{% endif %}>No</option>
-                    </select>
-                </div>
-
-                <div class="col-12 d-flex gap-2 flex-wrap">
-                    <button type="submit" class="btn btn-shadow">
-                        <i class="bi bi-search me-2"></i>Aplicar filtros
+                <div class="hero-filter-actions">
+                    <button type="submit" class="btn btn-light">
+                        <i class="bi bi-funnel"></i>
+                        Aplicar
                     </button>
-                    <a href="{% url 'reportes' %}?tab=planos" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-clockwise me-2"></i>Limpiar
+
+                    <a href="{% url 'reportes' %}" class="btn btn-outline-light">
+                        <i class="bi bi-arrow-clockwise"></i>
                     </a>
                 </div>
+
             </form>
         </div>
-    </div>
 
-    <div class="col-12">
-        <div class="card shadow-card p-4">
-            <h5 class="mb-4">Resultado del reporte de planos</h5>
-
-            {% if planos %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>ID plano depósito</th>
-                                <th>Carpeta</th>
-                                <th>Empresa</th>
-                                <th>Estado</th>
-                                <th>Procesado</th>
-                                <th>Fecha de carga</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for plano in planos %}
-                                <tr>
-                                    <td>
-                                        {% if plano.id_plano_deposito %}
-                                            {{ plano.id_plano_deposito }}
-                                        {% else %}
-                                            <span class="text-muted">Sin ID</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if plano.carpeta %}
-                                            {{ plano.carpeta.codigo_carpeta }}
-                                        {% else %}
-                                            <span class="text-muted">Sin carpeta</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if plano.carpeta and plano.carpeta.empresa %}
-                                            {{ plano.carpeta.empresa.nombre }}
-                                        {% else %}
-                                            <span class="text-muted">Sin empresa</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ plano.get_estado_display }}</td>
-                                    <td>
-                                        {% if plano.procesado %}
-                                            <span class="badge bg-success">Sí</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">No</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ plano.fecha_carga|date:"d/m/Y H:i" }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="alert alert-secondary mb-0">
-                    No se encontraron planos con los filtros actuales.
-                </div>
-            {% endif %}
+        <div class="hero-summary-card">
+            <span class="summary-label">Efectividad general</span>
+            <strong>{{ resumen.efectividad_general|floatformat:0 }}%</strong>
+            <small>{{ resumen.total_aprobados }} concretados de {{ resumen.total_nr }} NR atendidos</small>
         </div>
-    </div>
-    {% endif %}
+    </section>
+
+    <section class="compact-kpi-grid">
+        <article class="compact-kpi is-dark">
+            <span><i class="bi bi-clipboard-data"></i></span>
+            <div>
+                <small>Planos</small>
+                <strong>{{ resumen.total_planos }}</strong>
+            </div>
+        </article>
+
+        <article class="compact-kpi is-indigo">
+            <span><i class="bi bi-diagram-3"></i></span>
+            <div>
+                <small>NR atendidos</small>
+                <strong>{{ resumen.total_nr }}</strong>
+            </div>
+        </article>
+
+        <article class="compact-kpi is-violet">
+            <span><i class="bi bi-check-circle"></i></span>
+            <div>
+                <small>Concretados</small>
+                <strong>{{ resumen.total_aprobados }}</strong>
+            </div>
+        </article>
+
+        <article class="compact-kpi is-soft">
+            <span><i class="bi bi-x-octagon"></i></span>
+            <div>
+                <small>No concretados</small>
+                <strong>{{ resumen.total_rechazados }}</strong>
+            </div>
+        </article>
+
+        <article class="compact-kpi is-glass">
+            <span><i class="bi bi-search"></i></span>
+            <div>
+                <small>Verificación</small>
+                <strong>{{ resumen.total_verificacion }}</strong>
+            </div>
+        </article>
+
+        <article class="compact-kpi is-glass">
+            <span><i class="bi bi-clock-history"></i></span>
+            <div>
+                <small>Respuesta prom.</small>
+                <strong>{{ resumen.promedio_respuesta|floatformat:0 }} d</strong>
+            </div>
+        </article>
+    </section>
+
+    <section class="report-objectives-panel">
+        <div class="reports-section-head">
+            <div>
+                <h5>Reportes disponibles</h5>
+                <p>Selecciona un objetivo específico para generar el reporte correspondiente.</p>
+            </div>
+
+            <button type="button" class="btn btn-outline-dark btn-sm report-print-btn" onclick="window.print()">
+                <i class="bi bi-file-earmark-pdf"></i>
+                PDF general
+            </button>
+        </div>
+
+        <div class="report-card-grid">
+
+            <button type="button" class="report-card report-card-wide" data-report-modal="modalMateriales">
+                <span class="report-card-icon is-primary">
+                    <i class="bi bi-tools"></i>
+                </span>
+                <span class="report-card-content">
+                    <strong>Materiales por carpeta y empresa</strong>
+                    <small>Cantidad de materiales utilizados agrupados por carpeta, empresa, material y unidad.</small>
+                </span>
+                <span class="report-card-footer">
+                    <span>{{ reporte_materiales|length }} registros</span>
+                    <i class="bi bi-arrow-up-right"></i>
+                </span>
+            </button>
+
+            <button type="button" class="report-card" data-report-modal="modalReclamos">
+                <span class="report-card-icon is-info">
+                    <i class="bi bi-geo-alt"></i>
+                </span>
+                <span class="report-card-content">
+                    <strong>Reclamos por localidad, barrio y empresa</strong>
+                    <small>Distribución territorial de reclamos atendidos por ciudad, zona y empresa.</small>
+                </span>
+                <span class="report-card-footer">
+                    <span>{{ reporte_reclamos|length }} registros</span>
+                    <i class="bi bi-arrow-up-right"></i>
+                </span>
+            </button>
+
+            <button type="button" class="report-card" data-report-modal="modalTrabajos">
+                <span class="report-card-icon is-secondary">
+                    <i class="bi bi-buildings"></i>
+                </span>
+                <span class="report-card-content">
+                    <strong>Total de trabajos por empresa</strong>
+                    <small>Resumen de productividad operativa por empresa contratista.</small>
+                </span>
+                <span class="report-card-footer">
+                    <span>{{ reporte_empresas|length }} empresas</span>
+                    <i class="bi bi-arrow-up-right"></i>
+                </span>
+            </button>
+
+            <button type="button" class="report-card" data-report-modal="modalEstados">
+                <span class="report-card-icon is-success">
+                    <i class="bi bi-check2-square"></i>
+                </span>
+                <span class="report-card-content">
+                    <strong>Atendidos, concretados y no concretados</strong>
+                    <small>Estado general de los reclamos procesados por el sistema.</small>
+                </span>
+                <span class="report-card-footer">
+                    <span>{{ resumen.total_nr }} NR</span>
+                    <i class="bi bi-arrow-up-right"></i>
+                </span>
+            </button>
+
+            <button type="button" class="report-card report-card-wide" data-report-modal="modalEfectividad">
+                <span class="report-card-icon is-primary">
+                    <i class="bi bi-calendar-month"></i>
+                </span>
+                <span class="report-card-content">
+                    <strong>Efectividad mensual por empresa</strong>
+                    <small>Porcentaje de cumplimiento, concretados, no concretados y verificación por empresa.</small>
+                </span>
+                <span class="report-card-footer">
+                    <span>{{ resumen.efectividad_general|floatformat:0 }}% general</span>
+                    <i class="bi bi-arrow-up-right"></i>
+                </span>
+            </button>
+
+            <button type="button" class="report-card" data-report-modal="modalRechazos">
+                <span class="report-card-icon is-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </span>
+                <span class="report-card-content">
+                    <strong>Tipo de rechazo más frecuente</strong>
+                    <small>Clasificación de las causas principales de rechazo detectadas.</small>
+                </span>
+                <span class="report-card-footer">
+                    <span>{{ reporte_tipos_rechazo|length }} tipos</span>
+                    <i class="bi bi-arrow-up-right"></i>
+                </span>
+            </button>
+
+            <button type="button" class="report-card" data-report-modal="modalRespuesta">
+                <span class="report-card-icon is-warning">
+                    <i class="bi bi-clock-history"></i>
+                </span>
+                <span class="report-card-content">
+                    <strong>Tiempo de respuesta al reclamo</strong>
+                    <small>Días transcurridos entre fecha de reclamo y fecha de trabajo.</small>
+                </span>
+                <span class="report-card-footer">
+                    <span>{{ resumen.promedio_respuesta|floatformat:0 }} días prom.</span>
+                    <i class="bi bi-arrow-up-right"></i>
+                </span>
+            </button>
+
+        </div>
+    </section>
 
 </div>
 
+<div class="report-modal-layer" id="reportModalLayer" aria-hidden="true">
+    <div class="report-modal-backdrop" data-report-close></div>
+
+    <div class="report-modal-shell">
+
+        <section class="report-modal" id="modalMateriales" data-report-key="materiales">
+            <div class="report-modal-header">
+                <div class="report-modal-title">
+                    <span class="report-card-icon is-primary"><i class="bi bi-tools"></i></span>
+                    <div>
+                        <h3>Materiales por carpeta y empresa</h3>
+                        <p>Cantidad acumulada por empresa, carpeta, material y unidad.</p>
+                    </div>
+                </div>
+                <button type="button" class="report-modal-close" data-report-close>
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            {% include "reportes/partials/_modal_filters.html" with tab_value="materiales" %}
+
+            <div class="report-modal-body">
+                {% if reporte_materiales %}
+                <div class="table-responsive report-table-wrap">
+                    <table class="table report-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Empresa</th>
+                                <th>Carpeta</th>
+                                <th>Material</th>
+                                <th>Unidad</th>
+                                <th>Cantidad total</th>
+                                <th>Apariciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in reporte_materiales %}
+                            <tr>
+                                <td class="fw-semibold">{{ item.empresa }}</td>
+                                <td>{{ item.carpeta }}</td>
+                                <td>{{ item.material }}</td>
+                                <td>{{ item.unidad }}</td>
+                                <td>{{ item.cantidad_total|floatformat:0 }}</td>
+                                <td>{{ item.apariciones }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-report">
+                    <i class="bi bi-inbox"></i>
+                    No hay materiales disponibles para los filtros seleccionados.
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="report-modal" id="modalReclamos" data-report-key="reclamos">
+            <div class="report-modal-header">
+                <div class="report-modal-title">
+                    <span class="report-card-icon is-info"><i class="bi bi-geo-alt"></i></span>
+                    <div>
+                        <h3>Reclamos por localidad, barrio y empresa</h3>
+                        <p>Distribución de reclamos procesados por ciudad, zona y empresa.</p>
+                    </div>
+                </div>
+                <button type="button" class="report-modal-close" data-report-close>
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            {% include "reportes/partials/_modal_filters.html" with tab_value="reclamos" %}
+
+            <div class="report-modal-body">
+                {% if reporte_reclamos %}
+                <div class="table-responsive report-table-wrap">
+                    <table class="table report-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Localidad / Ciudad</th>
+                                <th>Barrio / Zona</th>
+                                <th>Empresa</th>
+                                <th>Total</th>
+                                <th>Concretados</th>
+                                <th>No concretados</th>
+                                <th>Verificación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in reporte_reclamos %}
+                            <tr>
+                                <td class="fw-semibold">{{ item.ciudad }}</td>
+                                <td>{{ item.zona }}</td>
+                                <td>{{ item.empresa }}</td>
+                                <td>{{ item.total }}</td>
+                                <td><span class="status-pill status-ok">{{ item.aprobados }}</span></td>
+                                <td><span class="status-pill status-danger">{{ item.rechazados }}</span></td>
+                                <td><span class="status-pill status-warn">{{ item.verificacion }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-report">
+                    <i class="bi bi-inbox"></i>
+                    No hay reclamos procesados para los filtros seleccionados.
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="report-modal" id="modalTrabajos" data-report-key="trabajos">
+            <div class="report-modal-header">
+                <div class="report-modal-title">
+                    <span class="report-card-icon is-secondary"><i class="bi bi-buildings"></i></span>
+                    <div>
+                        <h3>Total de trabajos realizados por empresa</h3>
+                        <p>Productividad operativa consolidada por contratista.</p>
+                    </div>
+                </div>
+                <button type="button" class="report-modal-close" data-report-close>
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            {% include "reportes/partials/_modal_filters.html" with tab_value="trabajos" %}
+
+            <div class="report-modal-body">
+                {% if reporte_empresas %}
+                <div class="table-responsive report-table-wrap">
+                    <table class="table report-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Empresa</th>
+                                <th>Total planos</th>
+                                <th>Total NR</th>
+                                <th>Concretados</th>
+                                <th>No concretados</th>
+                                <th>Verificación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in reporte_empresas %}
+                            <tr>
+                                <td class="fw-semibold">{{ item.empresa }}</td>
+                                <td>{{ item.total_planos }}</td>
+                                <td>{{ item.total_nr }}</td>
+                                <td>{{ item.aprobados }}</td>
+                                <td>{{ item.rechazados }}</td>
+                                <td>{{ item.verificacion }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-report">
+                    <i class="bi bi-inbox"></i>
+                    No hay datos de trabajos para los filtros seleccionados.
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="report-modal" id="modalEstados" data-report-key="estados">
+            <div class="report-modal-header">
+                <div class="report-modal-title">
+                    <span class="report-card-icon is-success"><i class="bi bi-check2-square"></i></span>
+                    <div>
+                        <h3>Reclamos atendidos, concretados y no concretados</h3>
+                        <p>Resumen ejecutivo de estados operativos.</p>
+                    </div>
+                </div>
+                <button type="button" class="report-modal-close" data-report-close>
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            {% include "reportes/partials/_modal_filters.html" with tab_value="estados" %}
+
+            <div class="report-modal-body">
+                <div class="modal-kpi-grid">
+                    <article>
+                        <small>Atendidos</small>
+                        <strong>{{ resumen.total_nr }}</strong>
+                    </article>
+                    <article>
+                        <small>Concretados</small>
+                        <strong>{{ resumen.total_aprobados }}</strong>
+                    </article>
+                    <article>
+                        <small>No concretados</small>
+                        <strong>{{ resumen.total_rechazados }}</strong>
+                    </article>
+                    <article>
+                        <small>En verificación</small>
+                        <strong>{{ resumen.total_verificacion }}</strong>
+                    </article>
+                </div>
+
+                {% if reporte_reclamos %}
+                <div class="table-responsive report-table-wrap mt-3">
+                    <table class="table report-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Localidad / Ciudad</th>
+                                <th>Barrio / Zona</th>
+                                <th>Empresa</th>
+                                <th>Total</th>
+                                <th>Concretados</th>
+                                <th>No concretados</th>
+                                <th>Verificación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in reporte_reclamos %}
+                            <tr>
+                                <td class="fw-semibold">{{ item.ciudad }}</td>
+                                <td>{{ item.zona }}</td>
+                                <td>{{ item.empresa }}</td>
+                                <td>{{ item.total }}</td>
+                                <td><span class="status-pill status-ok">{{ item.aprobados }}</span></td>
+                                <td><span class="status-pill status-danger">{{ item.rechazados }}</span></td>
+                                <td><span class="status-pill status-warn">{{ item.verificacion }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="report-modal" id="modalEfectividad" data-report-key="efectividad">
+            <div class="report-modal-header">
+                <div class="report-modal-title">
+                    <span class="report-card-icon is-primary"><i class="bi bi-calendar-month"></i></span>
+                    <div>
+                        <h3>Reporte mensual de efectividad por empresa</h3>
+                        <p>Indicador de cumplimiento operativo por empresa contratista.</p>
+                    </div>
+                </div>
+                <button type="button" class="report-modal-close" data-report-close>
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            {% include "reportes/partials/_modal_filters.html" with tab_value="efectividad" %}
+
+            <div class="report-modal-body">
+                {% if reporte_empresas %}
+                <div class="table-responsive report-table-wrap">
+                    <table class="table report-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Empresa</th>
+                                <th>Total planos</th>
+                                <th>Total NR</th>
+                                <th>Concretados</th>
+                                <th>No concretados</th>
+                                <th>Verificación</th>
+                                <th>Efectividad</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in reporte_empresas %}
+                            <tr>
+                                <td class="fw-semibold">{{ item.empresa }}</td>
+                                <td>{{ item.total_planos }}</td>
+                                <td>{{ item.total_nr }}</td>
+                                <td>{{ item.aprobados }}</td>
+                                <td>{{ item.rechazados }}</td>
+                                <td>{{ item.verificacion }}</td>
+                                <td>
+                                    <div class="effectiveness-cell">
+                                        <span>{{ item.efectividad|floatformat:0 }}%</span>
+                                        <div class="effectiveness-bar">
+                                            <div class="effectiveness-bar-fill" data-width="{{ item.efectividad|floatformat:0 }}"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-report">
+                    <i class="bi bi-inbox"></i>
+                    No hay datos de efectividad para los filtros seleccionados.
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="report-modal" id="modalRechazos" data-report-key="rechazos">
+            <div class="report-modal-header">
+                <div class="report-modal-title">
+                    <span class="report-card-icon is-danger"><i class="bi bi-exclamation-triangle"></i></span>
+                    <div>
+                        <h3>Tipo de rechazo más frecuente</h3>
+                        <p>Frecuencia de causas de rechazo detectadas por validación.</p>
+                    </div>
+                </div>
+                <button type="button" class="report-modal-close" data-report-close>
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            {% include "reportes/partials/_modal_filters.html" with tab_value="rechazos" %}
+
+            <div class="report-modal-body">
+                {% if reporte_tipos_rechazo %}
+                <div class="reason-list">
+                    {% for item in reporte_tipos_rechazo %}
+                    <div class="reason-item">
+                        <div>
+                            <strong>{{ item.tipo }}</strong>
+                            <span>{{ item.total }} caso{% if item.total != 1 %}s{% endif %}</span>
+                        </div>
+                        <div class="reason-count">{{ item.total }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-report compact">
+                    <i class="bi bi-check2-circle"></i>
+                    No se registran rechazos en el período seleccionado.
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="report-modal" id="modalRespuesta" data-report-key="respuesta">
+            <div class="report-modal-header">
+                <div class="report-modal-title">
+                    <span class="report-card-icon is-warning"><i class="bi bi-clock-history"></i></span>
+                    <div>
+                        <h3>Tiempo de respuesta al reclamo</h3>
+                        <p>Días transcurridos entre fecha de reclamo y fecha de trabajo.</p>
+                    </div>
+                </div>
+                <button type="button" class="report-modal-close" data-report-close>
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            {% include "reportes/partials/_modal_filters.html" with tab_value="respuesta" %}
+
+            <div class="report-modal-body">
+                <div class="response-summary">
+                    <span>Promedio general</span>
+                    <strong>{{ resumen.promedio_respuesta|floatformat:0 }} días</strong>
+                </div>
+
+                {% if tiempos_respuesta %}
+                <div class="response-list">
+                    {% for item in tiempos_respuesta|slice:":12" %}
+                    <div class="response-item">
+                        <div>
+                            <strong>NR {{ item.nr }}</strong>
+                            <span>{{ item.empresa }} · {{ item.ciudad }} / {{ item.zona }}</span>
+                        </div>
+                        <div class="response-days">
+                            {{ item.dias|floatformat:0 }} días
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-report compact">
+                    <i class="bi bi-clock"></i>
+                    No hay datos suficientes para calcular tiempos.
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const modalLayer = document.getElementById("reportModalLayer");
+    const modals = document.querySelectorAll(".report-modal");
+
+    const modalInitialHTML = {};
+
+    modals.forEach(function (modal) {
+        modalInitialHTML[modal.id] = modal.innerHTML;
+    });
+
+    function applyEffectivenessBars(scope) {
+        const root = scope || document;
+
+        root.querySelectorAll(".effectiveness-bar-fill[data-width]").forEach(function (bar) {
+            const rawValue = parseInt(bar.dataset.width || "0", 10);
+            const safeValue = Math.max(0, Math.min(100, rawValue));
+
+            bar.style.width = safeValue + "%";
+        });
+    }
+
+    function initializeReportDateRanges(scope) {
+        const root = scope || document;
+
+        if (typeof flatpickr === "undefined") return;
+
+        root.querySelectorAll(".report-date-range").forEach(function (rangoInput) {
+            if (rangoInput._flatpickr) {
+                rangoInput._flatpickr.destroy();
+            }
+
+            const form = rangoInput.closest("form");
+            if (!form) return;
+
+            const desdeInput = form.querySelector(".fecha-desde-input");
+            const hastaInput = form.querySelector(".fecha-hasta-input");
+
+            const defaultDates = [];
+
+            if (desdeInput && desdeInput.value) defaultDates.push(desdeInput.value);
+            if (hastaInput && hastaInput.value) defaultDates.push(hastaInput.value);
+
+            flatpickr(rangoInput, {
+                mode: "range",
+                dateFormat: "Y-m-d",
+                maxDate: "today",
+                defaultDate: defaultDates,
+                locale: {
+                    firstDayOfWeek: 1,
+                    rangeSeparator: " a ",
+                    weekdays: {
+                        shorthand: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+                        longhand: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
+                    },
+                    months: {
+                        shorthand: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
+                        longhand: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+                    }
+                },
+                onChange: function (selectedDates, dateStr, instance) {
+                    if (!desdeInput || !hastaInput) return;
+
+                    if (selectedDates.length === 2) {
+                        desdeInput.value = instance.formatDate(selectedDates[0], "Y-m-d");
+                        hastaInput.value = instance.formatDate(selectedDates[1], "Y-m-d");
+                    }
+
+                    if (selectedDates.length === 0) {
+                        desdeInput.value = "";
+                        hastaInput.value = "";
+                    }
+                }
+            });
+        });
+    }
+
+    function openReportModal(modalId) {
+        const target = document.getElementById(modalId);
+
+        if (!target || !modalLayer) return;
+
+        modals.forEach(function (modal) {
+            modal.classList.remove("is-active");
+        });
+
+        target.classList.add("is-active");
+        modalLayer.classList.add("is-open");
+        modalLayer.setAttribute("aria-hidden", "false");
+        document.body.classList.add("report-modal-open");
+
+        initializeReportDateRanges(target);
+        applyEffectivenessBars(target);
+    }
+
+    function closeReportModal() {
+        if (!modalLayer) return;
+
+        const activeModal = document.querySelector(".report-modal.is-active");
+
+        if (activeModal && modalInitialHTML[activeModal.id]) {
+            activeModal.innerHTML = modalInitialHTML[activeModal.id];
+        }
+
+        modalLayer.classList.remove("is-open");
+        modalLayer.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("report-modal-open");
+
+        setTimeout(function () {
+            modals.forEach(function (modal) {
+                modal.classList.remove("is-active");
+            });
+        }, 220);
+    }
+
+    document.addEventListener("click", function (event) {
+        const openButton = event.target.closest("[data-report-modal]");
+        const closeButton = event.target.closest("[data-report-close]");
+
+        if (openButton) {
+            openReportModal(openButton.dataset.reportModal);
+        }
+
+        if (closeButton) {
+            closeReportModal();
+        }
+    });
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+            closeReportModal();
+        }
+    });
+
+    document.addEventListener("submit", function (event) {
+        const form = event.target.closest(".report-modal-filters");
+
+        if (!form) return;
+
+        event.preventDefault();
+
+        const activeModal = form.closest(".report-modal");
+        if (!activeModal) return;
+
+        const submitButton = form.querySelector("button[type='submit']");
+        const originalButtonContent = submitButton ? submitButton.innerHTML : "";
+
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="bi bi-arrow-repeat"></i> Generando...';
+        }
+
+        const url = new URL(window.location.origin + window.location.pathname);
+        const formData = new FormData(form);
+
+        formData.forEach(function (value, key) {
+            if (value) {
+                url.searchParams.set(key, value);
+            }
+        });
+
+        fetch(url.toString(), {
+            method: "GET",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        })
+        .then(function (response) {
+            return response.text();
+        })
+        .then(function (html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, "text/html");
+            const newModal = doc.getElementById(activeModal.id);
+
+            if (newModal) {
+                activeModal.innerHTML = newModal.innerHTML;
+                activeModal.classList.add("is-active");
+
+                initializeReportDateRanges(activeModal);
+                applyEffectivenessBars(activeModal);
+            }
+        })
+        .catch(function () {
+            form.submit();
+        })
+        .finally(function () {
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonContent;
+            }
+        });
+    });
+
+    initializeReportDateRanges(document);
+    applyEffectivenessBars(document);
+
+    const currentTab = "{{ tab|default:'' }}";
+    const tabModalMap = {
+        materiales: "modalMateriales",
+        reclamos: "modalReclamos",
+        trabajos: "modalTrabajos",
+        estados: "modalEstados",
+        efectividad: "modalEfectividad",
+        rechazos: "modalRechazos",
+        respuesta: "modalRespuesta"
+    };
+
+    if (currentTab && tabModalMap[currentTab]) {
+        openReportModal(tabModalMap[currentTab]);
+    }
+});
+</script>
 {% endblock %}
