@@ -1,0 +1,192 @@
+{% extends "reportes/print/base_print.html" %}
+
+{% block title %}Reporte de tiempos{% endblock %}
+
+{% block report_title %}
+Reporte de tiempo de respuesta
+{% endblock %}
+
+{% block report_meta %}
+
+<div class="meta-item">
+    <span>Empresa</span>
+    <strong>
+        {% if filtros.empresa_nombre %}
+            {{ filtros.empresa_nombre }}
+        {% else %}
+            Todas las empresas
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Carpeta</span>
+    <strong>
+        {% if filtros.carpeta_codigo %}
+            {{ filtros.carpeta_codigo }}
+        {% else %}
+            Todas las carpetas
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Periodo</span>
+    <strong>
+        {% if filtros.fecha_desde and filtros.fecha_hasta %}
+            {{ filtros.fecha_desde }} → {{ filtros.fecha_hasta }}
+        {% else %}
+            Periodo completo
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Nivel operacional</span>
+    <strong>
+        {% if filtros.nivel_respuesta %}
+            {{ filtros.nivel_respuesta }}
+        {% else %}
+            Todos
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>NR buscado</span>
+    <strong>
+        {% if filtros.nr %}
+            {{ filtros.nr }}
+        {% else %}
+            —
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Fecha emisión</span>
+    <strong>{% now "d/m/Y H:i" %}</strong>
+</div>
+
+{% endblock %}
+
+{% block content %}
+
+<h3 class="print-section-title">
+    Resumen ejecutivo
+</h3>
+
+<div class="print-kpi-grid">
+
+    <div class="print-kpi">
+        <span>Tiempo promedio</span>
+        <strong>{{ resumen.promedio_respuesta|floatformat:0 }}</strong>
+    </div>
+
+    <div class="print-kpi">
+        <span>Respuesta rápida</span>
+        <strong>{{ resumen.respuesta_rapida }}</strong>
+    </div>
+
+    <div class="print-kpi">
+        <span>Respuesta lenta</span>
+        <strong>{{ resumen.respuesta_lenta }}</strong>
+    </div>
+
+    <div class="print-kpi">
+        <span>Casos críticos</span>
+        <strong>{{ resumen.casos_criticos }}</strong>
+    </div>
+
+</div>
+
+<h3 class="print-section-title">
+    Detalle operacional
+</h3>
+
+<table class="print-table">
+
+    <thead>
+        <tr>
+            <th>NR</th>
+            <th>Empresa</th>
+            <th>Ciudad / Zona</th>
+            <th>Fecha reclamo</th>
+            <th>Fecha trabajo</th>
+            <th>Días</th>
+            <th>Nivel</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+        {% for item in tiempos_respuesta %}
+
+        <tr>
+            <td>
+                <strong>{{ item.nr }}</strong>
+            </td>
+
+            <td>
+                {{ item.empresa }}
+            </td>
+
+            <td>
+                {{ item.ciudad }} / {{ item.zona }}
+            </td>
+
+            <td>
+                {{ item.fecha_reclamo|date:"d/m/Y" }}
+            </td>
+
+            <td>
+                {{ item.fecha_trabajo|date:"d/m/Y" }}
+            </td>
+
+            <td>
+                <strong>{{ item.dias|floatformat:0 }}</strong>
+            </td>
+
+            <td>
+
+                <span class="
+                    badge
+
+                    {% if item.nivel_respuesta == 'EXCELENTE' %}
+                        badge-excellent
+                    {% endif %}
+
+                    {% if item.nivel_respuesta == 'OPTIMO' %}
+                        badge-optimal
+                    {% endif %}
+
+                    {% if item.nivel_respuesta == 'ACEPTABLE' %}
+                        badge-acceptable
+                    {% endif %}
+
+                    {% if item.nivel_respuesta == 'CRITICO' %}
+                        badge-critical
+                    {% endif %}
+                ">
+                    {{ item.nivel_respuesta }}
+                </span>
+
+            </td>
+
+        </tr>
+
+        {% empty %}
+
+        <tr>
+            <td colspan="7" style="text-align:center;">
+                No existen datos para el reporte.
+            </td>
+        </tr>
+
+        {% endfor %}
+
+    </tbody>
+
+</table>
+
+{% endblock %}

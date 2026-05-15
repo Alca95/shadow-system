@@ -19,9 +19,6 @@
                     </div>
 
                     <h2 class="admin-sidebar-title">Navegación</h2>
-                    <p class="admin-sidebar-text">
-                        Accede rápidamente a los módulos principales del sistema.
-                    </p>
                 </div>
 
                 <nav class="admin-sidebar-nav">
@@ -210,23 +207,23 @@
                         </div>
 
                         <div class="col-md-6 col-xl-4">
-                            <a href="#" class="command-card command-card-muted">
+                            <a href="{% url 'reportes' %}" class="command-card command-card-reports">
                                 <div class="command-card-top">
                                     <div class="command-icon-wrap">
-                                        <i class="bi bi-bar-chart-line"></i>
+                                        <i class="bi bi-file-earmark-bar-graph"></i>
                                     </div>
                                     <div class="command-arrow">
                                         <i class="bi bi-arrow-up-right"></i>
                                     </div>
                                 </div>
 
-                                <div class="command-title">Estadísticas</div>
+                                <div class="command-title">Reportes</div>
                                 <div class="command-text">
-                                    Accede al módulo de métricas, análisis y visualización general del sistema.
+                                    Accede al panel institucional de reportes, métricas operativas y análisis ejecutivo del sistema.
                                 </div>
 
                                 <div class="command-footer">
-                                    <span>Análisis general</span>
+                                    <span>Reportes institucionales</span>
                                 </div>
                             </a>
                         </div>
@@ -723,6 +720,20 @@
     .command-card-muted::after {
         background: linear-gradient(90deg, #94a3b8, #cbd5e1);
     }
+
+    .command-card-reports {
+    border-bottom: 3px solid #8b5cf6;
+}
+
+.command-card-reports .command-icon-wrap {
+    background: rgba(139, 92, 246, 0.12);
+    color: #6d28d9;
+}
+
+.command-card-reports:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 22px 48px rgba(79, 70, 229, 0.18);
+}
 
     .command-card-top {
         display: flex;

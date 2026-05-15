@@ -28,7 +28,7 @@
                 Empresa
             </label>
 
-            <select name="empresa" class="form-select">
+            <select name="empresa" class="form-select modal-empresa-filter">
                 <option value="">Todas las empresas</option>
                 {% for empresa in empresas %}
                     <option value="{{ empresa.id }}"
@@ -41,18 +41,85 @@
 
         <div class="modal-filter-item">
             <label>
-                <i class="bi bi-check2-square"></i>
-                Estado
+                <i class="bi bi-search"></i>
+                Buscar NR
             </label>
 
-            <select name="estado" class="form-select">
-                <option value="">Todos los estados</option>
-                {% for value, label in plano_estado_choices %}
-                    <option value="{{ value }}"
-                        {% if filtros.estado == value %}selected{% endif %}>
-                        {{ label }}
+            <input
+                type="text"
+                name="nr"
+                class="form-control"
+                placeholder="Ej: 5068773-24"
+                value="{{ filtros.nr }}"
+            >
+        </div>
+
+        <div class="modal-filter-item">
+            <label>
+                <i class="bi bi-folder2-open"></i>
+                Carpeta
+            </label>
+            <div class="modal-filter-item">
+                <label>
+                    <i class="bi bi-box-seam"></i>
+                    Material
+                </label>
+
+                <input
+                    type="text"
+                    name="material"
+                    class="form-control"
+                    placeholder="Ej: IFE"
+                    value="{{ filtros.material }}"
+                >
+            </div>
+            <select name="carpeta" class="form-select materiales-carpeta-filter">
+
+                <option value="">Todas las carpetas</option>
+
+                {% for carpeta in carpetas %}
+                    <option
+                        value="{{ carpeta.id }}"
+                        data-empresa="{{ carpeta.empresa.id }}"
+                        {% if filtros.carpeta == carpeta.id|stringformat:"s" %}selected{% endif %}
+                    >
+                        {{ carpeta.codigo_carpeta }}
                     </option>
                 {% endfor %}
+
+            </select>
+        </div>
+
+        <div class="modal-filter-item">
+            <label>
+                <i class="bi bi-speedometer2"></i>
+                Nivel de respuesta
+            </label>
+
+            <select name="nivel_respuesta" class="form-select">
+
+                <option value="">Todos los niveles</option>
+
+                <option value="EXCELENTE"
+                    {% if filtros.nivel_respuesta == "EXCELENTE" %}selected{% endif %}>
+                    Excelente
+                </option>
+
+                <option value="OPTIMO"
+                    {% if filtros.nivel_respuesta == "OPTIMO" %}selected{% endif %}>
+                    Óptimo
+                </option>
+
+                <option value="ACEPTABLE"
+                    {% if filtros.nivel_respuesta == "ACEPTABLE" %}selected{% endif %}>
+                    Aceptable
+                </option>
+
+                <option value="CRITICO"
+                    {% if filtros.nivel_respuesta == "CRITICO" %}selected{% endif %}>
+                    Crítico
+                </option>
+
             </select>
         </div>
 

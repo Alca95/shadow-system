@@ -347,22 +347,6 @@
             line-height: 1;
         }
 
-        .role-pill {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.5rem 0.9rem;
-            border-radius: 999px;
-            background: linear-gradient(135deg, rgba(232, 241, 255, 0.96), rgba(240, 247, 255, 0.92));
-            color: #1d4ed8;
-            font-size: 0.79rem;
-            font-weight: 700;
-            letter-spacing: 0.2px;
-            border: 1px solid rgba(29, 78, 216, 0.12);
-            min-width: 126px;
-            line-height: 1;
-        }
-
         .logout-link {
             color: #334155 !important;
             padding-right: 0.85rem !important;
@@ -653,12 +637,6 @@
                 background: #f8fafc;
             }
 
-            .user-pill,
-            .role-pill {
-                width: 100%;
-                justify-content: center;
-            }
-
             .logout-link {
                 width: 100%;
                 justify-content: center !important;
@@ -801,14 +779,11 @@
                         <div class="user-area">
                             <span class="user-pill">
                                 <i class="bi bi-person-circle"></i>
-                                {{ request.user.username }}
-                            </span>
 
-                            <span class="role-pill">
                                 {% if request.user.is_superuser %}
                                     Administrador
                                 {% else %}
-                                    {{ request.user.perfil.get_rol_display }}
+                                    {{ request.user.username }}
                                 {% endif %}
                             </span>
 

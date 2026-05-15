@@ -12,7 +12,8 @@ class UsuarioBaseForm(forms.Form):
         max_length=150,
         widget=forms.TextInput(attrs={
             "class": "form-control",
-            "placeholder": "Ingrese el nombre de usuario"
+            "placeholder": "Ingrese el nombre de usuario",
+            "autocomplete": "off"
         })
     )
     first_name = forms.CharField(
@@ -93,17 +94,25 @@ class UsuarioBaseForm(forms.Form):
 class UsuarioCrearForm(UsuarioBaseForm):
     password1 = forms.CharField(
         label="Contraseña",
-        widget=forms.PasswordInput(attrs={
-            "class": "form-control",
-            "placeholder": "Ingrese la contraseña"
-        })
+        widget=forms.PasswordInput(
+            render_value=False,
+            attrs={
+                "class": "form-control",
+                "placeholder": "Ingrese la contraseña",
+                "autocomplete": "new-password"
+            }
+        )
     )
     password2 = forms.CharField(
         label="Confirmar contraseña",
-        widget=forms.PasswordInput(attrs={
-            "class": "form-control",
-            "placeholder": "Repita la contraseña"
-        })
+        widget=forms.PasswordInput(
+            render_value=False,
+            attrs={
+                "class": "form-control",
+                "placeholder": "Repita la contraseña",
+                "autocomplete": "new-password"
+            }
+        )
     )
 
     def clean_username(self):
@@ -154,6 +163,32 @@ class UsuarioCrearForm(UsuarioBaseForm):
 
 
 class UsuarioEditarForm(UsuarioBaseForm):
+    password1 = forms.CharField(
+        label="Nueva contraseña",
+        required=False,
+        widget=forms.PasswordInput(
+            render_value=False,
+            attrs={
+                "class": "form-control",
+                "placeholder": "Ingrese nueva contraseña",
+                "autocomplete": "new-password"
+            }
+        )
+    )
+
+    password2 = forms.CharField(
+        label="Confirmar nueva contraseña",
+        required=False,
+        widget=forms.PasswordInput(
+            render_value=False,
+            attrs={
+                "class": "form-control",
+                "placeholder": "Repita la nueva contraseña",
+                "autocomplete": "new-password"
+            }
+        )
+    )
+
     def __init__(self, *args, **kwargs):
         self.user_instance = kwargs.pop("user_instance", None)
         super().__init__(*args, **kwargs)
@@ -191,6 +226,23 @@ class UsuarioEditarForm(UsuarioBaseForm):
                 raise forms.ValidationError("Ya existe un usuario con ese correo electrónico.")
         return email
 
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+
+        if password1 or password2:
+            if password1 != password2:
+                self.add_error("password2", "Las contraseñas no coinciden.")
+
+            if password1:
+                try:
+                    validate_password(password1, self.user_instance)
+                except ValidationError as e:
+                    self.add_error("password1", e)
+
+        return cleaned_data
+
     def save(self):
         user = self.user_instance
         user.username = self.cleaned_data["username"]
@@ -198,6 +250,11 @@ class UsuarioEditarForm(UsuarioBaseForm):
         user.last_name = self.cleaned_data.get("last_name", "")
         user.email = self.cleaned_data.get("email", "")
         user.is_active = self.cleaned_data.get("activo", True)
+
+        password1 = self.cleaned_data.get("password1")
+        if password1:
+            user.set_password(password1)
+
         user.save()
 
         perfil, _ = PerfilUsuario.objects.get_or_create(user=user)

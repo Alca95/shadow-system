@@ -147,13 +147,22 @@
                             </div>
                         </div>
 
-                        {% if modo == "crear" %}
+                        {% if modo == "crear" or modo == "editar" %}
                         <div class="col-md-6">
                             <div class="field-shell">
-                                <label class="field-label">Contraseña</label>
-                                <div class="field-control-wrap">
+                            <label class="field-label">
+                                {% if modo == "crear" %}
+                                    Contraseña
+                                {% else %}
+                                    Nueva contraseña
+                                {% endif %}
+                            </label>
+                                <div class="field-control-wrap password-control-wrap">
                                     <span class="field-icon"><i class="bi bi-key"></i></span>
                                     {{ form.password1 }}
+                                    <button type="button" class="password-toggle-btn" data-target="id_password1">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
                                 </div>
                                 {% for error in form.password1.errors %}
                                     <div class="field-error">{{ error }}</div>
@@ -163,10 +172,19 @@
 
                         <div class="col-md-6">
                             <div class="field-shell">
-                                <label class="field-label">Confirmar contraseña</label>
-                                <div class="field-control-wrap">
+                            <label class="field-label">
+                                {% if modo == "crear" %}
+                                    Confirmar contraseña
+                                {% else %}
+                                    Confirmar nueva contraseña
+                                {% endif %}
+                            </label>
+                                <div class="field-control-wrap password-control-wrap">
                                     <span class="field-icon"><i class="bi bi-shield-check"></i></span>
                                     {{ form.password2 }}
+                                    <button type="button" class="password-toggle-btn" data-target="id_password2">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
                                 </div>
                                 {% for error in form.password2.errors %}
                                     <div class="field-error">{{ error }}</div>
@@ -443,7 +461,37 @@
         font-weight: 500;
         color: #24324a;
     }
+    .password-control-wrap input {
+        padding-right: 48px !important;
+    }
 
+    .password-toggle-btn {
+        position: absolute;
+        top: 50%;
+        right: 13px;
+        transform: translateY(-50%);
+        width: 34px;
+        height: 34px;
+        border: none;
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.06);
+        color: #475569;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 4;
+        transition: all 0.24s ease;
+    }
+
+    .password-toggle-btn:hover {
+        background: rgba(37, 99, 235, 0.10);
+        color: #2563eb;
+    }
+
+    .password-toggle-btn:focus {
+        outline: none;
+        box-shadow: 0 0 0 0.16rem rgba(37, 99, 235, 0.16);
+    }
     .field-control-wrap input::placeholder {
         color: #94a3b8;
     }
@@ -685,6 +733,24 @@
         if (rolField) {
             rolField.addEventListener("change", toggleEmpresaField);
         }
+
+        const passwordToggleButtons = document.querySelectorAll(".password-toggle-btn");
+
+        passwordToggleButtons.forEach(function (button) {
+            button.addEventListener("click", function () {
+                const targetId = button.getAttribute("data-target");
+                const input = document.getElementById(targetId);
+                const icon = button.querySelector("i");
+
+                if (!input || !icon) return;
+
+                const isPassword = input.type === "password";
+                input.type = isPassword ? "text" : "password";
+
+                icon.classList.toggle("bi-eye", !isPassword);
+                icon.classList.toggle("bi-eye-slash", isPassword);
+            });
+        });
     });
 </script>
 

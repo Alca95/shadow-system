@@ -314,7 +314,9 @@
                     </div>
                 </div>
 
-                <a href="#" class="forgot-link">¿Olvidaste tu contraseña?</a>
+                <a href="{% url 'password_reset' %}" class="forgot-link">
+                    ¿Olvidaste tu contraseña?
+                </a>
 
                 <button type="submit" class="submit-btn">Iniciar sesión</button>
             </form>

@@ -1,0 +1,268 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Informe operativo{% endblock %}</title>
+
+    <style>
+        @page {
+            size: A4;
+            margin: 14mm 13mm 16mm 13mm;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            color: #111827;
+            background: #f3f4f6;
+            font-size: 12px;
+        }
+
+        .print-page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 18mm 15mm;
+        }
+
+        .print-header {
+            display: grid;
+            grid-template-columns: 120px 1fr 120px;
+            align-items: center;
+            gap: 16px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .print-logo {
+            max-height: 42px;
+            max-width: 110px;
+            object-fit: contain;
+        }
+
+        .print-header-center {
+            text-align: center;
+        }
+
+        .print-header-center h1 {
+            margin: 0;
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #111827;
+        }
+
+        .print-header-center p {
+            margin: 4px 0 0;
+            font-size: 11px;
+            color: #6b7280;
+            font-weight: 600;
+        }
+
+        .print-meta {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 16px 0 14px;
+        }
+
+        .meta-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 8px 10px;
+            background: #fafafa;
+        }
+
+        .meta-item span {
+            display: block;
+            font-size: 9px;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            margin-bottom: 3px;
+        }
+
+        .meta-item strong {
+            display: block;
+            font-size: 11px;
+            color: #111827;
+            font-weight: 700;
+        }
+
+        .print-section-title {
+            margin: 18px 0 8px;
+            font-size: 13px;
+            font-weight: 800;
+            color: #111827;
+            border-left: 4px solid #f59e0b;
+            padding-left: 8px;
+        }
+
+        .print-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .print-kpi {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 10px;
+            background: #ffffff;
+        }
+
+        .print-kpi span {
+            display: block;
+            font-size: 9px;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .print-kpi strong {
+            font-size: 17px;
+            font-weight: 850;
+            color: #111827;
+        }
+
+        .print-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            font-size: 10.5px;
+        }
+
+        .print-table th {
+            background: #f9fafb;
+            color: #374151;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.035em;
+            border: 1px solid #e5e7eb;
+            padding: 7px;
+            text-align: left;
+        }
+
+        .print-table td {
+            border: 1px solid #e5e7eb;
+            padding: 7px;
+            vertical-align: top;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 7px;
+            border-radius: 999px;
+            font-size: 9px;
+            font-weight: 800;
+        }
+
+        .badge-excellent { background: #ecfdf5; color: #047857; }
+        .badge-optimal { background: #eff6ff; color: #2563eb; }
+        .badge-acceptable { background: #fffbeb; color: #b45309; }
+        .badge-critical { background: #fef2f2; color: #b91c1c; }
+
+        .print-footer {
+            margin-top: 18px;
+            padding-top: 10px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            color: #6b7280;
+            font-size: 9px;
+            font-weight: 600;
+        }
+
+        .print-actions {
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            height: 64px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+            padding: 0 32px;
+            background: #f3f4f6;
+        }
+
+        .print-actions button {
+            border: 0;
+            border-radius: 10px;
+            padding: 9px 12px;
+            background: #111827;
+            color: #ffffff;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        @media print {
+            body {
+                background: #ffffff;
+            }
+
+            .print-page {
+                width: 210mm;
+                min-height: 297mm;
+                margin: 24px auto 48px;
+                background: #ffffff;
+                padding: 18mm 15mm;
+            }
+
+            .print-actions {
+                display: none;
+            }
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+<div class="print-actions">
+    <button onclick="window.print()">Imprimir</button>
+    <button onclick="window.close()">Cerrar</button>
+</div>
+
+<main class="print-page">
+
+    <header class="print-header">
+        <div>
+            <img src="{% static 'img/logo_shadow3.png' %}" class="print-logo" alt="Shadow">
+        </div>
+
+        <div class="print-header-center">
+            <h1>{% block report_title %}Informe operativo{% endblock %}</h1>
+            <p>Shadow OCR · ANDE</p>
+        </div>
+
+        <div style="text-align:right;">
+            <img src="{% static 'img/logo_ande.png' %}" class="print-logo" alt="ANDE">
+        </div>
+    </header>
+
+    <section class="print-meta">
+        {% block report_meta %}{% endblock %}
+    </section>
+
+    {% block content %}{% endblock %}
+
+    <footer class="print-footer">
+        <span>Shadow OCR · Reporte institucional</span>
+        <span>Generado automáticamente</span>
+    </footer>
+
+</main>
+
+</body>
+</html>

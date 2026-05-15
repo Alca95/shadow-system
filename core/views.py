@@ -1,3 +1,5 @@
+from urllib import request
+
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -871,6 +873,8 @@ def carpetas_view(request):
     empresa_id = request.GET.get("empresa", "").strip()
     mes = request.GET.get("mes", "").strip()
     anio = request.GET.get("anio", "").strip()
+    nr_busqueda = request.GET.get("nr", "").strip()
+    filtro_nivel_respuesta = request.GET.get("nivel_respuesta", "").strip()
 
     carpetas = Carpeta.objects.filter(eliminada=False).select_related("empresa")
 
@@ -907,6 +911,7 @@ def carpetas_view(request):
             "empresa": "" if user_is_contratista(request.user) else empresa_id,
             "mes": mes,
             "anio": anio,
+            "nr": nr_busqueda,
         },
         "estado_choices": Carpeta.ESTADO_CHOICES,
     }
@@ -1755,18 +1760,31 @@ def estadisticas_view(request):
 @login_required
 def reportes_view(request):
     require_admin_or_funcionario(request)
+
     export = request.GET.get("export")
-
-
     tab = request.GET.get("tab", "general").strip() or "general"
 
     fecha_desde = request.GET.get("fecha_desde", "").strip()
     fecha_hasta = request.GET.get("fecha_hasta", "").strip()
     empresa_id = request.GET.get("empresa", "").strip()
     estado = request.GET.get("estado", "").strip()
+    nr_busqueda = request.GET.get("nr", "").strip()
+    filtro_nivel_respuesta = request.GET.get("nivel_respuesta", "").strip()
+    material_busqueda = request.GET.get("material", "").strip()
+
+    carpeta_id = request.GET.get("carpeta", "").strip()
+    localidad = request.GET.get("localidad", "").strip()
+    zona = request.GET.get("zona", "").strip()
+    metrica = request.GET.get("metrica", "").strip()
+    estado_operativo = request.GET.get("estado_operativo", "").strip()
+    orden = request.GET.get("orden", "").strip()
+    metrica_efectividad = request.GET.get("metrica_efectividad", "").strip()
+    nivel_rendimiento = request.GET.get("nivel_rendimiento", "").strip()
+    vista_efectividad = request.GET.get("vista_efectividad", "").strip()
 
     carpetas = Carpeta.objects.filter(eliminada=False).select_related("empresa")
     planos = Plano.objects.filter(eliminado=False).select_related("carpeta", "carpeta__empresa")
+
     resultados = ResultadoValidacionPlano.objects.select_related(
         "plano",
         "plano__carpeta",
@@ -1774,12 +1792,6 @@ def reportes_view(request):
         "reclamo_encontrado",
         "nr_materiales_encontrado",
     ).prefetch_related("materiales_detectados")
-
-    if export == "excel":
-        return exportar_excel(reportes_data)
-
-    if export == "pdf":
-        return exportar_pdf(reportes_data)
 
     if fecha_desde:
         planos = planos.filter(fecha_carga__date__gte=fecha_desde)
@@ -1796,9 +1808,19 @@ def reportes_view(request):
         resultados = resultados.filter(plano__carpeta__empresa_id=empresa_id)
         carpetas = carpetas.filter(empresa_id=empresa_id)
 
+    if carpeta_id:
+        planos = planos.filter(carpeta_id=carpeta_id)
+        resultados = resultados.filter(plano__carpeta_id=carpeta_id)
+
     if estado:
         planos = planos.filter(estado=estado)
         resultados = resultados.filter(estado_resultado=estado)
+
+    if localidad:
+        resultados = resultados.filter(reclamo_encontrado__ciudad__iexact=localidad)
+
+    if zona:
+        resultados = resultados.filter(reclamo_encontrado__zona__iexact=zona)
 
     empresas = EmpresaContratista.objects.all().order_by("nombre")
 
@@ -1811,6 +1833,30 @@ def reportes_view(request):
     efectividad_general = round((total_aprobados / total_nr) * 100, 2) if total_nr else 0
 
     # =========================
+    # AISLAMIENTO DE FILTROS POR MODAL
+    # =========================
+
+    if tab != "materiales":
+        carpeta_id = ""
+
+    if tab not in ["reclamos", "estados"]:
+        localidad = ""
+        zona = ""
+
+    if tab != "trabajos":
+        metrica = ""
+        orden = ""
+
+    if tab != "estados":
+        estado_operativo = ""
+
+    if tab != "efectividad":
+        metrica_efectividad = ""
+        nivel_rendimiento = ""
+        vista_efectividad = ""
+
+
+    # =========================
     # MATERIALES POR EMPRESA / CARPETA
     # =========================
     materiales_map = defaultdict(lambda: {
@@ -1821,6 +1867,11 @@ def reportes_view(request):
         "cantidad_total": 0,
         "apariciones": 0,
     })
+
+    if nr_busqueda:
+        resultados = resultados.filter(
+            nr_detectado__icontains=nr_busqueda
+        )
 
     for resultado in resultados:
         empresa = resultado.plano.carpeta.empresa.nombre if resultado.plano.carpeta.empresa else "Sin empresa"
@@ -1847,9 +1898,54 @@ def reportes_view(request):
 
     reporte_materiales = sorted(
         materiales_map.values(),
-        key=lambda x: (x["empresa"], x["carpeta"], x["material"])
+        key=lambda x: x["cantidad_total"],
+        reverse=True
+    )
+    if material_busqueda:
+        reporte_materiales = [
+            item for item in reporte_materiales
+            if material_busqueda.lower() in item["material"].lower()
+        ]
+
+    material_top = reporte_materiales[0] if reporte_materiales else None
+
+    total_materiales_operativos = sum(
+        item["cantidad_total"]
+        for item in reporte_materiales
     )
 
+    empresa_top = None
+    carpeta_top = None
+
+    if reporte_materiales:
+
+        empresa_consumo = {}
+        carpeta_consumo = {}
+
+        for item in reporte_materiales:
+
+            empresa = item["empresa"]
+            carpeta = item["carpeta"]
+
+            empresa_consumo[empresa] = (
+                empresa_consumo.get(empresa, 0)
+                + item["cantidad_total"]
+            )
+
+            carpeta_consumo[carpeta] = (
+                carpeta_consumo.get(carpeta, 0)
+                + item["cantidad_total"]
+            )
+
+        empresa_top = max(
+            empresa_consumo.items(),
+            key=lambda x: x[1]
+        )
+
+        carpeta_top = max(
+            carpeta_consumo.items(),
+            key=lambda x: x[1]
+        )        
     # =========================
     # RECLAMOS POR LOCALIDAD / BARRIO / EMPRESA
     # =========================
@@ -1868,12 +1964,12 @@ def reportes_view(request):
         empresa = resultado.plano.carpeta.empresa.nombre if resultado.plano.carpeta.empresa else "Sin empresa"
 
         ciudad = reclamo.ciudad if reclamo else "Sin ciudad"
-        zona = reclamo.zona if reclamo else "Sin zona"
+        zona_item = reclamo.zona if reclamo else "Sin zona"
 
-        key = (ciudad, zona, empresa)
+        key = (ciudad, zona_item, empresa)
 
         reclamos_map[key]["ciudad"] = ciudad
-        reclamos_map[key]["zona"] = zona
+        reclamos_map[key]["zona"] = zona_item
         reclamos_map[key]["empresa"] = empresa
         reclamos_map[key]["total"] += 1
 
@@ -1888,6 +1984,18 @@ def reportes_view(request):
         reclamos_map.values(),
         key=lambda x: (-x["total"], x["ciudad"], x["zona"])
     )
+
+    if estado_operativo == "aprobados":
+        reporte_reclamos = [item for item in reporte_reclamos if item["aprobados"] > 0]
+        reporte_reclamos = sorted(reporte_reclamos, key=lambda x: x["aprobados"], reverse=True)
+
+    elif estado_operativo == "no_concretados":
+        reporte_reclamos = [item for item in reporte_reclamos if item["rechazados"] > 0]
+        reporte_reclamos = sorted(reporte_reclamos, key=lambda x: x["rechazados"], reverse=True)
+
+    elif estado_operativo == "verificacion":
+        reporte_reclamos = [item for item in reporte_reclamos if item["verificacion"] > 0]
+        reporte_reclamos = sorted(reporte_reclamos, key=lambda x: x["verificacion"], reverse=True)
 
     # =========================
     # TRABAJOS / EFECTIVIDAD POR EMPRESA
@@ -1923,11 +2031,63 @@ def reportes_view(request):
     for item in empresas_map.values():
         item["efectividad"] = round((item["aprobados"] / item["total_nr"]) * 100, 2) if item["total_nr"] else 0
 
-    reporte_empresas = sorted(
-        empresas_map.values(),
-        key=lambda x: (-x["efectividad"], -x["total_nr"], x["empresa"])
-    )
+    if nivel_rendimiento == "alto":
+        empresas_map = {
+            key: value for key, value in empresas_map.items()
+            if value["efectividad"] >= 85
+        }
 
+    elif nivel_rendimiento == "medio":
+        empresas_map = {
+            key: value for key, value in empresas_map.items()
+            if 60 <= value["efectividad"] < 85
+        }
+
+    elif nivel_rendimiento == "bajo":
+        empresas_map = {
+            key: value for key, value in empresas_map.items()
+            if value["efectividad"] < 60
+        }
+
+    mapa_metricas_efectividad = {
+        "efectividad": "efectividad",
+        "volumen": "total_nr",
+        "rechazos": "rechazados",
+        "pendientes": "verificacion",
+    }
+
+    criterio_efectividad = mapa_metricas_efectividad.get(metrica_efectividad, "")
+
+
+    criterio_empresas = metrica or orden or criterio_efectividad
+
+    if criterio_empresas == "empresa_az":
+        reporte_empresas = sorted(empresas_map.values(), key=lambda x: x["empresa"])
+
+    elif criterio_empresas == "total_planos":
+        reporte_empresas = sorted(empresas_map.values(), key=lambda x: x["total_planos"], reverse=True)
+
+    elif criterio_empresas == "total_nr":
+        reporte_empresas = sorted(empresas_map.values(), key=lambda x: x["total_nr"], reverse=True)
+
+    elif criterio_empresas == "aprobados":
+        reporte_empresas = sorted(empresas_map.values(), key=lambda x: x["aprobados"], reverse=True)
+
+    elif criterio_empresas == "rechazados":
+        reporte_empresas = sorted(empresas_map.values(), key=lambda x: x["rechazados"], reverse=True)
+
+    elif criterio_empresas == "verificacion":
+        reporte_empresas = sorted(empresas_map.values(), key=lambda x: x["verificacion"], reverse=True)
+
+    else:
+        reporte_empresas = sorted(
+            empresas_map.values(),
+            key=lambda x: (-x["efectividad"], -x["total_nr"], x["empresa"])
+        )
+    for index, item in enumerate(reporte_empresas, start=1):
+        item["ranking"] = index
+
+        
     # =========================
     # TIPO DE RECHAZO MÁS FRECUENTE
     # =========================
@@ -1960,12 +2120,32 @@ def reportes_view(request):
     # =========================
     tiempos = []
 
+    if nr_busqueda:
+        resultados = resultados.filter(
+            nr_detectado__icontains=nr_busqueda
+        )
+
     for resultado in resultados:
         reclamo = resultado.reclamo_encontrado
         nr = resultado.nr_materiales_encontrado
 
-        if reclamo and nr and reclamo.fecha_reclamo and nr.fecha_trabajo:
-            dias = max((nr.fecha_trabajo - reclamo.fecha_reclamo).days,0)
+        valores_detectados = _resolver_valores_detectados_resultado(resultado)
+        fecha_trabajo = valores_detectados.get("fecha") or (nr.fecha_trabajo if nr else None)
+
+        if reclamo and fecha_trabajo and reclamo.fecha_reclamo:
+            dias = max((fecha_trabajo - reclamo.fecha_reclamo).days, 0)
+
+            if dias <= 3:
+                nivel_operacional = "EXCELENTE"
+            elif dias <= 7:
+                nivel_operacional = "OPTIMO"
+            elif dias <= 10:
+                nivel_operacional = "ACEPTABLE"
+            else:
+                nivel_operacional = "CRITICO"
+
+            if filtro_nivel_respuesta and nivel_operacional != filtro_nivel_respuesta:
+                continue
 
             tiempos.append({
                 "nr": resultado.nr_detectado,
@@ -1973,13 +2153,48 @@ def reportes_view(request):
                 "ciudad": reclamo.ciudad,
                 "zona": reclamo.zona,
                 "fecha_reclamo": reclamo.fecha_reclamo,
-                "fecha_trabajo": nr.fecha_trabajo,
+                "fecha_trabajo": fecha_trabajo,
                 "dias": dias,
+                "nivel_respuesta": nivel_operacional,
             })
 
-    promedio_respuesta = round(sum(t["dias"] for t in tiempos) / len(tiempos), 2) if tiempos else 0
+    promedio_respuesta = (
+        round(sum(t["dias"] for t in tiempos) / len(tiempos), 2)
+        if tiempos else 0
+    )
 
-    tiempos_respuesta = sorted(tiempos, key=lambda x: x["dias"], reverse=True)
+    respuesta_rapida = min(
+        [t["dias"] for t in tiempos],
+        default=0
+    )
+
+    respuesta_lenta = max(
+        [t["dias"] for t in tiempos],
+        default=0
+    )
+
+    casos_criticos = len([
+        t for t in tiempos
+        if t["nivel_respuesta"] == "CRITICO"
+    ])
+
+    tiempos_respuesta = sorted(
+        tiempos,
+        key=lambda x: x["dias"],
+        reverse=True
+    )
+
+    localidades = sorted({
+        item["ciudad"]
+        for item in reporte_reclamos
+        if item["ciudad"]
+    })
+
+    zonas = sorted({
+        item["zona"]
+        for item in reporte_reclamos
+        if item["zona"]
+    })
 
     return render(request, "reportes/listado.html", {
         "app_name": "Shadow",
@@ -1992,6 +2207,19 @@ def reportes_view(request):
             "fecha_hasta": fecha_hasta,
             "empresa": empresa_id,
             "estado": estado,
+            "carpeta": carpeta_id,
+            "localidad": localidad,
+            "zona": zona,
+            "metrica": metrica,
+            "estado_operativo": estado_operativo,
+            "orden": orden,
+            "criterio_empresas": criterio_empresas,
+            "metrica_efectividad": metrica_efectividad,
+            "nivel_rendimiento": nivel_rendimiento,
+            "vista_efectividad": vista_efectividad,
+            "nr": nr_busqueda,
+            "nivel_respuesta": filtro_nivel_respuesta,
+            "material": material_busqueda,
         },
         "resumen": {
             "total_planos": total_planos,
@@ -2001,13 +2229,139 @@ def reportes_view(request):
             "total_verificacion": total_verificacion,
             "efectividad_general": efectividad_general,
             "promedio_respuesta": promedio_respuesta,
+            "respuesta_rapida": respuesta_rapida,
+            "respuesta_lenta": respuesta_lenta,
+            "casos_criticos": casos_criticos,
+            "material_top": material_top,
+            "total_materiales_operativos": total_materiales_operativos,
+            "empresa_top_consumo": empresa_top,
+            "carpeta_top_consumo": carpeta_top,
         },
         "reporte_materiales": reporte_materiales,
         "reporte_reclamos": reporte_reclamos,
         "reporte_empresas": reporte_empresas,
         "reporte_tipos_rechazo": reporte_tipos_rechazo,
         "tiempos_respuesta": tiempos_respuesta,
+        "carpetas": carpetas,
+        "localidades": localidades,
+        "zonas": zonas,
     })
+
+@login_required
+def reporte_tiempos_print_view(request):
+    require_admin_or_funcionario(request)
+
+    fecha_desde = request.GET.get("fecha_desde", "").strip()
+    fecha_hasta = request.GET.get("fecha_hasta", "").strip()
+    empresa_id = request.GET.get("empresa", "").strip()
+    carpeta_id = request.GET.get("carpeta", "").strip()
+    nr_busqueda = request.GET.get("nr", "").strip()
+    filtro_nivel_respuesta = request.GET.get("nivel_respuesta", "").strip()
+
+    resultados = ResultadoValidacionPlano.objects.select_related(
+        "plano",
+        "plano__carpeta",
+        "plano__carpeta__empresa",
+        "reclamo_encontrado",
+        "nr_materiales_encontrado",
+    )
+
+    if fecha_desde:
+        resultados = resultados.filter(plano__fecha_carga__date__gte=fecha_desde)
+
+    if fecha_hasta:
+        resultados = resultados.filter(plano__fecha_carga__date__lte=fecha_hasta)
+
+    if empresa_id:
+        resultados = resultados.filter(plano__carpeta__empresa_id=empresa_id)
+
+    if carpeta_id:
+        resultados = resultados.filter(plano__carpeta_id=carpeta_id)
+
+    if nr_busqueda:
+        nr_limpio = (
+            nr_busqueda.upper()
+            .replace("NR", "")
+            .replace("N°", "")
+            .replace("Nº", "")
+            .strip()
+        )
+
+        resultados = resultados.filter(
+            Q(nr_detectado__icontains=nr_limpio) |
+            Q(nr_normalizado__icontains=nr_limpio)
+        )
+
+    tiempos = []
+
+    for resultado in resultados:
+        reclamo = resultado.reclamo_encontrado
+        nr = resultado.nr_materiales_encontrado
+
+        valores_detectados = _resolver_valores_detectados_resultado(resultado)
+        fecha_trabajo = valores_detectados.get("fecha") or (nr.fecha_trabajo if nr else None)
+
+        if reclamo and fecha_trabajo and reclamo.fecha_reclamo:
+            dias = max((fecha_trabajo - reclamo.fecha_reclamo).days, 0)
+
+            if dias <= 3:
+                nivel_operacional = "EXCELENTE"
+            elif dias <= 7:
+                nivel_operacional = "OPTIMO"
+            elif dias <= 10:
+                nivel_operacional = "ACEPTABLE"
+            else:
+                nivel_operacional = "CRITICO"
+
+            if filtro_nivel_respuesta and nivel_operacional != filtro_nivel_respuesta:
+                continue
+
+            tiempos.append({
+                "nr": resultado.nr_detectado,
+                "empresa": resultado.plano.carpeta.empresa.nombre if resultado.plano.carpeta.empresa else "Sin empresa",
+                "ciudad": reclamo.ciudad,
+                "zona": reclamo.zona,
+                "fecha_reclamo": reclamo.fecha_reclamo,
+                "fecha_trabajo": fecha_trabajo,
+                "dias": dias,
+                "nivel_respuesta": nivel_operacional,
+            })
+
+    tiempos_respuesta = sorted(tiempos, key=lambda x: x["dias"], reverse=True)
+
+    resumen = {
+        "promedio_respuesta": round(sum(t["dias"] for t in tiempos) / len(tiempos), 2) if tiempos else 0,
+        "respuesta_rapida": min([t["dias"] for t in tiempos], default=0),
+        "respuesta_lenta": max([t["dias"] for t in tiempos], default=0),
+        "casos_criticos": len([t for t in tiempos if t["nivel_respuesta"] == "CRITICO"]),
+    }
+
+    empresa_nombre = ""
+    carpeta_codigo = ""
+
+    if empresa_id:
+        empresa = EmpresaContratista.objects.filter(id=empresa_id).first()
+        empresa_nombre = empresa.nombre if empresa else ""
+
+    if carpeta_id:
+        carpeta = Carpeta.objects.filter(id=carpeta_id).first()
+        carpeta_codigo = carpeta.codigo_carpeta if carpeta else ""
+
+    filtros = {
+        "fecha_desde": fecha_desde,
+        "fecha_hasta": fecha_hasta,
+        "empresa_nombre": empresa_nombre,
+        "carpeta_codigo": carpeta_codigo,
+        "nr": nr_busqueda,
+        "nivel_respuesta": filtro_nivel_respuesta,
+    }
+
+    return render(request, "reportes/print/tiempos_print.html", {
+        "resumen": resumen,
+        "tiempos_respuesta": tiempos_respuesta,
+        "filtros": filtros,
+    })
+
 @login_required
 def buscar_nr_global_view(request):
     query = request.GET.get("q", "").strip()

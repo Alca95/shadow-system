@@ -3,6 +3,7 @@ from django.urls import path
 from core import views
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     # =========================
@@ -16,6 +17,44 @@ urlpatterns = [
     path('', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
 
+    # =========================
+    # 🔑 RESET
+    # =========================
+    path(
+        'password-reset/',
+        auth_views.PasswordResetView.as_view(
+            template_name='registration/password_reset_form.html',
+            email_template_name='registration/password_reset_email.html',
+            subject_template_name='registration/password_reset_subject.txt',
+            success_url='/password-reset/done/'
+        ),
+        name='password_reset'
+    ),
+
+    path(
+        'password-reset/done/',
+        auth_views.PasswordResetDoneView.as_view(
+            template_name='registration/password_reset_done.html'
+        ),
+        name='password_reset_done'
+    ),
+
+    path(
+        'reset/<uidb64>/<token>/',
+        auth_views.PasswordResetConfirmView.as_view(
+            template_name='registration/password_reset_confirm.html',
+            success_url='/reset/done/'
+        ),
+        name='password_reset_confirm'
+    ),
+
+    path(
+        'reset/done/',
+        auth_views.PasswordResetCompleteView.as_view(
+            template_name='registration/password_reset_complete.html'
+        ),
+        name='password_reset_complete'
+    ),
     # =========================
     # 🏠 DASHBOARDS POR ROL
     # =========================
@@ -102,6 +141,12 @@ urlpatterns = [
     path('usuarios/crear/', views.crear_usuario_view, name='crear_usuario'),
     path('usuarios/<int:user_id>/editar/', views.editar_usuario_view, name='editar_usuario'),
     path('usuarios/<int:user_id>/toggle/', views.toggle_usuario_activo_view, name='toggle_usuario'),
+
+    path(
+    "reportes/print/tiempos/",
+    views.reporte_tiempos_print_view,
+    name="reporte_tiempos_print"
+),
 ]
 
 if settings.DEBUG:
