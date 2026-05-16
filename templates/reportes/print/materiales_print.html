@@ -1,0 +1,252 @@
+{% extends "reportes/print/base_print.html" %}
+
+{% block title %}
+Reporte de materiales
+{% endblock %}
+
+{% block report_title %}
+Consumo operativo de materiales
+{% endblock %}
+
+{% block report_meta %}
+
+<div class="meta-item">
+    <span>Empresa</span>
+    <strong>
+        {% if filtros.empresa_nombre %}
+            {{ filtros.empresa_nombre }}
+        {% else %}
+            Todas las empresas
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Carpeta</span>
+    <strong>
+        {% if filtros.carpeta_codigo %}
+            {{ filtros.carpeta_codigo }}
+        {% else %}
+            Todas las carpetas
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Periodo</span>
+    <strong>
+        {% if filtros.fecha_desde and filtros.fecha_hasta %}
+            {{ filtros.fecha_desde }} → {{ filtros.fecha_hasta }}
+        {% else %}
+            Periodo completo
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Material buscado</span>
+    <strong>
+        {% if filtros.material %}
+            {{ filtros.material }}
+        {% else %}
+            Todos
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Coincidencia</span>
+    <strong>
+
+        {% if filtros.tipo_material == "exacta" %}
+            Exacta
+
+        {% elif filtros.tipo_material == "inicia" %}
+            Inicia con
+
+        {% else %}
+            Contiene
+
+        {% endif %}
+
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Nivel consumo</span>
+    <strong>
+
+        {% if filtros.nivel_consumo == "critico" %}
+            Crítico
+
+        {% elif filtros.nivel_consumo == "alto" %}
+            Alto
+
+        {% elif filtros.nivel_consumo == "medio" %}
+            Medio
+
+        {% elif filtros.nivel_consumo == "bajo" %}
+            Bajo
+
+        {% else %}
+            Todos
+
+        {% endif %}
+
+    </strong>
+</div>
+
+
+<div class="meta-item">
+    <span>Fecha emisión</span>
+    <strong>{% now "d/m/Y H:i" %}</strong>
+</div>
+
+{% endblock %}
+
+{% block content %}
+
+<h3 class="print-section-title">
+    Resumen ejecutivo
+</h3>
+
+<div class="print-kpi-grid">
+
+    <div class="print-kpi">
+        <span>Material más utilizado</span>
+
+        <strong>
+            {% if resumen.material_top %}
+                {{ resumen.material_top.material }}
+            {% else %}
+                —
+            {% endif %}
+        </strong>
+    </div>
+
+    <div class="print-kpi">
+        <span>Total materiales</span>
+
+        <strong>
+            {{ resumen.total_materiales_operativos|floatformat:0 }}
+        </strong>
+    </div>
+
+    <div class="print-kpi">
+        <span>Empresa mayor consumo</span>
+
+        <strong>
+            {% if resumen.empresa_top_consumo %}
+                {{ resumen.empresa_top_consumo.0 }}
+            {% else %}
+                —
+            {% endif %}
+        </strong>
+    </div>
+
+    <div class="print-kpi">
+        <span>Carpeta mayor volumen</span>
+
+        <strong>
+            {% if resumen.carpeta_top_consumo %}
+                {{ resumen.carpeta_top_consumo.0 }}
+            {% else %}
+                —
+            {% endif %}
+        </strong>
+    </div>
+
+</div>
+
+<h3 class="print-section-title">
+    Detalle operacional
+</h3>
+
+<table class="print-table">
+
+    <thead>
+        <tr>
+            <th>Empresa</th>
+            <th>Carpeta</th>
+            <th>Material</th>
+            <th>Unidad</th>
+            <th>Cantidad</th>
+            <th>Nivel consumo</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+        {% for item in reporte_materiales %}
+
+        <tr>
+
+            <td>
+                {{ item.empresa }}
+            </td>
+
+            <td>
+                {{ item.carpeta }}
+            </td>
+
+            <td>
+                <strong>{{ item.material }}</strong>
+            </td>
+
+            <td>
+                {{ item.unidad }}
+            </td>
+
+            <td>
+                <strong>
+                    {{ item.cantidad_total|floatformat:0 }}
+                </strong>
+            </td>
+
+            <td>
+
+                {% if item.cantidad_total > 20 %}
+
+                    <span class="badge badge-critical">
+                        CRÍTICO
+                    </span>
+
+                {% elif item.cantidad_total > 10 %}
+
+                    <span class="badge badge-acceptable">
+                        ALTO
+                    </span>
+
+                {% elif item.cantidad_total >= 5 %}
+
+                    <span class="badge badge-optimal">
+                        MEDIO
+                    </span>
+
+                {% else %}
+
+                    <span class="badge badge-excellent">
+                        BAJO
+                    </span>
+
+                {% endif %}
+
+            </td>
+
+        </tr>
+
+        {% empty %}
+
+        <tr>
+            <td colspan="6" style="text-align:center;">
+                No existen datos para el reporte.
+            </td>
+        </tr>
+
+        {% endfor %}
+
+    </tbody>
+
+</table>
+
+{% endblock %}

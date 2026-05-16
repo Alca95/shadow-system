@@ -146,7 +146,12 @@ urlpatterns = [
     "reportes/print/tiempos/",
     views.reporte_tiempos_print_view,
     name="reporte_tiempos_print"
-),
+    ),
+    path(
+        "reportes/print/materiales/",
+        views.reporte_materiales_print_view,
+        name="reporte_materiales_print"
+    ),
 ]
 
 if settings.DEBUG:

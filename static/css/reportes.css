@@ -1658,3 +1658,103 @@ body.report-modal-open {
     height: 44px;
     white-space: nowrap;
 }
+
+.report-modal-header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.report-action-btn {
+    height: 40px;
+    border: 0;
+    border-radius: 14px;
+    padding: 0 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.report-action-btn.primary {
+    color: #ffffff;
+    background: linear-gradient(135deg, #312e81, #1f2937);
+    box-shadow: 0 10px 22px rgba(49, 46, 129, .22);
+}
+
+.report-action-btn.secondary {
+    color: #374151;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+}
+
+.report-action-btn:hover {
+    transform: translateY(-1px);
+}
+
+.report-action-btn.primary:hover {
+    box-shadow: 0 14px 28px rgba(49, 46, 129, .28);
+}
+
+.report-action-btn.secondary:hover {
+    background: #f9fafb;
+}
+
+.report-action-btn i {
+    font-size: 14px;
+}
+
+@media (max-width: 900px) {
+    .report-modal-header {
+        align-items: flex-start;
+        gap: 14px;
+    }
+
+    .report-modal-header-actions {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .report-action-btn {
+        height: 38px;
+        padding: 0 13px;
+        font-size: 12px;
+    }
+}
+
+.reports-panel-print-btn {
+    height: 38px;
+    border: 0;
+    border-radius: 14px;
+    padding: 0 15px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    color: #ffffff;
+    background: linear-gradient(135deg, #111827, #312e81);
+    box-shadow: 0 10px 22px rgba(17, 24, 39, .18);
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.reports-panel-print-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 28px rgba(17, 24, 39, .24);
+}
+
+.reports-panel-print-btn i {
+    font-size: 14px;
+}

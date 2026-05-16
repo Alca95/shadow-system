@@ -4,7 +4,7 @@
 {% block title %}Reportes{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260514">
+<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260517">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 {% endblock %}
 
@@ -165,9 +165,9 @@
                 <p>Selecciona un objetivo específico para generar el reporte correspondiente.</p>
             </div>
 
-            <button type="button" class="btn btn-outline-dark btn-sm report-print-btn" onclick="window.print()">
-                <i class="bi bi-file-earmark-pdf"></i>
-                PDF general
+            <button type="button" class="reports-panel-print-btn" onclick="window.print()">
+                <i class="bi bi-printer"></i>
+                Exportar panel
             </button>
         </div>
 
@@ -201,20 +201,6 @@
                 </span>
             </button>
 
-            <button type="button" class="report-card" data-report-modal="modalTrabajos">
-                <span class="report-card-icon is-secondary">
-                    <i class="bi bi-buildings"></i>
-                </span>
-                <span class="report-card-content">
-                    <strong>Total de trabajos por empresa</strong>
-                    <small>Resumen de productividad operativa por empresa contratista.</small>
-                </span>
-                <span class="report-card-footer">
-                    <span>{{ reporte_empresas|length }} empresas</span>
-                    <i class="bi bi-arrow-up-right"></i>
-                </span>
-            </button>
-
             <button type="button" class="report-card" data-report-modal="modalEstados">
                 <span class="report-card-icon is-success">
                     <i class="bi bi-check2-square"></i>
@@ -231,14 +217,14 @@
 
             <button type="button" class="report-card report-card-wide" data-report-modal="modalEfectividad">
                 <span class="report-card-icon is-primary">
-                    <i class="bi bi-calendar-month"></i>
+                    <i class="bi bi-graph-up-arrow"></i>
                 </span>
                 <span class="report-card-content">
-                    <strong>Efectividad mensual por empresa</strong>
-                    <small>Porcentaje de cumplimiento, concretados, no concretados y verificación por empresa.</small>
+                    <strong>Rendimiento operativo por empresa</strong>
+                    <small>Ranking de productividad, efectividad, volumen de NR, rechazos y casos en verificación por contratista.</small>
                 </span>
                 <span class="report-card-footer">
-                    <span>{{ resumen.efectividad_general|floatformat:0 }}% general</span>
+                    <span>{{ resumen.efectividad_general|floatformat:0 }}% efectividad general</span>
                     <i class="bi bi-arrow-up-right"></i>
                 </span>
             </button>
@@ -292,12 +278,42 @@
                         </p>
                     </div>
                 </div>
-                <button type="button" class="report-modal-close" data-report-close>
-                    <i class="bi bi-x-lg"></i>
-                </button>
+                <div class="report-modal-header-actions">
+
+                    <a
+                        href="{% url 'reporte_materiales_print' %}?{{ request.GET.urlencode }}"
+                        target="_blank"
+                        class="report-print-btn"
+                        title="Imprimir reporte"
+                    >
+                        <i class="bi bi-printer"></i>
+                    </a>
+
+                    <button
+                        type="submit"
+                        form="form-materiales-report"
+                        class="report-action-btn primary"
+                    >
+                        <i class="bi bi-funnel"></i>
+                        Aplicar filtros
+                    </button>
+
+                    <button
+                        type="button"
+                        class="report-action-btn secondary report-reset-modal"
+                    >
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Limpiar
+                    </button>
+
+                    <button type="button" class="report-modal-close" data-report-close>
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+
+                </div>
             </div>
 
-            <form method="get" class="report-modal-filters">
+            <form method="get" class="report-modal-filters" id="form-materiales-report">
 
                 <input type="hidden" name="tab" value="materiales">
 
@@ -380,21 +396,59 @@
                         >
                     </div>
 
-                    <div class="modal-filter-item modal-filter-actions-inline">
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-sliders"></i>
+                            Coincidencia
+                        </label>
 
-                        <button type="submit" class="btn btn-shadow">
-                            <i class="bi bi-funnel"></i>
-                            Generar reporte
-                        </button>
+                        <select name="tipo_material" class="form-select">
+                            <option value="contiene"
+                                {% if filtros.tipo_material == "contiene" or not filtros.tipo_material %}selected{% endif %}>
+                                Contiene
+                            </option>
 
-                        <button
-                            type="button"
-                            class="btn btn-outline-secondary report-reset-modal"
-                        >
-                            <i class="bi bi-arrow-clockwise"></i>
-                            Limpiar
-                        </button>
+                            <option value="exacta"
+                                {% if filtros.tipo_material == "exacta" %}selected{% endif %}>
+                                Exacta
+                            </option>
 
+                            <option value="inicia"
+                                {% if filtros.tipo_material == "inicia" %}selected{% endif %}>
+                                Inicia con
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-speedometer2"></i>
+                            Nivel consumo
+                        </label>
+
+                        <select name="nivel_consumo" class="form-select">
+                            <option value="">Todos</option>
+
+                            <option value="critico"
+                                {% if filtros.nivel_consumo == "critico" %}selected{% endif %}>
+                                Crítico
+                            </option>
+
+                            <option value="alto"
+                                {% if filtros.nivel_consumo == "alto" %}selected{% endif %}>
+                                Alto
+                            </option>
+
+                            <option value="medio"
+                                {% if filtros.nivel_consumo == "medio" %}selected{% endif %}>
+                                Medio
+                            </option>
+
+                            <option value="bajo"
+                                {% if filtros.nivel_consumo == "bajo" %}selected{% endif %}>
+                                Bajo
+                            </option>
+                        </select>
                     </div>
 
                 </div>
@@ -1003,16 +1057,46 @@
                 <div class="report-modal-title">
                     <span class="report-card-icon is-primary"><i class="bi bi-calendar-month"></i></span>
                     <div>
-                        <h3>Reporte mensual de efectividad por empresa</h3>
-                        <p>Indicador de cumplimiento operativo por empresa contratista.</p>
+                        <h3>Rendimiento operativo por empresa</h3>
+                        <p>Análisis ejecutivo de productividad, efectividad y comportamiento operativo por empresa.</p>
                     </div>
                 </div>
-                <button type="button" class="report-modal-close" data-report-close>
-                    <i class="bi bi-x-lg"></i>
-                </button>
+                <div class="report-modal-header-actions">
+
+                    <a
+                        href="#"
+                        class="report-print-btn"
+                        title="Imprimir reporte"
+                        onclick="window.print(); return false;"
+                    >
+                        <i class="bi bi-printer"></i>
+                    </a>
+
+                    <button
+                        type="submit"
+                        form="form-efectividad-report"
+                        class="report-action-btn primary"
+                    >
+                        <i class="bi bi-funnel"></i>
+                        Aplicar filtros
+                    </button>
+
+                    <button
+                        type="button"
+                        class="report-action-btn secondary report-reset-modal"
+                    >
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Limpiar
+                    </button>
+
+                    <button type="button" class="report-modal-close" data-report-close>
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+
+                </div>
             </div>
 
-            <form method="get" class="report-modal-filters">
+            <form method="get" class="report-modal-filters" id="form-efectividad-report">
 
                 <input type="hidden" name="tab" value="efectividad">
 
@@ -1113,63 +1197,82 @@
                         </select>
                     </div>
 
-                    <div class="modal-filter-item">
-                        <label>
-                            <i class="bi bi-layout-text-window-reverse"></i>
-                            Tipo de vista
-                        </label>
-
-                        <select name="vista_efectividad" class="form-select">
-
-                            <option value="detallado"
-                                {% if filtros.vista_efectividad == "detallado" %}selected{% endif %}>
-                                Vista detallada
-                            </option>
-
-                        </select>
-                    </div>
-
-                </div>
-
-                <div class="modal-filter-actions">
-
-                    <button type="submit" class="btn btn-shadow">
-                        <i class="bi bi-funnel"></i>
-                        Generar reporte
-                    </button>
-
-                    <button type="button" class="btn btn-outline-secondary report-reset-modal">
-                        <i class="bi bi-arrow-clockwise"></i>
-                        Limpiar
-                    </button>
-
                 </div>
 
             </form>
 
             <div class="report-modal-body">
-                {% if reporte_empresas %}
+                <div class="report-modal-body">
+
+                    <div class="response-kpi-grid">
+
+                        <div class="response-kpi-card">
+                            <span>Empresas evaluadas</span>
+                            <strong>{{ reporte_empresas|length }}</strong>
+                        </div>
+
+                        <div class="response-kpi-card">
+                            <span>Efectividad general</span>
+                            <strong>{{ resumen.efectividad_general|floatformat:0 }}%</strong>
+                        </div>
+
+                        <div class="response-kpi-card">
+                            <span>NR procesados</span>
+                            <strong>{{ resumen.total_nr }}</strong>
+                        </div>
+
+                        <div class="response-kpi-card critical">
+                            <span>No concretados</span>
+                            <strong>{{ resumen.total_rechazados }}</strong>
+                        </div>
+
+                    </div>
+
+                    {% if reporte_empresas %}
                 <div class="table-responsive report-table-wrap">
                     <table class="table report-table align-middle">
                         <thead>
                             <tr>
                                 <th>Empresa</th>
-                                <th>Total planos</th>
-                                <th>Total NR</th>
-                                <th>Concretados</th>
-                                <th>No concretados</th>
-                                <th>Verificación</th>
-                                <th>Efectividad</th>
+                                <th>Planos</th>
+                                <th>NR procesados</th>
+                                <th>NR concretados</th>
+                                <th>NR no concretados</th>
+                                <th>NR en verificación</th>
+                                <th>Rendimiento</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for item in reporte_empresas %}
                             <tr>
-                                <td class="fw-semibold">{{ item.empresa }}</td>
+                                <td class="fw-semibold">
+
+                                    <div class="ranking-company">
+
+                                        <span class="
+                                            ranking-badge
+                                            {% if item.ranking == 1 %}is-gold{% endif %}
+                                            {% if item.ranking == 2 %}is-silver{% endif %}
+                                            {% if item.ranking == 3 %}is-bronze{% endif %}
+                                        ">
+                                            #{{ item.ranking }}
+                                        </span>
+
+                                        <span class="ranking-company-name">
+                                            {{ item.empresa }}
+                                        </span>
+
+                                    </div>
+
+                                </td>
                                 <td>{{ item.total_planos }}</td>
-                                <td>{{ item.aprobados }}</td>
+
                                 <td class="{% if filtros.metrica_efectividad == 'volumen' %}metric-highlight{% endif %}">
                                     {{ item.total_nr }}
+                                </td>
+
+                                <td>
+                                    {{ item.aprobados }}
                                 </td>
 
                                 <td class="{% if filtros.metrica_efectividad == 'rechazos' %}metric-highlight{% endif %}">
