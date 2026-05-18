@@ -1,0 +1,191 @@
+{% extends "reportes/print/base_print.html" %}
+
+{% block title %}
+Reporte de rendimiento operativo
+{% endblock %}
+
+{% block report_title %}
+Rendimiento operativo por empresa
+{% endblock %}
+
+{% block report_meta %}
+
+<div class="meta-item">
+    <span>Empresa</span>
+    <strong>
+        {% if filtros.empresa_nombre %}
+            {{ filtros.empresa_nombre }}
+        {% else %}
+            Todas las empresas
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Periodo</span>
+    <strong>
+        {% if filtros.fecha_desde and filtros.fecha_hasta %}
+            {{ filtros.fecha_desde }} → {{ filtros.fecha_hasta }}
+        {% else %}
+            Periodo completo
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Ordenado por</span>
+    <strong>
+
+        {% if filtros.metrica_efectividad == "volumen" %}
+            Mayor cantidad de reclamos
+
+        {% elif filtros.metrica_efectividad == "rechazos" %}
+            Mayor cantidad de rechazos
+
+        {% elif filtros.metrica_efectividad == "pendientes" %}
+            Mayor cantidad en verificación
+
+        {% else %}
+            Mayor efectividad operacional
+
+        {% endif %}
+
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Nivel rendimiento</span>
+    <strong>
+
+        {% if filtros.nivel_rendimiento == "alto" %}
+            Alto rendimiento
+
+        {% elif filtros.nivel_rendimiento == "medio" %}
+            Rendimiento medio
+
+        {% elif filtros.nivel_rendimiento == "bajo" %}
+            Bajo rendimiento
+
+        {% else %}
+            Todos
+
+        {% endif %}
+
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Fecha emisión</span>
+    <strong>{% now "d/m/Y H:i" %}</strong>
+</div>
+
+{% endblock %}
+
+{% block content %}
+
+<h3 class="print-section-title">
+    Resumen ejecutivo
+</h3>
+
+<div class="print-kpi-grid">
+
+    <div class="print-kpi">
+        <span>Empresas evaluadas</span>
+        <strong>{{ resumen.empresas_evaluadas }}</strong>
+    </div>
+
+    <div class="print-kpi">
+        <span>Efectividad general</span>
+        <strong>{{ resumen.efectividad_general|floatformat:0 }}%</strong>
+    </div>
+
+    <div class="print-kpi">
+        <span>NR procesados</span>
+        <strong>{{ resumen.total_nr }}</strong>
+    </div>
+
+    <div class="print-kpi">
+        <span>NR no concretados</span>
+        <strong>{{ resumen.total_rechazados }}</strong>
+    </div>
+
+</div>
+
+<h3 class="print-section-title">
+    Ranking operacional de empresas
+</h3>
+
+<table class="print-table">
+
+    <thead>
+        <tr>
+            <th>Ranking</th>
+            <th>Empresa</th>
+            <th>Planos</th>
+            <th>NR procesados</th>
+            <th>Concretados</th>
+            <th>No concretados</th>
+            <th>Verificación</th>
+            <th>Efectividad</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+        {% for item in reporte_empresas %}
+
+        <tr>
+
+            <td>
+                <strong>#{{ item.ranking }}</strong>
+            </td>
+
+            <td>
+                <strong>{{ item.empresa }}</strong>
+            </td>
+
+            <td>
+                {{ item.total_planos }}
+            </td>
+
+            <td>
+                {{ item.total_nr }}
+            </td>
+
+            <td>
+                {{ item.aprobados }}
+            </td>
+
+            <td>
+                {{ item.rechazados }}
+            </td>
+
+            <td>
+                {{ item.verificacion }}
+            </td>
+
+            <td>
+
+                <strong>
+                    {{ item.efectividad|floatformat:0 }}%
+                </strong>
+
+            </td>
+
+        </tr>
+
+        {% empty %}
+
+        <tr>
+            <td colspan="8" style="text-align:center;">
+                No existen datos para el reporte.
+            </td>
+        </tr>
+
+        {% endfor %}
+
+    </tbody>
+
+</table>
+
+{% endblock %}

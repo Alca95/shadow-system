@@ -1,0 +1,184 @@
+{% extends "reportes/print/base_print.html" %}
+
+{% block title %}
+Reporte de rechazos
+{% endblock %}
+
+{% block report_title %}
+Tipo de rechazo más frecuente
+{% endblock %}
+
+{% block report_meta %}
+
+<div class="meta-item">
+    <span>Empresa</span>
+    <strong>
+        {% if filtros.empresa_nombre %}
+            {{ filtros.empresa_nombre }}
+        {% else %}
+            Todas las empresas
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Periodo</span>
+    <strong>
+        {% if filtros.fecha_desde and filtros.fecha_hasta %}
+            {{ filtros.fecha_desde }} → {{ filtros.fecha_hasta }}
+        {% else %}
+            Periodo completo
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Tipo buscado</span>
+    <strong>
+        {% if filtros.tipo_rechazo %}
+            {{ filtros.tipo_rechazo }}
+        {% else %}
+            Todos
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Coincidencia</span>
+    <strong>
+        {% if filtros.coincidencia_rechazo == "exacta" %}
+            Exacta
+        {% elif filtros.coincidencia_rechazo == "inicia" %}
+            Inicia con
+        {% else %}
+            Contiene
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Nivel impacto</span>
+    <strong>
+        {% if filtros.nivel_impacto_rechazo == "critico" %}
+            Crítico
+        {% elif filtros.nivel_impacto_rechazo == "alto" %}
+            Alto
+        {% elif filtros.nivel_impacto_rechazo == "medio" %}
+            Medio
+        {% elif filtros.nivel_impacto_rechazo == "bajo" %}
+            Bajo
+        {% else %}
+            Todos
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Fecha emisión</span>
+    <strong>{% now "d/m/Y H:i" %}</strong>
+</div>
+
+{% endblock %}
+
+{% block content %}
+
+<h3 class="print-section-title">
+    Resumen ejecutivo
+</h3>
+
+<div class="print-kpi-grid">
+
+    <div class="print-kpi">
+        <span>Total inconsistencias</span>
+        <strong>{{ resumen.total_inconsistencias }}</strong>
+    </div>
+
+    <div class="print-kpi">
+        <span>Tipos detectados</span>
+        <strong>{{ resumen.tipos_detectados }}</strong>
+    </div>
+
+    <div class="print-kpi">
+        <span>Tipo predominante</span>
+        <strong>
+            {% if resumen.tipo_predominante %}
+                {{ resumen.tipo_predominante }}
+            {% else %}
+                —
+            {% endif %}
+        </strong>
+    </div>
+
+    <div class="print-kpi">
+        <span>Impacto operacional</span>
+        <strong>
+            {% if resumen.total_inconsistencias >= 15 %}
+                Crítico
+            {% elif resumen.total_inconsistencias >= 8 %}
+                Alto
+            {% elif resumen.total_inconsistencias >= 3 %}
+                Moderado
+            {% else %}
+                Bajo
+            {% endif %}
+        </strong>
+    </div>
+
+</div>
+
+<h3 class="print-section-title">
+    Detalle de inconsistencias detectadas
+</h3>
+
+<table class="print-table">
+    <thead>
+        <tr>
+            <th>Tipo de rechazo</th>
+            <th>Casos</th>
+            <th>Participación</th>
+            <th>Nivel impacto</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for item in reporte_tipos_rechazo %}
+            <tr>
+                <td>
+                    <strong>{{ item.tipo }}</strong>
+                </td>
+
+                <td>
+                    {{ item.total }}
+                </td>
+
+                <td>
+                    {% if resumen.total_inconsistencias %}
+                        {% widthratio item.total resumen.total_inconsistencias 100 %}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </td>
+
+                <td>
+                    {% if item.total >= 10 %}
+                        <span class="badge badge-critical">Crítico</span>
+                    {% elif item.total >= 5 %}
+                        <span class="badge badge-acceptable">Alto</span>
+                    {% elif item.total >= 2 %}
+                        <span class="badge badge-optimal">Medio</span>
+                    {% else %}
+                        <span class="badge badge-excellent">Bajo</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="4" style="text-align:center;">
+                    No existen rechazos para los filtros seleccionados.
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

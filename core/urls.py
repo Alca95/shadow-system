@@ -152,6 +152,24 @@ urlpatterns = [
         views.reporte_materiales_print_view,
         name="reporte_materiales_print"
     ),
+
+    path(
+        "reportes/print/rendimiento/",
+        views.reporte_rendimiento_print_view,
+        name="reporte_rendimiento_print"
+    ),   
+
+    path(
+        "reportes/print/efectividad-mensual/",
+        views.reporte_efectividad_mensual_print_view,
+        name="reporte_efectividad_mensual_print"
+    ),
+
+    path(
+        "reportes/print/rechazos/",
+        views.reporte_rechazos_print_view,
+        name="reporte_rechazos_print"
+    ), 
 ]
 
 if settings.DEBUG:

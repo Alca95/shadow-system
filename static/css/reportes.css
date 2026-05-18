@@ -1758,3 +1758,131 @@ body.report-modal-open {
 .reports-panel-print-btn i {
     font-size: 14px;
 }
+
+.reason-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.reason-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 10px;
+}
+
+.reason-header strong {
+    color: #111827;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.reason-header span {
+    color: #6b7280;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.reason-bar {
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    background: #eef2ff;
+    overflow: hidden;
+    position: relative;
+}
+
+.reason-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #dc2626, #f97316);
+}
+
+.reason-side {
+    min-width: 82px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.reason-level {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #b91c1c;
+}
+
+.reason-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.advanced-filters-toggle-wrap {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.advanced-filters-toggle {
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    color: #374151;
+    border-radius: 14px;
+    padding: 10px 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.advanced-filters-panel {
+    grid-column: 1 / -1;
+    display: none;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.advanced-filters-panel.is-open {
+    display: grid;
+}
+
+.advanced-filters-toggle.is-open .advanced-chevron {
+    transform: rotate(180deg);
+}
+
+.report-table th:last-child,
+.report-table td:last-child {
+    width: 190px;
+    min-width: 190px;
+    max-width: 190px;
+    vertical-align: middle;
+}
+
+.report-table th:last-child {
+    text-align: left;
+}
+
+.effectiveness-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+}
+
+.effectiveness-cell .effectiveness-bar {
+    width: 100%;
+}
+
+.effectiveness-bar {
+    width: 100%;
+    max-width: 120px;
+}

@@ -1,0 +1,127 @@
+{% extends "reportes/print/base_print.html" %}
+
+{% block title %}
+Reporte de efectividad mensual
+{% endblock %}
+
+{% block report_title %}
+Efectividad mensual por empresa
+{% endblock %}
+
+{% block report_meta %}
+
+<div class="meta-item">
+    <span>Periodo</span>
+    <strong>
+        {{ periodo_label }}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Fecha emisión</span>
+    <strong>{% now "d/m/Y H:i" %}</strong>
+</div>
+
+{% endblock %}
+
+{% block content %}
+
+<h3 class="print-section-title">
+    Resumen ejecutivo
+</h3>
+
+<div class="print-kpi-grid">
+
+    <div class="print-kpi">
+        <span>Empresas evaluadas</span>
+        <strong>{{ resumen.empresas }}</strong>
+    </div>
+
+    <div class="print-kpi">
+        <span>Carpetas mensuales</span>
+        <strong>{{ resumen.carpetas }}</strong>
+    </div>
+
+    <div class="print-kpi">
+        <span>NR procesados</span>
+        <strong>{{ resumen.nr }}</strong>
+    </div>
+
+    <div class="print-kpi">
+        <span>Efectividad promedio</span>
+        <strong>{{ resumen.efectividad|floatformat:0 }}%</strong>
+    </div>
+
+</div>
+
+<h3 class="print-section-title">
+    Detalle mensual por empresa
+</h3>
+
+<table class="print-table">
+
+    <thead>
+        <tr>
+            <th>Mes</th>
+            <th>Empresa</th>
+            <th>Carpeta</th>
+            <th>Planos</th>
+            <th>NR</th>
+            <th>Concretados</th>
+            <th>No concretados</th>
+            <th>Verificación</th>
+            <th>Efectividad</th>
+            <th>Nivel</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+        {% for item in reporte %}
+
+        <tr>
+            <td>{{ item.periodo }}</td>
+
+            <td>
+                <strong>{{ item.empresa }}</strong>
+            </td>
+
+            <td>{{ item.carpeta }}</td>
+            <td>{{ item.total_planos }}</td>
+            <td>{{ item.total_nr }}</td>
+            <td>{{ item.aprobados }}</td>
+            <td>{{ item.rechazados }}</td>
+            <td>{{ item.verificacion }}</td>
+
+            <td>
+                <strong>{{ item.efectividad|floatformat:0 }}%</strong>
+            </td>
+
+            <td>
+                {% if item.nivel == "EXCELENTE" %}
+                    <span class="badge badge-excellent">EXCELENTE</span>
+                {% elif item.nivel == "OPTIMO" %}
+                    <span class="badge badge-optimal">ÓPTIMO</span>
+                {% elif item.nivel == "RIESGO" %}
+                    <span class="badge badge-acceptable">RIESGO</span>
+                {% else %}
+                    <span class="badge badge-critical">CRÍTICO</span>
+                {% endif %}
+            </td>
+        </tr>
+
+        {% empty %}
+
+        <tr>
+            <td colspan="10" style="text-align:center;">
+                No existen datos para el reporte.
+            </td>
+        </tr>
+
+        {% endfor %}
+
+    </tbody>
+
+</table>
+
+{% endblock %}

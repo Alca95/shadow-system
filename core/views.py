@@ -876,6 +876,10 @@ def carpetas_view(request):
     anio = request.GET.get("anio", "").strip()
     nr_busqueda = request.GET.get("nr", "").strip()
     filtro_nivel_respuesta = request.GET.get("nivel_respuesta", "").strip()
+    respuesta_fecha_reclamo = request.GET.get("respuesta_fecha_reclamo", "").strip()
+    respuesta_fecha_trabajo = request.GET.get("respuesta_fecha_trabajo", "").strip()
+    respuesta_dias_max = request.GET.get("respuesta_dias_max", "").strip()
+    respuesta_orden = request.GET.get("respuesta_orden", "dias_desc").strip()
 
     carpetas = Carpeta.objects.filter(eliminada=False).select_related("empresa")
 
@@ -1771,19 +1775,38 @@ def reportes_view(request):
     estado = request.GET.get("estado", "").strip()
     nr_busqueda = request.GET.get("nr", "").strip()
     filtro_nivel_respuesta = request.GET.get("nivel_respuesta", "").strip()
+    respuesta_fecha_reclamo = request.GET.get("respuesta_fecha_reclamo", "").strip()
+    respuesta_fecha_trabajo = request.GET.get("respuesta_fecha_trabajo", "").strip()
+    respuesta_dias_min = request.GET.get("respuesta_dias_min", "").strip()
+    respuesta_dias_max = request.GET.get("respuesta_dias_max", "").strip()
+    respuesta_orden = request.GET.get("respuesta_orden", "dias_desc").strip()
     material_busqueda = request.GET.get("material", "").strip()
     tipo_material = request.GET.get("tipo_material", "contiene").strip()
     nivel_consumo = request.GET.get("nivel_consumo", "").strip()
-
+    tipo_rechazo_busqueda = request.GET.get("tipo_rechazo", "").strip()
+    coincidencia_rechazo = request.GET.get("coincidencia_rechazo", "contiene").strip()
+    nivel_impacto_rechazo = request.GET.get("nivel_impacto_rechazo", "").strip()
+    orden_rechazo = request.GET.get("orden_rechazo", "mayor").strip()
     carpeta_id = request.GET.get("carpeta", "").strip()
     localidad = request.GET.get("localidad", "").strip()
     zona = request.GET.get("zona", "").strip()
+    respuesta_fecha_reclamo = request.GET.get("respuesta_fecha_reclamo", "").strip()
+    respuesta_fecha_trabajo = request.GET.get("respuesta_fecha_trabajo", "").strip()
+    respuesta_dias_max = request.GET.get("respuesta_dias_max", "").strip()
+    respuesta_orden = request.GET.get("respuesta_orden", "dias_desc").strip()
     metrica = request.GET.get("metrica", "").strip()
     estado_operativo = request.GET.get("estado_operativo", "").strip()
     orden = request.GET.get("orden", "").strip()
     metrica_efectividad = request.GET.get("metrica_efectividad", "").strip()
     nivel_rendimiento = request.GET.get("nivel_rendimiento", "").strip()
     vista_efectividad = request.GET.get("vista_efectividad", "").strip()
+    efectividad_mensual_anio = request.GET.get("efectividad_mensual_anio", "").strip()
+    efectividad_mensual_mes = request.GET.get("efectividad_mensual_mes", "").strip()
+
+    if efectividad_mensual_mes:
+        efectividad_mensual_mes = efectividad_mensual_mes.zfill(2)
+    efectividad_mensual_nivel = request.GET.get("efectividad_mensual_nivel", "").strip()
+    efectividad_mensual_orden = request.GET.get("efectividad_mensual_orden", "efectividad_desc").strip()
 
     carpetas = Carpeta.objects.filter(eliminada=False).select_related("empresa")
     planos = Plano.objects.filter(eliminado=False).select_related("carpeta", "carpeta__empresa")
@@ -1852,7 +1875,7 @@ def reportes_view(request):
     if tab != "materiales":
         carpeta_id = ""
 
-    if tab not in ["reclamos", "estados"]:
+    if tab not in ["reclamos", "estados", "respuesta"]:
         localidad = ""
         zona = ""
 
@@ -1868,6 +1891,11 @@ def reportes_view(request):
         nivel_rendimiento = ""
         vista_efectividad = ""
 
+    if tab != "rechazos":
+        tipo_rechazo_busqueda = ""
+        coincidencia_rechazo = "contiene"
+        nivel_impacto_rechazo = ""
+        orden_rechazo = "mayor"
 
     # =========================
     # MATERIALES POR EMPRESA / CARPETA
@@ -2047,6 +2075,7 @@ def reportes_view(request):
     # =========================
     empresas_map = defaultdict(lambda: {
         "empresa": "",
+        "total_carpetas": 0,
         "total_planos": 0,
         "total_nr": 0,
         "aprobados": 0,
@@ -2055,8 +2084,15 @@ def reportes_view(request):
         "efectividad": 0,
     })
 
+    for carpeta in carpetas:
+        empresa = carpeta.empresa.nombre if carpeta.empresa else "Sin empresa"
+
+        empresas_map[empresa]["empresa"] = empresa
+        empresas_map[empresa]["total_carpetas"] += 1
+
     for plano in planos:
         empresa = plano.carpeta.empresa.nombre if plano.carpeta.empresa else "Sin empresa"
+
         empresas_map[empresa]["empresa"] = empresa
         empresas_map[empresa]["total_planos"] += 1
 
@@ -2080,10 +2116,16 @@ def reportes_view(request):
 
 
     mapa_metricas_efectividad = {
-        "efectividad": "efectividad",
+        "efectividad_desc": "efectividad_desc",
+        "concretados_desc": "aprobados",
         "volumen": "total_nr",
         "rechazos": "rechazados",
         "pendientes": "verificacion",
+        "carpetas_desc": "total_carpetas",
+        "carpetas_asc": "carpetas_asc",
+        "planos_desc": "total_planos",
+        "planos_asc": "planos_asc",
+
     }
 
     criterio_efectividad = mapa_metricas_efectividad.get(metrica_efectividad, "")
@@ -2094,14 +2136,31 @@ def reportes_view(request):
     if criterio_empresas == "empresa_az":
         reporte_empresas = sorted(empresas_map.values(), key=lambda x: x["empresa"])
 
+
+
     elif criterio_empresas == "total_planos":
         reporte_empresas = sorted(empresas_map.values(), key=lambda x: x["total_planos"], reverse=True)
 
+    elif criterio_empresas == "total_carpetas":
+        reporte_empresas = sorted(empresas_map.values(), key=lambda x: x["total_carpetas"], reverse=True)
+
+    elif criterio_empresas == "carpetas_asc":
+        reporte_empresas = sorted(empresas_map.values(), key=lambda x: x["total_carpetas"])
+
+    elif criterio_empresas == "planos_asc":
+        reporte_empresas = sorted(empresas_map.values(), key=lambda x: x["total_planos"])
+        
     elif criterio_empresas == "total_nr":
         reporte_empresas = sorted(empresas_map.values(), key=lambda x: x["total_nr"], reverse=True)
 
     elif criterio_empresas == "aprobados":
         reporte_empresas = sorted(empresas_map.values(), key=lambda x: x["aprobados"], reverse=True)
+
+    elif criterio_empresas == "efectividad_desc":
+        reporte_empresas = sorted(
+            empresas_map.values(),
+            key=lambda x: (-x["efectividad"], -x["total_nr"], x["empresa"])
+        )        
 
     elif criterio_empresas == "rechazados":
         reporte_empresas = sorted(empresas_map.values(), key=lambda x: x["rechazados"], reverse=True)
@@ -2140,6 +2199,139 @@ def reportes_view(request):
     else:
         reporte_empresas = reporte_empresas_base
 
+    # =========================
+    # EFECTIVIDAD MENSUAL POR EMPRESA
+    # =========================
+    efectividad_mensual_map = defaultdict(lambda: {
+        "periodo": "",
+        "anio": "",
+        "mes": "",
+        "empresa": "",
+        "carpeta": "",
+        "codigo_carpeta": "",
+        "total_planos": 0,
+        "total_nr": 0,
+        "aprobados": 0,
+        "rechazados": 0,
+        "verificacion": 0,
+        "efectividad": 0,
+        "nivel": "",
+        "_planos_ids": set(),
+    })
+
+    for resultado in resultados:
+        plano = resultado.plano
+        carpeta = plano.carpeta if plano else None
+
+        if not carpeta:
+            continue
+
+        empresa = carpeta.empresa.nombre if carpeta.empresa else "Sin empresa"
+
+        anio = str(carpeta.anio) if getattr(carpeta, "anio", None) else ""
+        mes = str(carpeta.mes).zfill(2) if getattr(carpeta, "mes", None) else ""
+
+        if not anio or not mes:
+            fecha_base = plano.fecha_carga
+            anio = str(fecha_base.year)
+            mes = str(fecha_base.month).zfill(2)
+
+        if efectividad_mensual_anio and anio != efectividad_mensual_anio:
+            continue
+
+        if efectividad_mensual_mes and mes != efectividad_mensual_mes.zfill(2):
+            continue
+
+        key = (anio, mes, empresa, carpeta.codigo_carpeta)
+
+        item = efectividad_mensual_map[key]
+        item["anio"] = anio
+        item["mes"] = mes
+        item["periodo"] = f"{mes}/{anio}"
+        item["empresa"] = empresa
+        item["carpeta"] = carpeta.codigo_carpeta
+        item["codigo_carpeta"] = carpeta.codigo_carpeta
+        item["_planos_ids"].add(plano.id)
+        item["total_nr"] += 1
+
+        estado_final = resultado.estado_resultado_manual or resultado.estado_resultado
+
+        if estado_final == "APROBADO":
+            item["aprobados"] += 1
+        elif estado_final == "RECHAZADO":
+            item["rechazados"] += 1
+        elif estado_final == "EN_VERIFICACION":
+            item["verificacion"] += 1
+
+    for item in efectividad_mensual_map.values():
+        item["total_planos"] = len(item["_planos_ids"])
+        item["efectividad"] = round((item["aprobados"] / item["total_nr"]) * 100, 2) if item["total_nr"] else 0
+
+        if item["efectividad"] >= 95:
+            item["nivel"] = "EXCELENTE"
+        elif item["efectividad"] >= 85:
+            item["nivel"] = "OPTIMO"
+        elif item["efectividad"] >= 70:
+            item["nivel"] = "RIESGO"
+        else:
+            item["nivel"] = "CRITICO"
+
+        item.pop("_planos_ids", None)
+
+    reporte_efectividad_mensual = list(efectividad_mensual_map.values())
+
+    if empresa_id:
+        empresa_filtrada = EmpresaContratista.objects.filter(id=empresa_id).first()
+        if empresa_filtrada:
+            reporte_efectividad_mensual = [
+                item for item in reporte_efectividad_mensual
+                if item["empresa"] == empresa_filtrada.nombre
+            ]
+
+    if efectividad_mensual_nivel:
+        reporte_efectividad_mensual = [
+            item for item in reporte_efectividad_mensual
+            if item["nivel"] == efectividad_mensual_nivel
+        ]
+
+    if efectividad_mensual_orden == "periodo_desc":
+        reporte_efectividad_mensual = sorted(
+            reporte_efectividad_mensual,
+            key=lambda x: (x["anio"], x["mes"], x["empresa"]),
+            reverse=True
+        )
+    elif efectividad_mensual_orden == "periodo_asc":
+        reporte_efectividad_mensual = sorted(
+            reporte_efectividad_mensual,
+            key=lambda x: (x["anio"], x["mes"], x["empresa"])
+        )
+    elif efectividad_mensual_orden == "nr_desc":
+        reporte_efectividad_mensual = sorted(
+            reporte_efectividad_mensual,
+            key=lambda x: x["total_nr"],
+            reverse=True
+        )
+    elif efectividad_mensual_orden == "rechazos_desc":
+        reporte_efectividad_mensual = sorted(
+            reporte_efectividad_mensual,
+            key=lambda x: x["rechazados"],
+            reverse=True
+        )
+    else:
+        reporte_efectividad_mensual = sorted(
+            reporte_efectividad_mensual,
+            key=lambda x: (-x["efectividad"], -x["total_nr"], x["empresa"])
+        )
+
+    resumen_efectividad_mensual = {
+        "empresas": len({item["empresa"] for item in reporte_efectividad_mensual}),
+        "carpetas": len({item["codigo_carpeta"] for item in reporte_efectividad_mensual}),
+        "total_nr": sum(item["total_nr"] for item in reporte_efectividad_mensual),
+        "efectividad_promedio": round(
+            sum(item["efectividad"] for item in reporte_efectividad_mensual) / len(reporte_efectividad_mensual),
+            2
+        ) if reporte_efectividad_mensual else 0,
+    }
         
     # =========================
     # TIPO DE RECHAZO MÁS FRECUENTE
@@ -2169,6 +2361,71 @@ def reportes_view(request):
         {"tipo": tipo, "total": total}
         for tipo, total in tipos_rechazo_counter.most_common()
     ]
+
+    if tipo_rechazo_busqueda:
+        query = tipo_rechazo_busqueda.lower()
+
+        if coincidencia_rechazo == "exacta":
+            reporte_tipos_rechazo = [
+                item for item in reporte_tipos_rechazo
+                if item["tipo"].lower() == query
+            ]
+
+        elif coincidencia_rechazo == "inicia":
+            reporte_tipos_rechazo = [
+                item for item in reporte_tipos_rechazo
+                if item["tipo"].lower().startswith(query)
+            ]
+
+        else:
+            reporte_tipos_rechazo = [
+                item for item in reporte_tipos_rechazo
+                if query in item["tipo"].lower()
+            ]
+
+
+    def resolver_nivel_impacto_rechazo(total):
+        if total >= 10:
+            return "critico"
+        if total >= 5:
+            return "alto"
+        if total >= 2:
+            return "medio"
+        return "bajo"
+
+
+    if nivel_impacto_rechazo:
+        reporte_tipos_rechazo = [
+            item for item in reporte_tipos_rechazo
+            if resolver_nivel_impacto_rechazo(item["total"]) == nivel_impacto_rechazo
+        ]
+
+
+    if orden_rechazo == "menor":
+        reporte_tipos_rechazo = sorted(
+            reporte_tipos_rechazo,
+            key=lambda x: x["total"]
+        )
+
+    elif orden_rechazo == "tipo_az":
+        reporte_tipos_rechazo = sorted(
+            reporte_tipos_rechazo,
+            key=lambda x: x["tipo"]
+        )
+
+    elif orden_rechazo == "tipo_za":
+        reporte_tipos_rechazo = sorted(
+            reporte_tipos_rechazo,
+            key=lambda x: x["tipo"],
+            reverse=True
+        )
+
+    else:
+        reporte_tipos_rechazo = sorted(
+            reporte_tipos_rechazo,
+            key=lambda x: x["total"],
+            reverse=True
+        )
 
     # =========================
     # TIEMPO DE RESPUESTA
@@ -2201,7 +2458,24 @@ def reportes_view(request):
 
             if filtro_nivel_respuesta and nivel_operacional != filtro_nivel_respuesta:
                 continue
+            if localidad and reclamo.ciudad != localidad:
+                continue
 
+            if zona and reclamo.zona != zona:
+                continue
+
+            if respuesta_fecha_reclamo and str(reclamo.fecha_reclamo) != respuesta_fecha_reclamo:
+                continue
+
+            if respuesta_fecha_trabajo and str(fecha_trabajo) != respuesta_fecha_trabajo:
+                continue
+
+            if respuesta_dias_max:
+                try:
+                    if dias > int(respuesta_dias_max):
+                        continue
+                except ValueError:
+                    pass
             tiempos.append({
                 "nr": resultado.nr_detectado,
                 "empresa": resultado.plano.carpeta.empresa.nombre if resultado.plano.carpeta.empresa else "Sin empresa",
@@ -2233,11 +2507,21 @@ def reportes_view(request):
         if t["nivel_respuesta"] == "CRITICO"
     ])
 
-    tiempos_respuesta = sorted(
-        tiempos,
-        key=lambda x: x["dias"],
-        reverse=True
-    )
+    if respuesta_orden == "dias_asc":
+        tiempos_respuesta = sorted(tiempos, key=lambda x: x["dias"])
+
+    elif respuesta_orden == "nr_asc":
+        tiempos_respuesta = sorted(tiempos, key=lambda x: x["nr"])
+
+    elif respuesta_orden == "fecha_reclamo_desc":
+        tiempos_respuesta = sorted(tiempos, key=lambda x: x["fecha_reclamo"], reverse=True)
+
+    elif respuesta_orden == "fecha_trabajo_desc":
+        tiempos_respuesta = sorted(tiempos, key=lambda x: x["fecha_trabajo"], reverse=True)
+
+    else:
+        tiempos_respuesta = sorted(tiempos, key=lambda x: x["dias"], reverse=True)
+
 
     localidades = sorted({
         item["ciudad"]
@@ -2249,6 +2533,12 @@ def reportes_view(request):
         item["zona"]
         for item in reporte_reclamos
         if item["zona"]
+    })
+
+    zonas_territoriales = sorted({
+        (item["ciudad"], item["zona"])
+        for item in reporte_reclamos
+        if item["ciudad"] and item["zona"]
     })
 
     return render(request, "reportes/listado.html", {
@@ -2277,6 +2567,19 @@ def reportes_view(request):
             "material": material_busqueda,
             "tipo_material": tipo_material,
             "nivel_consumo": nivel_consumo,
+            "tipo_rechazo": tipo_rechazo_busqueda,
+            "coincidencia_rechazo": coincidencia_rechazo,
+            "nivel_impacto_rechazo": nivel_impacto_rechazo,
+            "orden_rechazo": orden_rechazo,
+            "respuesta_fecha_reclamo": respuesta_fecha_reclamo,
+            "respuesta_fecha_trabajo": respuesta_fecha_trabajo,
+            "respuesta_dias_max": respuesta_dias_max,
+            "respuesta_orden": respuesta_orden,
+            "efectividad_mensual_anio": efectividad_mensual_anio,
+            "efectividad_mensual_mes": efectividad_mensual_mes,
+            "efectividad_mensual_nivel": efectividad_mensual_nivel,
+            "efectividad_mensual_orden": efectividad_mensual_orden,
+
         },
         "resumen": {
             "total_planos": total_planos,
@@ -2297,11 +2600,14 @@ def reportes_view(request):
         "reporte_materiales": reporte_materiales,
         "reporte_reclamos": reporte_reclamos,
         "reporte_empresas": reporte_empresas,
+        "reporte_efectividad_mensual": reporte_efectividad_mensual,
+        "resumen_efectividad_mensual": resumen_efectividad_mensual,
         "reporte_tipos_rechazo": reporte_tipos_rechazo,
         "tiempos_respuesta": tiempos_respuesta,
         "carpetas": carpetas,
         "localidades": localidades,
         "zonas": zonas,
+        "zonas_territoriales": zonas_territoriales,
     })
 
 @login_required
@@ -2314,6 +2620,10 @@ def reporte_tiempos_print_view(request):
     carpeta_id = request.GET.get("carpeta", "").strip()
     nr_busqueda = request.GET.get("nr", "").strip()
     filtro_nivel_respuesta = request.GET.get("nivel_respuesta", "").strip()
+    tipo_rechazo_busqueda = request.GET.get("tipo_rechazo", "").strip()
+    coincidencia_rechazo = request.GET.get("coincidencia_rechazo", "contiene").strip()
+    nivel_impacto_rechazo = request.GET.get("nivel_impacto_rechazo", "").strip()
+    orden_rechazo = request.GET.get("orden_rechazo", "mayor").strip()
 
     resultados = ResultadoValidacionPlano.objects.select_related(
         "plano",
@@ -2587,6 +2897,512 @@ def reporte_materiales_print_view(request):
         "reporte_materiales": reporte_materiales,
         "filtros": filtros,
     })
+
+@login_required
+def reporte_rendimiento_print_view(request):
+    require_admin_or_funcionario(request)
+
+    fecha_desde = request.GET.get("fecha_desde", "").strip()
+    fecha_hasta = request.GET.get("fecha_hasta", "").strip()
+    empresa_id = request.GET.get("empresa", "").strip()
+    metrica_efectividad = request.GET.get("metrica_efectividad", "").strip()
+    nivel_rendimiento = request.GET.get("nivel_rendimiento", "").strip()
+
+    planos = Plano.objects.filter(eliminado=False).select_related(
+        "carpeta",
+        "carpeta__empresa"
+    )
+
+    resultados = ResultadoValidacionPlano.objects.select_related(
+        "plano",
+        "plano__carpeta",
+        "plano__carpeta__empresa",
+    )
+
+    if fecha_desde:
+        planos = planos.filter(fecha_carga__date__gte=fecha_desde)
+        resultados = resultados.filter(plano__fecha_carga__date__gte=fecha_desde)
+
+    if fecha_hasta:
+        planos = planos.filter(fecha_carga__date__lte=fecha_hasta)
+        resultados = resultados.filter(plano__fecha_carga__date__lte=fecha_hasta)
+
+    if empresa_id:
+        planos = planos.filter(carpeta__empresa_id=empresa_id)
+        resultados = resultados.filter(plano__carpeta__empresa_id=empresa_id)
+
+    empresas_map = defaultdict(lambda: {
+        "empresa": "",
+        "total_planos": 0,
+        "total_nr": 0,
+        "aprobados": 0,
+        "rechazados": 0,
+        "verificacion": 0,
+        "efectividad": 0,
+    })
+
+    for plano in planos:
+        empresa = plano.carpeta.empresa.nombre if plano.carpeta.empresa else "Sin empresa"
+        empresas_map[empresa]["empresa"] = empresa
+        empresas_map[empresa]["total_planos"] += 1
+
+    for resultado in resultados:
+        empresa = resultado.plano.carpeta.empresa.nombre if resultado.plano.carpeta.empresa else "Sin empresa"
+
+        empresas_map[empresa]["empresa"] = empresa
+        empresas_map[empresa]["total_nr"] += 1
+
+        estado_final = resultado.estado_resultado_manual or resultado.estado_resultado
+
+        if estado_final == "APROBADO":
+            empresas_map[empresa]["aprobados"] += 1
+        elif estado_final == "RECHAZADO":
+            empresas_map[empresa]["rechazados"] += 1
+        elif estado_final == "EN_VERIFICACION":
+            empresas_map[empresa]["verificacion"] += 1
+
+    for item in empresas_map.values():
+        item["efectividad"] = (
+            round((item["aprobados"] / item["total_nr"]) * 100, 2)
+            if item["total_nr"]
+            else 0
+        )
+
+    mapa_metricas = {
+        "efectividad": "efectividad",
+        "volumen": "total_nr",
+        "rechazos": "rechazados",
+        "pendientes": "verificacion",
+    }
+
+    criterio = mapa_metricas.get(metrica_efectividad, "efectividad")
+
+    if criterio == "total_nr":
+        reporte_empresas = sorted(empresas_map.values(), key=lambda x: x["total_nr"], reverse=True)
+    elif criterio == "rechazados":
+        reporte_empresas = sorted(empresas_map.values(), key=lambda x: x["rechazados"], reverse=True)
+    elif criterio == "verificacion":
+        reporte_empresas = sorted(empresas_map.values(), key=lambda x: x["verificacion"], reverse=True)
+    else:
+        reporte_empresas = sorted(
+            empresas_map.values(),
+            key=lambda x: (-x["efectividad"], -x["total_nr"], x["empresa"])
+        )
+
+    reporte_empresas_base = list(reporte_empresas)
+
+    for index, item in enumerate(reporte_empresas_base, start=1):
+        item["ranking"] = index
+
+    if nivel_rendimiento == "alto":
+        reporte_empresas = [
+            item for item in reporte_empresas_base
+            if item["efectividad"] >= 85
+        ]
+    elif nivel_rendimiento == "medio":
+        reporte_empresas = [
+            item for item in reporte_empresas_base
+            if 60 <= item["efectividad"] < 85
+        ]
+    elif nivel_rendimiento == "bajo":
+        reporte_empresas = [
+            item for item in reporte_empresas_base
+            if item["efectividad"] < 60
+        ]
+    else:
+        reporte_empresas = reporte_empresas_base
+
+    total_planos = planos.count()
+    total_nr = sum(item["total_nr"] for item in reporte_empresas)
+    total_aprobados = sum(item["aprobados"] for item in reporte_empresas)
+    total_rechazados = sum(item["rechazados"] for item in reporte_empresas)
+    total_verificacion = sum(item["verificacion"] for item in reporte_empresas)
+
+    efectividad_general = (
+        round((total_aprobados / total_nr) * 100, 2)
+        if total_nr
+        else 0
+    )
+
+    empresa_nombre = ""
+
+    if empresa_id:
+        empresa = EmpresaContratista.objects.filter(id=empresa_id).first()
+        empresa_nombre = empresa.nombre if empresa else ""
+
+    resumen = {
+        "total_planos": total_planos,
+        "total_nr": total_nr,
+        "total_aprobados": total_aprobados,
+        "total_rechazados": total_rechazados,
+        "total_verificacion": total_verificacion,
+        "efectividad_general": efectividad_general,
+        "empresas_evaluadas": len(reporte_empresas),
+    }
+
+    filtros = {
+        "fecha_desde": fecha_desde,
+        "fecha_hasta": fecha_hasta,
+        "empresa_nombre": empresa_nombre,
+        "metrica_efectividad": metrica_efectividad,
+        "nivel_rendimiento": nivel_rendimiento,
+    }
+
+    return render(request, "reportes/print/rendimiento_print.html", {
+        "resumen": resumen,
+        "reporte_empresas": reporte_empresas,
+        "filtros": filtros,
+    })
+
+@login_required
+def reporte_efectividad_mensual_print_view(request):
+
+    fecha_desde = request.GET.get("fecha_desde", "").strip()
+    fecha_hasta = request.GET.get("fecha_hasta", "").strip()
+    empresa_id = request.GET.get("empresa", "").strip()
+
+    efectividad_mensual_anio = request.GET.get("efectividad_mensual_anio", "").strip()
+    efectividad_mensual_mes = request.GET.get("efectividad_mensual_mes", "").strip()
+    efectividad_mensual_nivel = request.GET.get("efectividad_mensual_nivel", "").strip()
+    efectividad_mensual_orden = request.GET.get("efectividad_mensual_orden", "efectividad_desc").strip()
+
+    resultados = ResultadoValidacionPlano.objects.select_related(
+        "plano",
+        "plano__carpeta",
+        "plano__carpeta__empresa"
+    )
+
+    if fecha_desde:
+        resultados = resultados.filter(
+            plano__fecha_carga__date__gte=fecha_desde
+        )
+
+    if fecha_hasta:
+        resultados = resultados.filter(
+            plano__fecha_carga__date__lte=fecha_hasta
+        )
+
+    if empresa_id:
+        resultados = resultados.filter(
+            plano__carpeta__empresa_id=empresa_id
+        )
+
+    efectividad_mensual_map = defaultdict(lambda: {
+        "periodo": "",
+        "empresa": "",
+        "carpeta": "",
+        "total_planos": 0,
+        "total_nr": 0,
+        "aprobados": 0,
+        "rechazados": 0,
+        "verificacion": 0,
+        "efectividad": 0,
+        "nivel": "",
+        "_planos_ids": set(),
+    })
+
+    for resultado in resultados:
+
+        plano = resultado.plano
+        carpeta = plano.carpeta if plano else None
+
+        if not carpeta:
+            continue
+
+        empresa = carpeta.empresa.nombre if carpeta.empresa else "Sin empresa"
+
+        anio = str(carpeta.anio) if getattr(carpeta, "anio", None) else ""
+        mes = str(carpeta.mes).zfill(2) if getattr(carpeta, "mes", None) else ""
+
+        if not anio or not mes:
+            fecha_base = plano.fecha_carga
+            anio = str(fecha_base.year)
+            mes = str(fecha_base.month).zfill(2)
+
+        if efectividad_mensual_anio and anio != efectividad_mensual_anio:
+            continue
+
+        if efectividad_mensual_mes and mes != efectividad_mensual_mes.zfill(2):
+            continue
+
+        key = (anio, mes, empresa, carpeta.codigo_carpeta)
+
+        item = efectividad_mensual_map[key]
+
+        item["anio"] = anio
+        item["mes"] = mes
+        item["periodo"] = f"{mes}/{anio}"
+        item["empresa"] = empresa
+        item["carpeta"] = carpeta.codigo_carpeta
+
+        item["_planos_ids"].add(plano.id)
+
+        item["total_nr"] += 1
+
+        estado_final = resultado.estado_resultado_manual or resultado.estado_resultado
+
+        if estado_final == "APROBADO":
+            item["aprobados"] += 1
+
+        elif estado_final == "RECHAZADO":
+            item["rechazados"] += 1
+
+        elif estado_final == "EN_VERIFICACION":
+            item["verificacion"] += 1
+
+    for item in efectividad_mensual_map.values():
+
+        item["total_planos"] = len(item["_planos_ids"])
+
+        item["efectividad"] = round(
+            (item["aprobados"] / item["total_nr"]) * 100,
+            2
+        ) if item["total_nr"] else 0
+
+        if item["efectividad"] >= 95:
+            item["nivel"] = "EXCELENTE"
+
+        elif item["efectividad"] >= 85:
+            item["nivel"] = "OPTIMO"
+
+        elif item["efectividad"] >= 70:
+            item["nivel"] = "RIESGO"
+
+        else:
+            item["nivel"] = "CRITICO"
+
+        item.pop("_planos_ids", None)
+
+    reporte_efectividad_mensual = list(efectividad_mensual_map.values())
+
+    if efectividad_mensual_nivel:
+        reporte_efectividad_mensual = [
+            item for item in reporte_efectividad_mensual
+            if item["nivel"] == efectividad_mensual_nivel
+        ]
+
+    if efectividad_mensual_orden == "periodo_desc":
+        reporte_efectividad_mensual = sorted(
+            reporte_efectividad_mensual,
+            key=lambda x: x["periodo"],
+            reverse=True
+        )
+
+    elif efectividad_mensual_orden == "periodo_asc":
+        reporte_efectividad_mensual = sorted(
+            reporte_efectividad_mensual,
+            key=lambda x: x["periodo"]
+        )
+
+    elif efectividad_mensual_orden == "nr_desc":
+        reporte_efectividad_mensual = sorted(
+            reporte_efectividad_mensual,
+            key=lambda x: x["total_nr"],
+            reverse=True
+        )
+
+    elif efectividad_mensual_orden == "rechazos_desc":
+        reporte_efectividad_mensual = sorted(
+            reporte_efectividad_mensual,
+            key=lambda x: x["rechazados"],
+            reverse=True
+        )
+
+    else:
+        reporte_efectividad_mensual = sorted(
+            reporte_efectividad_mensual,
+            key=lambda x: (-x["efectividad"], -x["total_nr"])
+        )
+
+    if efectividad_mensual_mes and not efectividad_mensual_anio and reporte_efectividad_mensual:
+        efectividad_mensual_anio = reporte_efectividad_mensual[0].get("anio", "")
+
+    resumen = {
+        "empresas": len({item["empresa"] for item in reporte_efectividad_mensual}),
+        "carpetas": len({item["carpeta"] for item in reporte_efectividad_mensual}),
+        "nr": sum(item["total_nr"] for item in reporte_efectividad_mensual),
+        "efectividad": round(
+            sum(item["efectividad"] for item in reporte_efectividad_mensual) / len(reporte_efectividad_mensual),
+            2
+        ) if reporte_efectividad_mensual else 0
+    }
+
+    meses_label = {
+        "01": "Enero",
+        "02": "Febrero",
+        "03": "Marzo",
+        "04": "Abril",
+        "05": "Mayo",
+        "06": "Junio",
+        "07": "Julio",
+        "08": "Agosto",
+        "09": "Septiembre",
+        "10": "Octubre",
+        "11": "Noviembre",
+        "12": "Diciembre",
+    }
+
+    periodo_label = "Periodo completo"
+
+    if efectividad_mensual_mes:
+        efectividad_mensual_mes = efectividad_mensual_mes.zfill(2)
+
+    if efectividad_mensual_mes and efectividad_mensual_anio:
+        periodo_label = f"{meses_label.get(efectividad_mensual_mes, efectividad_mensual_mes)} {efectividad_mensual_anio}"
+
+    elif efectividad_mensual_anio:
+        periodo_label = f"Año {efectividad_mensual_anio}"
+
+
+    context = {
+        "reporte": reporte_efectividad_mensual,
+        "resumen": resumen,
+        "fecha_desde": fecha_desde,
+        "fecha_hasta": fecha_hasta,
+        "periodo_label": periodo_label,
+    }
+
+    return render(
+        request,
+        "reportes/print/efectividad_mensual_print.html",
+        context
+    )
+
+@login_required
+def reporte_rechazos_print_view(request):
+    require_admin_or_funcionario(request)
+
+    fecha_desde = request.GET.get("fecha_desde", "").strip()
+    fecha_hasta = request.GET.get("fecha_hasta", "").strip()
+    empresa_id = request.GET.get("empresa", "").strip()
+    tipo_rechazo_busqueda = request.GET.get("tipo_rechazo", "").strip()
+    coincidencia_rechazo = request.GET.get("coincidencia_rechazo", "contiene").strip()
+    nivel_impacto_rechazo = request.GET.get("nivel_impacto_rechazo", "").strip()
+    orden_rechazo = request.GET.get("orden_rechazo", "mayor").strip()
+
+    resultados = ResultadoValidacionPlano.objects.select_related(
+        "plano",
+        "plano__carpeta",
+        "plano__carpeta__empresa",
+    )
+
+    if fecha_desde:
+        resultados = resultados.filter(plano__fecha_carga__date__gte=fecha_desde)
+
+    if fecha_hasta:
+        resultados = resultados.filter(plano__fecha_carga__date__lte=fecha_hasta)
+
+    if empresa_id:
+        resultados = resultados.filter(plano__carpeta__empresa_id=empresa_id)
+
+    tipos_rechazo_counter = Counter()
+
+    for resultado in resultados:
+        estado_final = resultado.estado_resultado_manual or resultado.estado_resultado
+
+        if estado_final != "RECHAZADO":
+            continue
+
+        if not resultado.ciudad_ok:
+            tipos_rechazo_counter["Ciudad no coincide"] += 1
+
+        if not resultado.zona_ok:
+            tipos_rechazo_counter["Zona no coincide"] += 1
+
+        if not resultado.fecha_ok:
+            tipos_rechazo_counter["Fecha inválida"] += 1
+
+        if resultado.materiales_requieren_revision:
+            tipos_rechazo_counter["Materiales inconsistentes"] += 1
+
+        motivo = str(resultado.motivo_resultado or "").lower()
+
+        if "desconocido" in motivo:
+            tipos_rechazo_counter["NR desconocido"] += 1
+
+    reporte_tipos_rechazo = [
+        {"tipo": tipo, "total": total}
+        for tipo, total in tipos_rechazo_counter.most_common()
+    ]
+
+    if tipo_rechazo_busqueda:
+        query = tipo_rechazo_busqueda.lower()
+
+        if coincidencia_rechazo == "exacta":
+            reporte_tipos_rechazo = [
+                item for item in reporte_tipos_rechazo
+                if item["tipo"].lower() == query
+            ]
+
+        elif coincidencia_rechazo == "inicia":
+            reporte_tipos_rechazo = [
+                item for item in reporte_tipos_rechazo
+                if item["tipo"].lower().startswith(query)
+            ]
+
+        else:
+            reporte_tipos_rechazo = [
+                item for item in reporte_tipos_rechazo
+                if query in item["tipo"].lower()
+            ]
+
+    def resolver_nivel_impacto(total):
+        if total >= 10:
+            return "critico"
+        if total >= 5:
+            return "alto"
+        if total >= 2:
+            return "medio"
+        return "bajo"
+
+    if nivel_impacto_rechazo:
+        reporte_tipos_rechazo = [
+            item for item in reporte_tipos_rechazo
+            if resolver_nivel_impacto(item["total"]) == nivel_impacto_rechazo
+        ]
+
+    if orden_rechazo == "menor":
+        reporte_tipos_rechazo = sorted(reporte_tipos_rechazo, key=lambda x: x["total"])
+
+    elif orden_rechazo == "tipo_az":
+        reporte_tipos_rechazo = sorted(reporte_tipos_rechazo, key=lambda x: x["tipo"])
+
+    elif orden_rechazo == "tipo_za":
+        reporte_tipos_rechazo = sorted(reporte_tipos_rechazo, key=lambda x: x["tipo"], reverse=True)
+
+    else:
+        reporte_tipos_rechazo = sorted(reporte_tipos_rechazo, key=lambda x: x["total"], reverse=True)
+
+    empresa_nombre = ""
+
+    if empresa_id:
+        empresa = EmpresaContratista.objects.filter(id=empresa_id).first()
+        empresa_nombre = empresa.nombre if empresa else ""
+
+    total_inconsistencias = sum(item["total"] for item in reporte_tipos_rechazo)
+
+    resumen = {
+        "total_inconsistencias": total_inconsistencias,
+        "tipos_detectados": len(reporte_tipos_rechazo),
+        "tipo_predominante": reporte_tipos_rechazo[0]["tipo"] if reporte_tipos_rechazo else "",
+    }
+
+    filtros = {
+        "fecha_desde": fecha_desde,
+        "fecha_hasta": fecha_hasta,
+        "empresa_nombre": empresa_nombre,
+        "tipo_rechazo": tipo_rechazo_busqueda,
+        "coincidencia_rechazo": coincidencia_rechazo,
+        "nivel_impacto_rechazo": nivel_impacto_rechazo,
+        "orden_rechazo": orden_rechazo,
+    }
+
+    return render(request, "reportes/print/rechazos_print.html", {
+        "resumen": resumen,
+        "reporte_tipos_rechazo": reporte_tipos_rechazo,
+        "filtros": filtros,
+    })
+
 @login_required
 def buscar_nr_global_view(request):
     query = request.GET.get("q", "").strip()

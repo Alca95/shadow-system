@@ -4,7 +4,7 @@
 {% block title %}Reportes{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260517">
+<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260519">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 {% endblock %}
 
@@ -187,34 +187,6 @@
                 </span>
             </button>
 
-            <button type="button" class="report-card" data-report-modal="modalReclamos">
-                <span class="report-card-icon is-info">
-                    <i class="bi bi-geo-alt"></i>
-                </span>
-                <span class="report-card-content">
-                    <strong>Reclamos por localidad, barrio y empresa</strong>
-                    <small>Distribución territorial de reclamos atendidos por ciudad, zona y empresa.</small>
-                </span>
-                <span class="report-card-footer">
-                    <span>{{ reporte_reclamos|length }} registros</span>
-                    <i class="bi bi-arrow-up-right"></i>
-                </span>
-            </button>
-
-            <button type="button" class="report-card" data-report-modal="modalEstados">
-                <span class="report-card-icon is-success">
-                    <i class="bi bi-check2-square"></i>
-                </span>
-                <span class="report-card-content">
-                    <strong>Atendidos, concretados y no concretados</strong>
-                    <small>Estado general de los reclamos procesados por el sistema.</small>
-                </span>
-                <span class="report-card-footer">
-                    <span>{{ resumen.total_nr }} NR</span>
-                    <i class="bi bi-arrow-up-right"></i>
-                </span>
-            </button>
-
             <button type="button" class="report-card report-card-wide" data-report-modal="modalEfectividad">
                 <span class="report-card-icon is-primary">
                     <i class="bi bi-graph-up-arrow"></i>
@@ -229,16 +201,41 @@
                 </span>
             </button>
 
+            <button type="button" class="report-card report-card-wide" data-report-modal="modalEfectividadMensual">
+                <span class="report-card-icon is-primary">
+                    <i class="bi bi-calendar-check"></i>
+                </span>
+
+                <span class="report-card-content">
+                    <strong>Efectividad mensual por empresa</strong>
+                    <small>
+                        Evaluación mensual por empresa considerando carpetas, planos,
+                        NR concretados, no concretados y casos en verificación.
+                    </small>
+                </span>
+
+                <span class="report-card-footer">
+                    <span>{{ resumen_efectividad_mensual.efectividad_promedio|floatformat:0 }}% promedio</span>
+                    <i class="bi bi-arrow-up-right"></i>
+                </span>
+            </button>
+
             <button type="button" class="report-card" data-report-modal="modalRechazos">
                 <span class="report-card-icon is-danger">
                     <i class="bi bi-exclamation-triangle"></i>
                 </span>
+
                 <span class="report-card-content">
                     <strong>Tipo de rechazo más frecuente</strong>
-                    <small>Clasificación de las causas principales de rechazo detectadas.</small>
+
+                    <small>
+                        Clasificación de inconsistencias detectadas durante la validación OCR
+                        de planos operativos y reclamos procesados.
+                    </small>
                 </span>
+
                 <span class="report-card-footer">
-                    <span>{{ reporte_tipos_rechazo|length }} tipos</span>
+                    <span>{{ tipos_rechazo|length }} categorías detectadas</span>
                     <i class="bi bi-arrow-up-right"></i>
                 </span>
             </button>
@@ -557,137 +554,6 @@
             
         </section>
 
-        <section class="report-modal" id="modalReclamos" data-report-key="reclamos">
-            <div class="report-modal-header">
-                <div class="report-modal-title">
-                    <span class="report-card-icon is-info"><i class="bi bi-geo-alt"></i></span>
-                    <div>
-                        <h3>Reclamos por localidad, barrio y empresa</h3>
-                        <p>Distribución de reclamos procesados por ciudad, zona y empresa.</p>
-                    </div>
-                </div>
-                <button type="button" class="report-modal-close" data-report-close>
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
-
-            <form method="get" class="report-modal-filters">
-
-                <input type="hidden" name="tab" value="reclamos">
-
-                <input type="hidden" name="fecha_desde" class="fecha-desde-input" value="{{ filtros.fecha_desde }}">
-                <input type="hidden" name="fecha_hasta" class="fecha-hasta-input" value="{{ filtros.fecha_hasta }}">
-
-                <div class="modal-filter-grid modal-filter-grid-reclamos">
-
-                    <div class="modal-filter-item modal-filter-wide">
-                        <label>
-                            <i class="bi bi-calendar2-range"></i>
-                            Periodo
-                        </label>
-
-                        <input
-                            type="text"
-                            class="form-control report-date-range"
-                            placeholder="Seleccionar rango"
-                            autocomplete="off"
-                            value="{% if filtros.fecha_desde and filtros.fecha_hasta %}{{ filtros.fecha_desde }} a {{ filtros.fecha_hasta }}{% endif %}"
-                        >
-                    </div>
-
-                    <div class="modal-filter-item">
-                        <label>
-                            <i class="bi bi-buildings"></i>
-                            Empresa
-                        </label>
-
-                        <select name="empresa" class="form-select">
-                            <option value="">Todas las empresas</option>
-                            {% for empresa in empresas %}
-                                <option value="{{ empresa.id }}"
-                                    {% if filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
-                                    {{ empresa.nombre }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="modal-filter-item">
-                        <label>
-                            <i class="bi bi-geo-alt"></i>
-                            Localidad
-                        </label>
-
-                        <select name="localidad" class="form-select">
-                            <option value="">Todas las localidades</option>
-                            {% for localidad in localidades %}
-                                <option value="{{ localidad }}"
-                                    {% if filtros.localidad == localidad %}selected{% endif %}>
-                                    {{ localidad }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="modal-filter-item">
-                        <label>
-                            <i class="bi bi-signpost-split"></i>
-                            Barrio / Zona
-                        </label>
-
-                        <select name="zona" class="form-select">
-                            <option value="">Todos los barrios / zonas</option>
-                            {% for zona in zonas %}
-                                <option value="{{ zona }}"
-                                    {% if filtros.zona == zona %}selected{% endif %}>
-                                    {{ zona }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                </div>
-
-            </form>
-
-            <div class="report-modal-body">
-                {% if reporte_reclamos %}
-                <div class="table-responsive report-table-wrap">
-                    <table class="table report-table align-middle">
-                        <thead>
-                            <tr>
-                                <th>Localidad / Ciudad</th>
-                                <th>Barrio / Zona</th>
-                                <th>Empresa</th>
-                                <th>Total</th>
-                                <th>Concretados</th>
-                                <th>No concretados</th>
-                                <th>Verificación</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in reporte_reclamos %}
-                            <tr>
-                                <td class="fw-semibold">{{ item.ciudad }}</td>
-                                <td>{{ item.zona }}</td>
-                                <td>{{ item.empresa }}</td>
-                                <td>{{ item.total }}</td>
-                                <td><span class="status-pill status-ok">{{ item.aprobados }}</span></td>
-                                <td><span class="status-pill status-danger">{{ item.rechazados }}</span></td>
-                                <td><span class="status-pill status-warn">{{ item.verificacion }}</span></td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <div class="empty-report">
-                    <i class="bi bi-inbox"></i>
-                    No hay reclamos procesados para los filtros seleccionados.
-                </div>
-                {% endif %}
-            </div>
-        </section>
 
         <section class="report-modal" id="modalTrabajos" data-report-key="trabajos">
             <div class="report-modal-header">
@@ -810,7 +676,7 @@
 
                                 </td>
 
-                                <td>
+                                <td class="{% if filtros.metrica_efectividad == 'planos_desc' or filtros.metrica_efectividad == 'planos_asc' %}metric-highlight{% endif %}">
                                     {{ item.total_planos }}
                                 </td>
 
@@ -818,7 +684,7 @@
                                     {{ item.total_nr }}
                                 </td>
 
-                                <td>
+                                <td class="{% if filtros.metrica_efectividad == 'concretados_desc' %}metric-highlight{% endif %}">
                                     {{ item.aprobados }}
                                 </td>
 
@@ -861,6 +727,7 @@
             </div>
         </section>
 
+        
         <section class="report-modal" id="modalEstados" data-report-key="estados">
             <div class="report-modal-header">
                 <div class="report-modal-title">
@@ -1064,10 +931,10 @@
                 <div class="report-modal-header-actions">
 
                     <a
-                        href="#"
+                        href="{% url 'reporte_rendimiento_print' %}?{{ request.GET.urlencode }}"
+                        target="_blank"
                         class="report-print-btn"
                         title="Imprimir reporte"
-                        onclick="window.print(); return false;"
                     >
                         <i class="bi bi-printer"></i>
                     </a>
@@ -1141,29 +1008,59 @@
                     <div class="modal-filter-item">
                         <label>
                             <i class="bi bi-bar-chart-line"></i>
-                            Métrica analítica
+                            Ordenar por
                         </label>
 
                         <select name="metrica_efectividad" class="form-select">
 
-                            <option value="efectividad"
-                                {% if filtros.metrica_efectividad == "efectividad" or not filtros.metrica_efectividad %}selected{% endif %}>
-                                Mayor efectividad
+                            <option value=""
+                                {% if not filtros.metrica_efectividad %}selected{% endif %}>
+                                Orden predeterminado
+                            </option>                        
+
+                            <option value="carpetas_desc"
+                                {% if filtros.metrica_efectividad == "carpetas_desc" %}selected{% endif %}>
+                                Mayor cantidad de carpetas
+                            </option>
+
+                            <option value="carpetas_asc"
+                                {% if filtros.metrica_efectividad == "carpetas_asc" %}selected{% endif %}>
+                                Menor cantidad de carpetas
+                            </option>
+
+                            <option value="efectividad_desc"
+                                {% if filtros.metrica_efectividad == "efectividad_desc" %}selected{% endif %}>
+                                Mayor efectividad operacional
+                            </option>
+
+                            <option value="concretados_desc"
+                                {% if filtros.metrica_efectividad == "concretados_desc" %}selected{% endif %}>
+                                Mayor cantidad de NR concretados
                             </option>
 
                             <option value="volumen"
                                 {% if filtros.metrica_efectividad == "volumen" %}selected{% endif %}>
-                                Mayor cantidad de reclamos
+                                Mayor cantidad de NR procesados
                             </option>
 
                             <option value="rechazos"
                                 {% if filtros.metrica_efectividad == "rechazos" %}selected{% endif %}>
-                                Mayor cantidad de rechazos
+                                Mayor cantidad de NR no concretados
                             </option>
 
                             <option value="pendientes"
                                 {% if filtros.metrica_efectividad == "pendientes" %}selected{% endif %}>
-                                Mayor cantidad en verificación
+                                Mayor cantidad de NR en verificación
+                            </option>
+
+                            <option value="planos_desc"
+                                {% if filtros.metrica_efectividad == "planos_desc" %}selected{% endif %}>
+                                Mayor cantidad de planos procesados
+                            </option>
+
+                            <option value="planos_asc"
+                                {% if filtros.metrica_efectividad == "planos_asc" %}selected{% endif %}>
+                                Menor cantidad de planos procesados
                             </option>
 
                         </select>
@@ -1197,11 +1094,49 @@
                         </select>
                     </div>
 
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-geo-alt"></i>
+                            Ciudad
+                        </label>
+
+                        <select name="localidad" class="form-select rendimiento-ciudad-filter">
+                            <option value="">Todas las ciudades</option>
+
+                            {% for localidad in localidades %}
+                                <option value="{{ localidad }}"
+                                    {% if filtros.localidad == localidad %}selected{% endif %}>
+                                    {{ localidad }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-pin-map"></i>
+                            Zona
+                        </label>
+
+                        <select name="zona" class="form-select rendimiento-zona-filter">
+                            <option value="">Todas las zonas</option>
+
+                            {% for ciudad, zona_item in zonas_territoriales %}
+                                <option
+                                    value="{{ zona_item }}"
+                                    data-ciudad="{{ ciudad }}"
+                                    {% if filtros.zona == zona_item %}selected{% endif %}
+                                >
+                                    {{ zona_item }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        
+                    </div>
                 </div>
 
             </form>
 
-            <div class="report-modal-body">
                 <div class="report-modal-body">
 
                     <div class="response-kpi-grid">
@@ -1234,6 +1169,7 @@
                         <thead>
                             <tr>
                                 <th>Empresa</th>
+                                <th>Carpetas</th>
                                 <th>Planos</th>
                                 <th>NR procesados</th>
                                 <th>NR concretados</th>
@@ -1265,13 +1201,20 @@
                                     </div>
 
                                 </td>
-                                <td>{{ item.total_planos }}</td>
+
+                                <td class="{% if filtros.metrica_efectividad == 'carpetas_desc' or filtros.metrica_efectividad == 'carpetas_asc' %}metric-highlight{% endif %}">
+                                    {{ item.total_carpetas|default:0 }}
+                                </td>
+
+                                <td class="{% if filtros.metrica_efectividad == 'planos_desc' or filtros.metrica_efectividad == 'planos_asc' %}metric-highlight{% endif %}">
+                                    {{ item.total_planos }}
+                                </td>
 
                                 <td class="{% if filtros.metrica_efectividad == 'volumen' %}metric-highlight{% endif %}">
                                     {{ item.total_nr }}
                                 </td>
 
-                                <td>
+                                <td class="{% if filtros.metrica_efectividad == 'concretados_desc' %}metric-highlight{% endif %}">
                                     {{ item.aprobados }}
                                 </td>
 
@@ -1280,15 +1223,36 @@
                                 </td>
 
                                 <td class="{% if filtros.metrica_efectividad == 'pendientes' %}metric-highlight{% endif %}">
-                                    {{ item.verificacion }}
+                                    {{ item.verificacion|default:0 }}
                                 </td>
-                                <td>
+
+                                <td class="{% if filtros.metrica_efectividad == 'efectividad_desc' or not filtros.metrica_efectividad %}metric-highlight{% endif %}">
+
                                     <div class="effectiveness-cell">
-                                        <span>{{ item.efectividad|floatformat:0 }}%</span>
+
+                                        <strong>
+                                            {{ item.efectividad|floatformat:0 }}%
+                                        </strong>
+
+                                        {% if item.efectividad >= 95 %}
+                                            <span class="status-pill status-ok">Excelente</span>
+                                        {% elif item.efectividad >= 85 %}
+                                            <span class="status-pill status-info">Óptimo</span>
+                                        {% elif item.efectividad >= 70 %}
+                                            <span class="status-pill status-warn">Riesgo</span>
+                                        {% else %}
+                                            <span class="status-pill status-danger">Crítico</span>
+                                        {% endif %}
+
                                         <div class="effectiveness-bar">
-                                            <div class="effectiveness-bar-fill" data-width="{{ item.efectividad|floatformat:0 }}"></div>
+                                            <div
+                                                class="effectiveness-bar-fill"
+                                                data-width="{{ item.efectividad|floatformat:0 }}">
+                                            </div>
                                         </div>
+
                                     </div>
+
                                 </td>
                             </tr>
                             {% endfor %}
@@ -1301,44 +1265,559 @@
                     No hay datos de efectividad para los filtros seleccionados.
                 </div>
                 {% endif %}
+        </section>
+
+        <section class="report-modal" id="modalEfectividadMensual" data-report-key="efectividad_mensual">
+
+            <div class="report-modal-header">
+                <div class="report-modal-title">
+                    <span class="report-card-icon is-primary">
+                        <i class="bi bi-calendar-check"></i>
+                    </span>
+
+                    <div>
+                        <h3>Efectividad mensual por empresa</h3>
+                        <p>Análisis mensual de carpetas, planos, NR procesados y efectividad operativa por empresa.</p>
+                    </div>
+                </div>
+
+                <div class="report-modal-header-actions">
+
+                    <a
+                        href="{% url 'reporte_efectividad_mensual_print' %}?{{ request.GET.urlencode }}"
+                        target="_blank"
+                        class="report-print-btn"
+                        title="Imprimir reporte"
+                    >
+                        <i class="bi bi-printer"></i>
+                    </a>
+
+                    <button
+                        type="submit"
+                        form="form-efectividad-mensual-report"
+                        class="report-action-btn primary"
+                    >
+                        <i class="bi bi-funnel"></i>
+                        Aplicar filtros
+                    </button>
+
+                    <button
+                        type="button"
+                        class="report-action-btn secondary report-reset-modal"
+                    >
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Limpiar
+                    </button>
+
+                    <button type="button" class="report-modal-close" data-report-close>
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+
+                </div>
             </div>
+
+            <form method="get" class="report-modal-filters" id="form-efectividad-mensual-report">
+
+                <input type="hidden" name="tab" value="efectividad_mensual">
+
+                <input type="hidden" name="fecha_desde" class="fecha-desde-input" value="{{ filtros.fecha_desde }}">
+                <input type="hidden" name="fecha_hasta" class="fecha-hasta-input" value="{{ filtros.fecha_hasta }}">
+
+                <div class="modal-filter-grid">
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-calendar3"></i>
+                            Año
+                        </label>
+
+                        <input
+                            type="number"
+                            name="efectividad_mensual_anio"
+                            class="form-control"
+                            placeholder="Ej: 2026"
+                            value="{{ filtros.efectividad_mensual_anio }}"
+                        >
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-calendar-month"></i>
+                            Mes
+                        </label>
+
+                        <select name="efectividad_mensual_mes" class="form-select">
+                            <option value="">Todos los meses</option>
+
+                            <option value="01" {% if filtros.efectividad_mensual_mes == "01" %}selected{% endif %}>Enero</option>
+                            <option value="02" {% if filtros.efectividad_mensual_mes == "02" %}selected{% endif %}>Febrero</option>
+                            <option value="03" {% if filtros.efectividad_mensual_mes == "03" %}selected{% endif %}>Marzo</option>
+                            <option value="04" {% if filtros.efectividad_mensual_mes == "04" %}selected{% endif %}>Abril</option>
+                            <option value="05" {% if filtros.efectividad_mensual_mes == "05" %}selected{% endif %}>Mayo</option>
+                            <option value="06" {% if filtros.efectividad_mensual_mes == "06" %}selected{% endif %}>Junio</option>
+                            <option value="07" {% if filtros.efectividad_mensual_mes == "07" %}selected{% endif %}>Julio</option>
+                            <option value="08" {% if filtros.efectividad_mensual_mes == "08" %}selected{% endif %}>Agosto</option>
+                            <option value="09" {% if filtros.efectividad_mensual_mes == "09" %}selected{% endif %}>Septiembre</option>
+                            <option value="10" {% if filtros.efectividad_mensual_mes == "10" %}selected{% endif %}>Octubre</option>
+                            <option value="11" {% if filtros.efectividad_mensual_mes == "11" %}selected{% endif %}>Noviembre</option>
+                            <option value="12" {% if filtros.efectividad_mensual_mes == "12" %}selected{% endif %}>Diciembre</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-buildings"></i>
+                            Empresa
+                        </label>
+
+                        <select name="empresa" class="form-select">
+                            <option value="">Todas las empresas</option>
+
+                            {% for empresa in empresas %}
+                                <option value="{{ empresa.id }}"
+                                    {% if filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ empresa.nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-speedometer2"></i>
+                            Nivel
+                        </label>
+
+                        <select name="efectividad_mensual_nivel" class="form-select">
+                            <option value="">Todos los niveles</option>
+                            <option value="EXCELENTE" {% if filtros.efectividad_mensual_nivel == "EXCELENTE" %}selected{% endif %}>Excelente</option>
+                            <option value="OPTIMO" {% if filtros.efectividad_mensual_nivel == "OPTIMO" %}selected{% endif %}>Óptimo</option>
+                            <option value="RIESGO" {% if filtros.efectividad_mensual_nivel == "RIESGO" %}selected{% endif %}>Riesgo</option>
+                            <option value="CRITICO" {% if filtros.efectividad_mensual_nivel == "CRITICO" %}selected{% endif %}>Crítico</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-sort-down"></i>
+                            Ordenar por
+                        </label>
+
+                        <select name="efectividad_mensual_orden" class="form-select">
+                            <option value="efectividad_desc" {% if filtros.efectividad_mensual_orden == "efectividad_desc" %}selected{% endif %}>
+                                Mayor efectividad
+                            </option>
+                            <option value="periodo_desc" {% if filtros.efectividad_mensual_orden == "periodo_desc" %}selected{% endif %}>
+                                Mes más reciente
+                            </option>
+                            <option value="periodo_asc" {% if filtros.efectividad_mensual_orden == "periodo_asc" %}selected{% endif %}>
+                                Mes más antiguo
+                            </option>
+                            <option value="nr_desc" {% if filtros.efectividad_mensual_orden == "nr_desc" %}selected{% endif %}>
+                                Mayor NR procesados
+                            </option>
+                            <option value="rechazos_desc" {% if filtros.efectividad_mensual_orden == "rechazos_desc" %}selected{% endif %}>
+                                Mayor no concretados
+                            </option>
+                        </select>
+                    </div>
+
+                </div>
+
+            </form>
+
+            <div class="report-modal-body">
+
+                <div class="response-kpi-grid">
+
+                    <div class="response-kpi-card">
+                        <span>Empresas evaluadas</span>
+                        <strong>{{ resumen_efectividad_mensual.empresas }}</strong>
+                    </div>
+
+                    <div class="response-kpi-card">
+                        <span>Carpetas mensuales</span>
+                        <strong>{{ resumen_efectividad_mensual.carpetas }}</strong>
+                    </div>
+
+                    <div class="response-kpi-card">
+                        <span>NR procesados</span>
+                        <strong>{{ resumen_efectividad_mensual.total_nr }}</strong>
+                    </div>
+
+                    <div class="response-kpi-card">
+                        <span>Efectividad promedio</span>
+                        <strong>{{ resumen_efectividad_mensual.efectividad_promedio|floatformat:0 }}%</strong>
+                    </div>
+
+                </div>
+
+                {% if reporte_efectividad_mensual %}
+                    <div class="table-responsive report-table-wrap">
+                        <table class="table report-table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Mes</th>
+                                    <th>Empresa</th>
+                                    <th>Carpeta</th>
+                                    <th>Planos</th>
+                                    <th>NR procesados</th>
+                                    <th>Concretados</th>
+                                    <th>No concretados</th>
+                                    <th>Verificación</th>
+                                    <th>Efectividad</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for item in reporte_efectividad_mensual %}
+                                    <tr>
+                                        <td class="fw-semibold">{{ item.periodo }}</td>
+                                        <td class="fw-semibold">{{ item.empresa }}</td>
+                                        <td>{{ item.carpeta }}</td>
+                                        <td>{{ item.total_planos }}</td>
+                                        <td>{{ item.total_nr }}</td>
+                                        <td>{{ item.aprobados }}</td>
+                                        <td>{{ item.rechazados }}</td>
+                                        <td>{{ item.verificacion }}</td>
+
+                                        <td>
+                                            <div class="effectiveness-cell">
+                                                <strong>{{ item.efectividad|floatformat:0 }}%</strong>
+
+                                                {% if item.nivel == "EXCELENTE" %}
+                                                    <span class="status-pill status-ok">Excelente</span>
+                                                {% elif item.nivel == "OPTIMO" %}
+                                                    <span class="status-pill status-info">Óptimo</span>
+                                                {% elif item.nivel == "RIESGO" %}
+                                                    <span class="status-pill status-warn">Riesgo</span>
+                                                {% else %}
+                                                    <span class="status-pill status-danger">Crítico</span>
+                                                {% endif %}
+
+                                                <div class="effectiveness-bar">
+                                                    <div
+                                                        class="effectiveness-bar-fill"
+                                                        data-width="{{ item.efectividad|floatformat:0 }}">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-report">
+                        <i class="bi bi-inbox"></i>
+                        No hay datos de efectividad mensual para los filtros seleccionados.
+                    </div>
+                {% endif %}
+
+            </div>
+
         </section>
 
         <section class="report-modal" id="modalRechazos" data-report-key="rechazos">
             <div class="report-modal-header">
+
                 <div class="report-modal-title">
-                    <span class="report-card-icon is-danger"><i class="bi bi-exclamation-triangle"></i></span>
+                    <span class="report-card-icon is-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </span>
+
                     <div>
                         <h3>Tipo de rechazo más frecuente</h3>
-                        <p>Frecuencia de causas de rechazo detectadas por validación.</p>
+                        <p>
+                            Análisis de inconsistencias detectadas durante el proceso
+                            de validación OCR y control operacional de NR procesados.
+                        </p>
                     </div>
                 </div>
-                <button type="button" class="report-modal-close" data-report-close>
-                    <i class="bi bi-x-lg"></i>
-                </button>
+
+                <div class="report-modal-header-actions">
+
+                    <a
+                        href="{% url 'reporte_rechazos_print' %}?{{ request.GET.urlencode }}"
+                        target="_blank"
+                        class="report-print-btn"
+                        title="Imprimir reporte"
+                    >
+                        <i class="bi bi-printer"></i>
+                    </a>
+
+                    <button
+                        type="submit"
+                        form="form-rechazos-report"
+                        class="report-action-btn primary"
+                    >
+                        <i class="bi bi-funnel"></i>
+                        Aplicar filtros
+                    </button>
+
+                    <button
+                        type="button"
+                        class="report-action-btn secondary report-reset-modal"
+                    >
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Limpiar
+                    </button>
+
+                    <button type="button" class="report-modal-close" data-report-close>
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                    
+                </div>
+
             </div>
 
-            {% include "reportes/partials/_modal_filters.html" with tab_value="rechazos" %}
+            <form
+                method="get"
+                class="report-modal-filters"
+                id="form-rechazos-report"
+            >
+                <input type="hidden" name="tab" value="rechazos">
+
+                <input type="hidden" name="fecha_desde" class="fecha-desde-input" value="{{ filtros.fecha_desde }}">
+                <input type="hidden" name="fecha_hasta" class="fecha-hasta-input" value="{{ filtros.fecha_hasta }}">
+
+                <div class="modal-filter-grid modal-filter-grid-rechazos">
+
+                    <div class="modal-filter-item modal-filter-wide">
+                        <label>
+                            <i class="bi bi-calendar2-range"></i>
+                            Periodo
+                        </label>
+
+                        <input
+                            type="text"
+                            class="form-control report-date-range"
+                            placeholder="Seleccionar rango"
+                            autocomplete="off"
+                            value="{% if filtros.fecha_desde and filtros.fecha_hasta %}{{ filtros.fecha_desde }} a {{ filtros.fecha_hasta }}{% endif %}"
+                        >
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-buildings"></i>
+                            Empresa
+                        </label>
+
+                        <select name="empresa" class="form-select">
+                            <option value="">Todas las empresas</option>
+
+                            {% for empresa in empresas %}
+                                <option value="{{ empresa.id }}"
+                                    {% if filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ empresa.nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-search"></i>
+                            Tipo de rechazo
+                        </label>
+
+                        <input
+                            type="text"
+                            name="tipo_rechazo"
+                            class="form-control"
+                            placeholder="Ej: ciudad, zona, materiales..."
+                            value="{{ filtros.tipo_rechazo }}"
+                        >
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-funnel"></i>
+                            Coincidencia
+                        </label>
+
+                        <select name="coincidencia_rechazo" class="form-select">
+
+                            <option value="contiene"
+                                {% if filtros.coincidencia_rechazo == "contiene" or not filtros.coincidencia_rechazo %}selected{% endif %}>
+                                Contiene
+                            </option>
+
+                            <option value="exacta"
+                                {% if filtros.coincidencia_rechazo == "exacta" %}selected{% endif %}>
+                                Coincidencia exacta
+                            </option>
+
+                            <option value="inicia"
+                                {% if filtros.coincidencia_rechazo == "inicia" %}selected{% endif %}>
+                                Inicia con
+                            </option>
+
+                        </select>
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-exclamation-octagon"></i>
+                            Nivel impacto
+                        </label>
+
+                        <select name="nivel_impacto_rechazo" class="form-select">
+
+                            <option value="">Todos los niveles</option>
+
+                            <option value="critico"
+                                {% if filtros.nivel_impacto_rechazo == "critico" %}selected{% endif %}>
+                                Crítico
+                            </option>
+
+                            <option value="alto"
+                                {% if filtros.nivel_impacto_rechazo == "alto" %}selected{% endif %}>
+                                Alto
+                            </option>
+
+                            <option value="medio"
+                                {% if filtros.nivel_impacto_rechazo == "medio" %}selected{% endif %}>
+                                Medio
+                            </option>
+
+                            <option value="bajo"
+                                {% if filtros.nivel_impacto_rechazo == "bajo" %}selected{% endif %}>
+                                Bajo
+                            </option>
+
+                        </select>
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-sort-down"></i>
+                            Ordenar por
+                        </label>
+
+                        <select name="orden_rechazo" class="form-select">
+
+                            <option value="mayor"
+                                {% if filtros.orden_rechazo == "mayor" or not filtros.orden_rechazo %}selected{% endif %}>
+                                Mayor cantidad de casos
+                            </option>
+
+                            <option value="menor"
+                                {% if filtros.orden_rechazo == "menor" %}selected{% endif %}>
+                                Menor cantidad de casos
+                            </option>
+
+                            <option value="tipo_az"
+                                {% if filtros.orden_rechazo == "tipo_az" %}selected{% endif %}>
+                                Tipo A-Z
+                            </option>
+
+                            <option value="tipo_za"
+                                {% if filtros.orden_rechazo == "tipo_za" %}selected{% endif %}>
+                                Tipo Z-A
+                            </option>
+
+                        </select>
+                    </div>
+
+                </div>
+            </form>
 
             <div class="report-modal-body">
-                {% if reporte_tipos_rechazo %}
-                <div class="reason-list">
-                    {% for item in reporte_tipos_rechazo %}
-                    <div class="reason-item">
-                        <div>
-                            <strong>{{ item.tipo }}</strong>
-                            <span>{{ item.total }} caso{% if item.total != 1 %}s{% endif %}</span>
-                        </div>
-                        <div class="reason-count">{{ item.total }}</div>
+
+                <div class="response-kpi-grid">
+
+                    <div class="response-kpi-card critical">
+                        <span>Total inconsistencias</span>
+                        <strong>{{ resumen.total_rechazados }}</strong>
                     </div>
-                    {% endfor %}
+
+                    <div class="response-kpi-card">
+                        <span>Tipos detectados</span>
+                        <strong>{{ reporte_tipos_rechazo|length }}</strong>
+                    </div>
+
+                    <div class="response-kpi-card">
+                        <span>Tipo predominante</span>
+                        <strong>
+                            {% if reporte_tipos_rechazo %}
+                                {{ reporte_tipos_rechazo.0.tipo }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="response-kpi-card">
+                        <span>Impacto operacional</span>
+                        <strong>
+                            {% if resumen.total_rechazados >= 15 %}
+                                Crítico
+                            {% elif resumen.total_rechazados >= 8 %}
+                                Alto
+                            {% elif resumen.total_rechazados >= 3 %}
+                                Moderado
+                            {% else %}
+                                Bajo
+                            {% endif %}
+                        </strong>
+                    </div>
+
                 </div>
+
+                {% if reporte_tipos_rechazo %}
+                    <div class="reason-list">
+                        {% for item in reporte_tipos_rechazo %}
+                            <div class="reason-item">
+
+                                <div class="reason-content">
+
+                                    <div class="reason-header">
+                                        <strong>{{ item.tipo }}</strong>
+                                        <span>{{ item.total }} caso{% if item.total != 1 %}s{% endif %}</span>
+                                    </div>
+
+                                    <div class="reason-bar">
+                                        <div
+                                            class="reason-bar-fill"
+                                            style="width: {% widthratio item.total resumen.total_rechazados 100 %}%;">
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <div class="reason-side">
+
+                                    <div class="reason-count">
+                                        {{ item.total }}
+                                    </div>
+
+                                    <div class="reason-level">
+                                        {% if item.total >= 10 %}
+                                            Crítico
+                                        {% elif item.total >= 5 %}
+                                            Alto
+                                        {% elif item.total >= 2 %}
+                                            Medio
+                                        {% else %}
+                                            Bajo
+                                        {% endif %}
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        {% endfor %}
+                    </div>
                 {% else %}
-                <div class="empty-report compact">
-                    <i class="bi bi-check2-circle"></i>
-                    No se registran rechazos en el período seleccionado.
-                </div>
+                    <div class="empty-report compact">
+                        <i class="bi bi-check2-circle"></i>
+                        No se registran rechazos en el período seleccionado.
+                    </div>
                 {% endif %}
+
             </div>
         </section>
 
@@ -1346,13 +1825,22 @@
 
             <div class="report-modal-header">
                 <div class="report-modal-title">
-                    <span class="report-card-icon is-warning"><i class="bi bi-clock-history"></i></span>
+                    <span class="report-card-icon is-warning">
+                        <i class="bi bi-clock-history"></i>
+                    </span>
+
                     <div>
-                        <h3>Tiempo de respuesta al reclamo</h3>
-                        <p>Días transcurridos entre fecha de reclamo y fecha de trabajo.</p>
+                        <h3>Tiempo de respuesta operacional</h3>
+
+                        <p>
+                            Análisis de eficiencia operacional considerando el tiempo transcurrido
+                            entre el reclamo registrado y la ejecución del trabajo.
+                        </p>
                     </div>
                 </div>
+
                 <div class="report-modal-header-actions">
+
                     <a
                         href="{% url 'reporte_tiempos_print' %}?{{ request.GET.urlencode }}"
                         target="_blank"
@@ -1362,94 +1850,342 @@
                         <i class="bi bi-printer"></i>
                     </a>
 
+                    <button
+                        type="submit"
+                        form="form-respuesta-report"
+                        class="report-action-btn primary"
+                    >
+                        <i class="bi bi-funnel"></i>
+                        Aplicar filtros
+                    </button>
+
+                    <button
+                        type="button"
+                        class="report-action-btn secondary report-reset-modal"
+                    >
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Limpiar
+                    </button>
+
                     <button type="button" class="report-modal-close" data-report-close>
                         <i class="bi bi-x-lg"></i>
                     </button>
+
                 </div>
             </div>
 
-            {% include "reportes/partials/_modal_filters.html" with tab_value="respuesta" %}
+            <form
+                method="get"
+                class="report-modal-filters"
+                id="form-respuesta-report"
+            >
+                <input type="hidden" name="tab" value="respuesta">
+
+                <input type="hidden" name="fecha_desde" class="fecha-desde-input" value="{{ filtros.fecha_desde }}">
+                <input type="hidden" name="fecha_hasta" class="fecha-hasta-input" value="{{ filtros.fecha_hasta }}">
+
+                <div class="modal-filter-grid modal-filter-grid-response">
+
+                    <div class="modal-filter-item modal-filter-wide">
+                        <label>
+                            <i class="bi bi-calendar2-range"></i>
+                            Periodo
+                        </label>
+
+                        <input
+                            type="text"
+                            class="form-control report-date-range"
+                            placeholder="Seleccionar rango"
+                            autocomplete="off"
+                            value="{% if filtros.fecha_desde and filtros.fecha_hasta %}{{ filtros.fecha_desde }} a {{ filtros.fecha_hasta }}{% endif %}"
+                        >
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-buildings"></i>
+                            Empresa
+                        </label>
+
+                        <select name="empresa" class="form-select">
+                            <option value="">Todas las empresas</option>
+
+                            {% for empresa in empresas %}
+                                <option value="{{ empresa.id }}"
+                                    {% if filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ empresa.nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-speedometer2"></i>
+                            Nivel operacional
+                        </label>
+
+                        <select name="nivel_respuesta" class="form-select">
+                            <option value="">Todos los niveles</option>
+
+                            <option value="EXCELENTE"
+                                {% if filtros.nivel_respuesta == "EXCELENTE" %}selected{% endif %}>
+                                Excelente
+                            </option>
+
+                            <option value="OPTIMO"
+                                {% if filtros.nivel_respuesta == "OPTIMO" %}selected{% endif %}>
+                                Óptimo
+                            </option>
+
+                            <option value="ACEPTABLE"
+                                {% if filtros.nivel_respuesta == "ACEPTABLE" %}selected{% endif %}>
+                                Riesgo
+                            </option>
+
+                            <option value="CRITICO"
+                                {% if filtros.nivel_respuesta == "CRITICO" %}selected{% endif %}>
+                                Crítico
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="advanced-filters-toggle-wrap">
+
+                        <button
+                            type="button"
+                            class="advanced-filters-toggle"
+                            data-advanced-toggle="respuesta"
+                        >
+                            <i class="bi bi-sliders"></i>
+
+                            <span>Filtros avanzados</span>
+
+                            <i class="bi bi-chevron-down advanced-chevron"></i>
+                        </button>
+
+                    </div>
+
+                    <div
+                        class="advanced-filters-panel"
+                        data-advanced-panel="respuesta"
+                    >
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-search"></i>
+                            Buscar NR
+                        </label>
+
+                        <input
+                            type="text"
+                            name="nr"
+                            class="form-control"
+                            placeholder="Ej: 5095790-24"
+                            value="{{ filtros.nr }}"
+                        >
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-geo-alt"></i>
+                            Ciudad
+                        </label>
+
+                        <input
+                            type="text"
+                            name="localidad"
+                            class="form-control"
+                            placeholder="Ej: Coronel Oviedo"
+                            value="{{ filtros.localidad }}"
+                        >
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-pin-map"></i>
+                            Zona
+                        </label>
+
+                        <input
+                            type="text"
+                            name="zona"
+                            class="form-control"
+                            placeholder="Ej: Las Mercedes"
+                            value="{{ filtros.zona }}"
+                        >
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-calendar-event"></i>
+                            Fecha reclamo
+                        </label>
+
+                        <input
+                            type="date"
+                            name="respuesta_fecha_reclamo"
+                            class="form-control"
+                            value="{{ filtros.respuesta_fecha_reclamo }}"
+                        >
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-calendar-check"></i>
+                            Fecha trabajo
+                        </label>
+
+                        <input
+                            type="date"
+                            name="respuesta_fecha_trabajo"
+                            class="form-control"
+                            value="{{ filtros.respuesta_fecha_trabajo }}"
+                        >
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-arrow-up-short"></i>
+                            Días máximo
+                        </label>
+
+                        <input
+                            type="number"
+                            name="respuesta_dias_max"
+                            class="form-control"
+                            min="0"
+                            placeholder="30"
+                            value="{{ filtros.respuesta_dias_max }}"
+                        >
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-sort-down"></i>
+                            Ordenar por
+                        </label>
+
+                        <select name="respuesta_orden" class="form-select">
+
+                            <option value="dias_desc"
+                                {% if filtros.respuesta_orden == "dias_desc" or not filtros.respuesta_orden %}selected{% endif %}>
+                                Mayor cantidad de días
+                            </option>
+
+                            <option value="dias_asc"
+                                {% if filtros.respuesta_orden == "dias_asc" %}selected{% endif %}>
+                                Menor cantidad de días
+                            </option>
+
+                            <option value="nr_asc"
+                                {% if filtros.respuesta_orden == "nr_asc" %}selected{% endif %}>
+                                NR ascendente
+                            </option>
+
+                            <option value="fecha_reclamo_desc"
+                                {% if filtros.respuesta_orden == "fecha_reclamo_desc" %}selected{% endif %}>
+                                Reclamos más recientes
+                            </option>
+
+                            <option value="fecha_trabajo_desc"
+                                {% if filtros.respuesta_orden == "fecha_trabajo_desc" %}selected{% endif %}>
+                                Trabajos más recientes
+                            </option>
+
+                        </select>
+                    </div>
+
+                    </div>
+
+                </div>
+            </form>
 
             <div class="report-modal-body">
 
                 {% if tiempos_respuesta %}
 
-                <div class="response-kpi-grid">
+                    <div class="response-kpi-grid">
 
-                    <div class="response-kpi-card">
-                        <span>Tiempo promedio</span>
-                        <strong>{{ resumen.promedio_respuesta|floatformat:0 }} días</strong>
-                    </div>
-
-                    <div class="response-kpi-card">
-                        <span>Respuesta rápida</span>
-                        <strong>{{ resumen.respuesta_rapida }} días</strong>
-                    </div>
-
-                    <div class="response-kpi-card">
-                        <span>Respuesta lenta</span>
-                        <strong>{{ resumen.respuesta_lenta }} días</strong>
-                    </div>
-
-                    <div class="response-kpi-card critical">
-                        <span>Casos críticos</span>
-                        <strong>{{ resumen.casos_criticos }}</strong>
-                    </div>
-
-                </div>
-
-                <div class="response-list">
-
-                    {% for item in tiempos_respuesta|slice:":12" %}
-
-                    <div class="response-item enhanced">
-
-                        <div class="response-main-info">
-
-                            <div class="response-title-row">
-                                <strong>NR {{ item.nr }}</strong>
-
-                                <span class="response-level
-                                    {% if item.nivel_respuesta == 'EXCELENTE' %}level-excellent{% endif %}
-                                    {% if item.nivel_respuesta == 'OPTIMO' %}level-optimal{% endif %}
-                                    {% if item.nivel_respuesta == 'ACEPTABLE' %}level-acceptable{% endif %}
-                                    {% if item.nivel_respuesta == 'CRITICO' %}level-critical{% endif %}
-                                ">
-                                    {{ item.nivel_respuesta }}
-                                </span>
-                            </div>
-
-                            <span class="response-meta">
-                                {{ item.empresa }} · {{ item.ciudad }} / {{ item.zona }}
-                            </span>
-
-                            <div class="response-dates">
-                                Reclamo: {{ item.fecha_reclamo|date:"d/m/Y" }}
-                                ·
-                                Trabajo: {{ item.fecha_trabajo|date:"d/m/Y" }}
-                            </div>
-
+                        <div class="response-kpi-card">
+                            <span>Tiempo promedio</span>
+                            <strong>{{ resumen.promedio_respuesta|floatformat:0 }} días</strong>
                         </div>
 
-                        <div class="response-days enhanced">
-                            {{ item.dias|floatformat:0 }}
-                            <small>días</small>
+                        <div class="response-kpi-card">
+                            <span>Respuesta más rápida</span>
+                            <strong>{{ resumen.respuesta_rapida }} días</strong>
+                        </div>
+
+                        <div class="response-kpi-card">
+                            <span>Respuesta más lenta</span>
+                            <strong>{{ resumen.respuesta_lenta }} días</strong>
+                        </div>
+
+                        <div class="response-kpi-card critical">
+                            <span>Casos críticos</span>
+                            <strong>{{ resumen.casos_criticos }}</strong>
                         </div>
 
                     </div>
 
-                    {% endfor %}
+                    <div class="response-list">
 
-                </div>
+                        {% for item in tiempos_respuesta|slice:":12" %}
+
+                            <div class="response-item enhanced">
+
+                                <div class="response-main-info">
+
+                                    <div class="response-title-row">
+                                        <strong>NR {{ item.nr }}</strong>
+
+                                        <span class="response-level
+                                            {% if item.nivel_respuesta == 'EXCELENTE' %}level-excellent{% endif %}
+                                            {% if item.nivel_respuesta == 'OPTIMO' %}level-optimal{% endif %}
+                                            {% if item.nivel_respuesta == 'ACEPTABLE' %}level-acceptable{% endif %}
+                                            {% if item.nivel_respuesta == 'CRITICO' %}level-critical{% endif %}
+                                        ">
+                                            {% if item.nivel_respuesta == 'ACEPTABLE' %}
+                                                RIESGO
+                                            {% else %}
+                                                {{ item.nivel_respuesta }}
+                                            {% endif %}
+                                        </span>
+                                    </div>
+
+                                    <span class="response-meta">
+                                        {{ item.empresa }} · {{ item.ciudad }} / {{ item.zona }}
+                                    </span>
+
+                                    <div class="response-dates">
+                                        Reclamo: {{ item.fecha_reclamo|date:"d/m/Y" }}
+                                        ·
+                                        Trabajo: {{ item.fecha_trabajo|date:"d/m/Y" }}
+                                    </div>
+
+                                </div>
+
+                                <div class="response-days enhanced">
+                                    {{ item.dias|floatformat:0 }}
+                                    <small>días</small>
+                                </div>
+
+                            </div>
+
+                        {% endfor %}
+
+                    </div>
 
                 {% else %}
 
-                <div class="empty-report compact">
-                    <i class="bi bi-clock"></i>
-                    No hay datos suficientes para calcular tiempos.
-                </div>
+                    <div class="empty-report compact">
+                        <i class="bi bi-clock"></i>
+                        No hay datos suficientes para calcular tiempos.
+                    </div>
 
                 {% endif %}
+
             </div>
         </section>
 
@@ -1528,6 +2264,60 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    function initializeTerritorialFilters(scope) {
+        const root = scope || document;
+
+        root.querySelectorAll(".rendimiento-ciudad-filter").forEach(function (ciudadSelect) {
+
+            const form = ciudadSelect.closest("form");
+            if (!form) return;
+
+            const zonaSelect = form.querySelector(".rendimiento-zona-filter");
+            if (!zonaSelect) return;
+
+            const zonaOptions = Array.from(zonaSelect.options);
+
+            function filterZonas() {
+
+                const ciudadSeleccionada = ciudadSelect.value;
+
+                zonaOptions.forEach(function (option) {
+
+                    if (!option.value) {
+                        option.hidden = false;
+                        option.disabled = false;
+                        return;
+                    }
+
+                    const ciudadOption = option.getAttribute("data-ciudad");
+
+                    const visible =
+                        !ciudadSeleccionada ||
+                        ciudadOption === ciudadSeleccionada;
+
+                    option.hidden = !visible;
+                    option.disabled = !visible;
+
+                    if (!visible && option.selected) {
+                        option.selected = false;
+                    }
+                });
+
+                const selectedOption = zonaSelect.options[zonaSelect.selectedIndex];
+
+                if (selectedOption && selectedOption.hidden) {
+                    zonaSelect.value = "";
+                }
+            }
+
+            ciudadSelect.removeEventListener("change", filterZonas);
+            ciudadSelect.addEventListener("change", filterZonas);
+
+            filterZonas();
+        });
+    }
+
+
     function initializeReportDateRanges(scope) {
         const root = scope || document;
 
@@ -1587,6 +2377,7 @@ document.addEventListener("DOMContentLoaded", function () {
         initializeReportDateRanges(scope);
         applyEffectivenessBars(scope);
         initializeCarpetaFilters(scope);
+        initializeTerritorialFilters(scope);
     }
 
     function openReportModal(modalId) {
@@ -1630,6 +2421,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const openButton = event.target.closest("[data-report-modal]");
         const closeButton = event.target.closest("[data-report-close]");
         const resetButton = event.target.closest(".report-reset-modal");
+        const advancedToggle = event.target.closest("[data-advanced-toggle]");
 
         if (openButton) {
             openReportModal(openButton.dataset.reportModal);
@@ -1649,6 +2441,18 @@ document.addEventListener("DOMContentLoaded", function () {
                 initializeModalPlugins(activeModal);
             }
         }
+
+        if (advancedToggle) {
+            const key = advancedToggle.dataset.advancedToggle;
+            const activeModal = advancedToggle.closest(".report-modal");
+            const panel = activeModal.querySelector(`[data-advanced-panel="${key}"]`);
+
+            if (panel) {
+                panel.classList.toggle("is-open");
+                advancedToggle.classList.toggle("is-open");
+            }
+        }
+
     });
 
     document.addEventListener("keydown", function (event) {
@@ -1729,7 +2533,14 @@ document.addEventListener("DOMContentLoaded", function () {
         respuesta: "modalRespuesta"
     };
 
-    if (currentTab && tabModalMap[currentTab]) {
+    const navigationEntry = performance.getEntriesByType("navigation")[0];
+    const navigationType = navigationEntry ? navigationEntry.type : "";
+
+    if (
+        navigationType !== "reload" &&
+        currentTab &&
+        tabModalMap[currentTab]
+    ) {
         openReportModal(tabModalMap[currentTab]);
     }
 });
