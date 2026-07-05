@@ -17,11 +17,6 @@
                         </div>
 
                         <div>
-                            <div class="shadow-header-badge mb-2">
-                                <i class="bi bi-stars"></i>
-                                Gestión documental
-                            </div>
-
                             <h2 class="shadow-title detalle-carpeta-title mb-1">Detalle de carpeta</h2>
                             <p class="shadow-subtitle mb-0">
                                 Consulta información general, métricas y el listado de planos asociados a esta carpeta.
@@ -106,7 +101,7 @@
                                     </div>
                                     <div>
                                         <div class="detalle-info-label">Período</div>
-                                        <div class="detalle-info-value">{{ carpeta.mes }}/{{ carpeta.anio }}</div>
+                                        <div class="detalle-info-value">{{ carpeta.mes_nombre }} {{ carpeta.anio }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -138,11 +133,23 @@
                             <div class="col-md-6">
                                 <div class="detalle-info-tile h-100">
                                     <div class="detalle-info-icon">
-                                        <i class="bi bi-collection"></i>
+                                        <i class="bi bi-activity"></i>
                                     </div>
                                     <div>
-                                        <div class="detalle-info-label">Total de planos</div>
-                                        <div class="detalle-info-value">{{ total_planos }}</div>
+                                        <div class="detalle-info-label">Estado de carpeta</div>
+                                        <div class="detalle-info-value">
+                                            {% if carpeta.estado == "ABIERTA" %}
+                                                Abierta
+                                            {% elif carpeta.estado == "EN_REVISION" %}
+                                                En revisión
+                                            {% elif carpeta.estado == "CERRADA" %}
+                                                Cerrada
+                                            {% elif carpeta.estado == "OBSERVADA" %}
+                                                Observada
+                                            {% else %}
+                                                {{ carpeta.estado }}
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -379,10 +386,10 @@
                                                         class="d-inline"
                                                     >
                                                         {% csrf_token %}
-                                                        <button type="submit" class="btn btn-sm btn-danger detalle-table-btn detalle-btn-anim">
-                                                            <i class="bi bi-trash me-1"></i>
-                                                            Eliminar
-                                                        </button>
+                                                    <button type="submit" class="btn btn-sm detalle-btn-delete detalle-table-btn detalle-btn-anim">
+                                                        <i class="bi bi-trash me-1"></i>
+                                                        Eliminar
+                                                    </button>
                                                     </form>
                                                 </div>
                                             </td>
@@ -701,7 +708,26 @@
     }
 
     .detalle-table-btn {
-        min-width: 88px;
+        width: 104px;
+        height: 38px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+        font-weight: 800;
+    }
+
+    .detalle-btn-delete {
+        background: rgba(239, 68, 68, 0.08);
+        color: #b91c1c;
+        border: 1px solid rgba(239, 68, 68, 0.18);
+    }
+
+    .detalle-btn-delete:hover {
+        background: rgba(239, 68, 68, 0.13);
+        color: #991b1b;
+        border-color: rgba(239, 68, 68, 0.28);
     }
 
     .detalle-btn-anim {
@@ -735,6 +761,9 @@
             min-width: auto;
         }
     }
+
+
+    
 </style>
 
 <script>

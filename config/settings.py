@@ -114,9 +114,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "es"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "America/Asuncion"
 
 USE_I18N = True
 
@@ -132,9 +132,16 @@ STATIC_URL = 'static/'
 # 📧 EMAIL CONFIG
 # =========================
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
-DEFAULT_FROM_EMAIL = "shadow-system@ande.local"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = "yinsen7ho@gmail.com"
+EMAIL_HOST_PASSWORD = "tqxmmggomtpulojx"
+
+DEFAULT_FROM_EMAIL = "Shadow OCR <yinsen7ho@gmail.com>"
 
 LOGIN_URL = "/"
 LOGIN_REDIRECT_URL = "/dashboard/"

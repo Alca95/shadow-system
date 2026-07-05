@@ -1,10 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}Carpetas{% endblock %}
-
-{% block page_title %}
-Carpetas
-{% endblock %}
+{% block show_page_header %}{% endblock %}
 
 {% block content %}
 
@@ -13,96 +10,108 @@ Carpetas
     <div class="col-12">
         <div class="card shadow-card p-4">
 
-            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-                <div>
-                    <h5 class="mb-1">Gestión de carpetas</h5>
-                    <p class="text-muted mb-0">Busca, filtra y accede a las carpetas registradas en el sistema.</p>
+            <div class="carpetas-hero-header mb-4">
+                <div class="carpetas-hero-left">
+                    <div class="carpetas-hero-icon">
+                        <i class="bi bi-folder2-open"></i>
+                    </div>
+
+                    <div>
+
+                        <h5 class="carpetas-hero-title mb-1">Gestión de carpetas</h5>
+                        <p class="carpetas-hero-subtitle mb-0">
+                            Buscar, filtrar y accede a las carpetas registradas en el sistema.
+                        </p>
+                    </div>
                 </div>
 
-                <div>
-                    <a href="{% url 'crear_carpeta' %}" class="btn btn-primary">
-                        <i class="bi bi-folder-plus me-2"></i>
-                        Crear carpeta
-                    </a>
-                </div>
+                <a href="{% url 'crear_carpeta' %}" class="btn carpetas-btn-create">
+                    <i class="bi bi-folder-plus me-2"></i>
+                    Crear carpeta
+                </a>
             </div>
 
-            <form method="get" class="row g-3">
+            <form method="get" class="carpetas-filter-form">
+                <div class="row g-3 align-items-end">
 
-                <div class="col-md-6 col-lg-3">
-                    <label for="q" class="form-label">Código de carpeta</label>
-                    <input
-                        type="text"
-                        class="form-control"
-                        id="q"
-                        name="q"
-                        value="{{ filtros.q }}"
-                        placeholder="Ej: CARP001"
-                    >
+                    <div class="col-md-6 col-xl-3">
+                        <label for="q" class="form-label carpetas-filter-label">Código de carpeta</label>
+                        <div class="carpetas-input-wrap">
+                            <i class="bi bi-search carpetas-input-icon"></i>
+                            <input
+                                type="text"
+                                class="form-control carpetas-filter-control carpetas-filter-control-icon"
+                                id="q"
+                                name="q"
+                                value="{{ filtros.q }}"
+                                placeholder="Ej: CARP001"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-xl-3">
+                        <label for="empresa" class="form-label carpetas-filter-label">Empresa</label>
+                        <select id="empresa" name="empresa" class="form-select carpetas-filter-control">
+                            <option value="">Todas las empresas</option>
+                            {% for empresa in empresas %}
+                                <option value="{{ empresa.id }}" {% if filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ empresa.nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 col-xl-2">
+                        <label for="estado" class="form-label carpetas-filter-label">Estado</label>
+                        <select id="estado" name="estado" class="form-select carpetas-filter-control">
+                            <option value="">Todos</option>
+                            {% for value, label in estado_choices %}
+                                <option value="{{ value }}" {% if filtros.estado == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 col-xl-2">
+                        <label for="mes" class="form-label carpetas-filter-label">Mes</label>
+                        <select id="mes" name="mes" class="form-select carpetas-filter-control">
+                            <option value="">Todos</option>
+                            {% for mes_num, mes_nombre in meses_choices %}
+                                <option value="{{ mes_num }}" {% if filtros.mes == mes_num|stringformat:"s" %}selected{% endif %}>
+                                    {{ mes_nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 col-xl-2">
+                        <label for="anio" class="form-label carpetas-filter-label">Año</label>
+                        <select id="anio" name="anio" class="form-select carpetas-filter-control">
+                            <option value="">Todos</option>
+                            {% for anio_item in anios_disponibles %}
+                                <option value="{{ anio_item }}" {% if filtros.anio == anio_item|stringformat:"s" %}selected{% endif %}>
+                                    {{ anio_item }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="carpetas-filter-actions">
+                            <button type="submit" class="btn btn-shadow carpetas-filter-btn-primary">
+                                <i class="bi bi-funnel me-2"></i>
+                                Aplicar filtros
+                            </button>
+
+                            <a href="{% url 'carpetas' %}" class="btn carpetas-filter-btn-clear">
+                                <i class="bi bi-arrow-clockwise me-2"></i>
+                                Limpiar
+                            </a>
+                        </div>
+                    </div>
+
                 </div>
-
-                <div class="col-md-6 col-lg-2">
-                    <label for="estado" class="form-label">Estado</label>
-                    <select id="estado" name="estado" class="form-select">
-                        <option value="">Todos</option>
-                        {% for value, label in estado_choices %}
-                            <option value="{{ value }}" {% if filtros.estado == value %}selected{% endif %}>
-                                {{ label }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-md-6 col-lg-3">
-                    <label for="empresa" class="form-label">Empresa</label>
-                    <select id="empresa" name="empresa" class="form-select">
-                        <option value="">Todas</option>
-                        {% for empresa in empresas %}
-                            <option value="{{ empresa.id }}" {% if filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
-                                {{ empresa.nombre }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-md-3 col-lg-2">
-                    <label for="mes" class="form-label">Mes</label>
-                    <input
-                        type="number"
-                        class="form-control"
-                        id="mes"
-                        name="mes"
-                        min="1"
-                        max="12"
-                        value="{{ filtros.mes }}"
-                        placeholder="3"
-                    >
-                </div>
-
-                <div class="col-md-3 col-lg-2">
-                    <label for="anio" class="form-label">Año</label>
-                    <input
-                        type="number"
-                        class="form-control"
-                        id="anio"
-                        name="anio"
-                        value="{{ filtros.anio }}"
-                        placeholder="2026"
-                    >
-                </div>
-
-                <div class="col-12 d-flex gap-2 flex-wrap">
-                    <button type="submit" class="btn btn-shadow">
-                        <i class="bi bi-search me-2"></i>
-                        Aplicar filtros
-                    </button>
-
-                    <a href="{% url 'carpetas' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-clockwise me-2"></i>
-                        Limpiar
-                    </a>
-                </div>
-
             </form>
 
         </div>
@@ -110,25 +119,37 @@ Carpetas
 
 
     <div class="col-12">
-        <div class="card shadow-card p-4">
+        <div class="card shadow-card carpetas-list-card">
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="mb-0">Listado de carpetas</h5>
-                <span class="text-muted">Total: {{ carpetas|length }}</span>
+            <div class="carpetas-list-header">
+                <div>
+                    <div class="carpetas-section-kicker">
+                        Registro operativo
+                    </div>
+                    <h5 class="carpetas-section-title mb-1">Listado de carpetas</h5>
+                    <p class="carpetas-section-subtitle mb-0">
+                        Carpetas registradas según los filtros aplicados.
+                    </p>
+                </div>
+
+                <span class="carpetas-total-chip">
+                    <i class="bi bi-collection me-1"></i>
+                    Total: {{ carpetas|length }}
+                </span>
             </div>
 
             {% if carpetas %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                <div class="table-responsive carpetas-table-wrap">
+                    <table class="table table-hover align-middle carpetas-table mb-0">
 
-                        <thead class="table-light">
+                        <thead>
                             <tr>
                                 <th>Código</th>
                                 <th>Empresa</th>
                                 <th>Período</th>
                                 <th>Fecha de creación</th>
-                                <th>Estado</th>
-                                <th>Planos</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-center">Planos</th>
                                 <th class="text-end">Acciones</th>
                             </tr>
                         </thead>
@@ -137,40 +158,70 @@ Carpetas
                             {% for carpeta in carpetas %}
                                 <tr>
                                     <td>
-                                        <strong>{{ carpeta.codigo_carpeta }}</strong>
+                                        <div class="carpetas-code-cell">
+                                            <i class="bi bi-folder2-open"></i>
+                                            <strong>{{ carpeta.codigo_carpeta }}</strong>
+                                        </div>
                                     </td>
 
                                     <td>
                                         {% if carpeta.empresa %}
-                                            {{ carpeta.empresa.nombre }}
+                                            <span class="carpetas-company">{{ carpeta.empresa.nombre }}</span>
                                         {% else %}
                                             <span class="text-muted">Sin empresa</span>
                                         {% endif %}
                                     </td>
 
-                                    <td>{{ carpeta.mes }}/{{ carpeta.anio }}</td>
-
-                                    <td>{{ carpeta.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        <div class="carpetas-period-cell">
+                                            <span>{{ carpeta.mes_nombre }}</span>
+                                            <small>{{ carpeta.anio }}</small>
+                                        </div>
+                                    </td>
 
                                     <td>
+                                        <span class="carpetas-date-cell">
+                                            {{ carpeta.fecha_creacion|date:"d/m/Y H:i" }}
+                                        </span>
+                                    </td>
+
+                                    <td class="text-center">
                                         {% if carpeta.estado == "ABIERTA" %}
-                                            <span class="badge bg-primary">Abierta</span>
+                                            <span class="carpeta-status-chip carpeta-status-open">
+                                                <i class="bi bi-folder2-open me-1"></i>
+                                                Abierta
+                                            </span>
                                         {% elif carpeta.estado == "EN_REVISION" %}
-                                            <span class="badge bg-warning text-dark">En revisión</span>
+                                            <span class="carpeta-status-chip carpeta-status-review">
+                                                <i class="bi bi-search me-1"></i>
+                                                En revisión
+                                            </span>
                                         {% elif carpeta.estado == "CERRADA" %}
-                                            <span class="badge bg-success">Cerrada</span>
+                                            <span class="carpeta-status-chip carpeta-status-closed">
+                                                <i class="bi bi-check-circle me-1"></i>
+                                                Cerrada
+                                            </span>
                                         {% elif carpeta.estado == "OBSERVADA" %}
-                                            <span class="badge bg-danger">Observada</span>
+                                            <span class="carpeta-status-chip carpeta-status-observed">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                                Observada
+                                            </span>
                                         {% else %}
-                                            <span class="badge bg-secondary">{{ carpeta.estado }}</span>
+                                            <span class="carpeta-status-chip carpeta-status-neutral">
+                                                {{ carpeta.estado }}
+                                            </span>
                                         {% endif %}
                                     </td>
 
-                                    <td>{{ carpeta.planos.count }}</td>
+                                    <td class="text-center">
+                                        <span class="carpetas-planos-chip">
+                                            {{ carpeta.planos.count }}
+                                        </span>
+                                    </td>
 
                                     <td class="text-end">
-                                        <div class="d-flex justify-content-end gap-2 flex-wrap">
-                                            <a href="{% url 'detalle_carpeta' carpeta.id %}" class="btn btn-sm btn-shadow">
+                                        <div class="carpetas-actions">
+                                            <a href="{% url 'detalle_carpeta' carpeta.id %}" class="btn btn-sm btn-shadow carpetas-btn-open">
                                                 <i class="bi bi-folder2-open me-1"></i>
                                                 Abrir
                                             </a>
@@ -182,7 +233,7 @@ Carpetas
                                                 class="d-inline"
                                             >
                                                 {% csrf_token %}
-                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                <button type="submit" class="btn btn-sm carpetas-btn-delete">
                                                     <i class="bi bi-trash me-1"></i>
                                                     Eliminar
                                                 </button>
@@ -196,8 +247,14 @@ Carpetas
                     </table>
                 </div>
             {% else %}
-                <div class="alert alert-secondary mb-0">
-                    No se encontraron carpetas con los filtros actuales.
+                <div class="carpetas-empty-state">
+                    <div class="carpetas-empty-icon">
+                        <i class="bi bi-folder-x"></i>
+                    </div>
+                    <h6>No se encontraron carpetas</h6>
+                    <p class="mb-0">
+                        Ajusta los filtros o registra una nueva carpeta para iniciar el flujo operativo.
+                    </p>
                 </div>
             {% endif %}
 
@@ -205,5 +262,448 @@ Carpetas
     </div>
 
 </div>
+
+<style>
+    .carpetas-filter-form {
+        padding: 1rem;
+        border-radius: 22px;
+        background:
+            linear-gradient(
+                135deg,
+                rgba(248, 250, 255, 0.98),
+                rgba(255, 255, 255, 0.96)
+            );
+        border: 1px solid rgba(226, 232, 240, 0.95);
+    }
+
+    .carpetas-filter-label {
+        color: #475569;
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.045em;
+        margin-bottom: 0.45rem;
+    }
+
+    .carpetas-filter-control {
+        min-height: 46px;
+        border-radius: 15px;
+        border: 1px solid rgba(203, 213, 225, 0.9);
+        background-color: rgba(255, 255, 255, 0.96);
+        font-size: 0.92rem;
+        font-weight: 600;
+        color: #243247;
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.04);
+    }
+
+    .carpetas-filter-control:focus {
+        border-color: rgba(91, 82, 214, 0.45);
+        box-shadow: 0 0 0 0.22rem rgba(91, 82, 214, 0.10);
+    }
+
+    .carpetas-input-wrap {
+        position: relative;
+    }
+
+    .carpetas-input-icon {
+        position: absolute;
+        top: 50%;
+        left: 0.95rem;
+        transform: translateY(-50%);
+        color: #7c83b6;
+        font-size: 0.95rem;
+        z-index: 2;
+    }
+
+    .carpetas-filter-control-icon {
+        padding-left: 2.6rem;
+    }
+
+    .carpetas-filter-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        padding-top: 0.25rem;
+    }
+
+    .carpetas-filter-btn-primary {
+        min-width: 170px;
+        border-radius: 999px;
+        font-weight: 800;
+    }
+
+    .carpetas-filter-btn-clear {
+        min-width: 130px;
+        border-radius: 999px;
+        background: rgba(100, 116, 139, 0.08);
+        color: #475569;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        font-weight: 800;
+    }
+
+    .carpetas-filter-btn-clear:hover {
+        background: rgba(100, 116, 139, 0.13);
+        color: #334155;
+    }
+
+    @media (max-width: 767.98px) {
+        .carpetas-filter-actions {
+            justify-content: stretch;
+        }
+
+        .carpetas-filter-actions .btn {
+            width: 100%;
+        }
+    }
+
+    .carpetas-list-card {
+        padding: 0;
+        overflow: hidden;
+        border-radius: 26px;
+    }
+
+    .carpetas-list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.35rem 1.5rem 1.15rem;
+        background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(246,248,255,0.94));
+        border-bottom: 1px solid rgba(226,232,240,0.85);
+    }
+
+    .carpetas-section-kicker {
+        color: #7c83b6;
+        font-size: 0.74rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+    }
+
+    .carpetas-section-title {
+        color: #182033;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+    }
+
+    .carpetas-section-subtitle {
+        color: #667085;
+        font-size: 0.92rem;
+    }
+
+    .carpetas-total-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.55rem 0.85rem;
+        border-radius: 999px;
+        background: rgba(91,82,214,0.10);
+        color: #5b52d6;
+        font-size: 0.82rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .carpetas-table-wrap {
+        padding: 0.35rem 1rem 1rem;
+        background: rgba(255,255,255,0.96);
+    }
+
+    .carpetas-table {
+        border-collapse: separate;
+        border-spacing: 0 0.55rem;
+    }
+
+    .carpetas-table thead th {
+        border: 0;
+        color: #64748b;
+        font-size: 0.74rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.055em;
+        padding: 0.7rem 0.85rem;
+        background: transparent;
+    }
+
+    .carpetas-table tbody tr {
+        background: #ffffff;
+        box-shadow: 0 8px 20px rgba(15,23,42,0.05);
+        transition: transform 0.24s ease, box-shadow 0.24s ease;
+    }
+
+    .carpetas-table tbody tr:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 28px rgba(15,23,42,0.10);
+    }
+
+    .carpetas-table tbody td {
+        border: 0;
+        padding: 0.95rem 0.85rem;
+        background: #ffffff;
+        vertical-align: middle;
+    }
+
+    .carpetas-table tbody td:first-child {
+        border-radius: 18px 0 0 18px;
+    }
+
+    .carpetas-table tbody td:last-child {
+        border-radius: 0 18px 18px 0;
+    }
+
+    .carpetas-code-cell {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        color: #182033;
+    }
+
+    .carpetas-code-cell i {
+        color: #5b52d6;
+    }
+
+    .carpetas-company {
+        color: #334155;
+        font-weight: 600;
+    }
+
+    .carpetas-period-cell {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.25;
+    }
+
+    .carpetas-period-cell span {
+        color: #182033;
+        font-weight: 800;
+    }
+
+    .carpetas-period-cell small {
+        color: #94a3b8;
+        font-weight: 700;
+    }
+
+    .carpetas-date-cell {
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .carpeta-status-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.42rem 0.68rem;
+        border-radius: 999px;
+        font-size: 0.76rem;
+        font-weight: 800;
+        white-space: nowrap;
+        border: 1px solid transparent;
+    }
+
+    .carpeta-status-open {
+        background: rgba(91,82,214,0.11);
+        color: #4d46be;
+        border-color: rgba(91,82,214,0.16);
+    }
+
+    .carpeta-status-review {
+        background: rgba(245,158,11,0.14);
+        color: #a16207;
+        border-color: rgba(245,158,11,0.18);
+    }
+
+    .carpeta-status-closed {
+        background: rgba(16,185,129,0.13);
+        color: #047857;
+        border-color: rgba(16,185,129,0.18);
+    }
+
+    .carpeta-status-observed {
+        background: rgba(239,68,68,0.12);
+        color: #b91c1c;
+        border-color: rgba(239,68,68,0.18);
+    }
+
+    .carpeta-status-neutral {
+        background: rgba(100,116,139,0.13);
+        color: #475569;
+        border-color: rgba(100,116,139,0.16);
+    }
+
+    .carpetas-planos-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        background: rgba(15,23,42,0.06);
+        color: #334155;
+        font-weight: 800;
+    }
+
+    .carpetas-actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 0.45rem;
+        flex-wrap: wrap;
+    }
+
+    .carpetas-btn-open {
+        border-radius: 999px;
+        font-weight: 800;
+    }
+
+    .carpetas-btn-delete {
+        border-radius: 999px;
+        background: rgba(239,68,68,0.08);
+        color: #b91c1c;
+        border: 1px solid rgba(239,68,68,0.18);
+        font-weight: 800;
+    }
+
+    .carpetas-btn-delete:hover {
+        background: rgba(239,68,68,0.13);
+        color: #991b1b;
+        border-color: rgba(239,68,68,0.28);
+    }
+
+    .carpetas-empty-state {
+        margin: 1.25rem;
+        padding: 2rem 1.25rem;
+        text-align: center;
+        border-radius: 22px;
+        background: linear-gradient(180deg, rgba(248,250,255,0.98), rgba(255,255,255,0.96));
+        border: 1px dashed rgba(148,163,184,0.35);
+        color: #64748b;
+    }
+
+    .carpetas-empty-icon {
+        width: 58px;
+        height: 58px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.85rem;
+        border-radius: 18px;
+        background: rgba(91,82,214,0.10);
+        color: #5b52d6;
+        font-size: 1.35rem;
+    }
+
+    .carpetas-empty-state h6 {
+        color: #182033;
+        font-weight: 800;
+        margin-bottom: 0.35rem;
+    }
+
+    @media (max-width: 767.98px) {
+        .carpetas-list-header {
+            flex-direction: column;
+        }
+
+        .carpetas-actions {
+            justify-content: flex-start;
+        }
+    }
+
+    .carpetas-hero-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.15rem;
+        border-radius: 24px;
+        background:
+            linear-gradient(135deg, rgba(91,82,214,0.10), rgba(255,255,255,0.96)),
+            radial-gradient(circle at 92% 0%, rgba(139,122,240,0.18), transparent 36%);
+        border: 1px solid rgba(226,232,240,0.92);
+    }
+
+    .carpetas-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .carpetas-hero-icon {
+        width: 58px;
+        height: 58px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #5b52d6, #8b7af0);
+        color: #ffffff;
+        font-size: 1.35rem;
+        box-shadow: 0 14px 26px rgba(91,82,214,0.24);
+        flex-shrink: 0;
+    }
+
+    .carpetas-hero-badge {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        margin-bottom: 0.35rem;
+        padding: 0.32rem 0.65rem;
+        border-radius: 999px;
+        background: rgba(91,82,214,0.10);
+        color: #5b52d6;
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.055em;
+    }
+
+    .carpetas-hero-title {
+        color: #182033;
+        font-size: 1.18rem;
+        font-weight: 850;
+        letter-spacing: -0.025em;
+    }
+
+    .carpetas-hero-subtitle {
+        color: #667085;
+        font-size: 0.92rem;
+    }
+
+    .carpetas-btn-create {
+        min-height: 46px;
+        padding: 0.7rem 1.05rem;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #5b52d6, #8b7af0);
+        color: #ffffff;
+        border: 0;
+        font-weight: 800;
+        box-shadow: 0 14px 26px rgba(91,82,214,0.22);
+        white-space: nowrap;
+    }
+
+    .carpetas-btn-create:hover {
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 18px 34px rgba(91,82,214,0.28);
+    }
+
+    @media (max-width: 767.98px) {
+        .carpetas-hero-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .carpetas-hero-left {
+            align-items: flex-start;
+        }
+
+        .carpetas-btn-create {
+            width: 100%;
+        }
+    }
+
+
+</style>
 
 {% endblock %}

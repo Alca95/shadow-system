@@ -11,49 +11,60 @@
         <section class="funcionario-dashboard mb-4">
             <div class="row g-3 g-xxl-4 align-items-stretch">
 
-                <div class="col-xl-3">
-                    <div class="funcionario-intro-card h-100">
-                        <div class="funcionario-intro-badge">
-                            <i class="bi bi-stars"></i>
-                            Panel Funcionario
+                <div class="col-12 col-xl-3">
+                    <aside class="admin-sidebar">
+                        <div class="admin-sidebar-head">
+                            <div class="admin-sidebar-badge">
+                                <span class="admin-sidebar-badge-dot"></span>
+                                Panel funcionario
+                            </div>
+
+                            <h2 class="admin-sidebar-title">Navegación</h2>
                         </div>
 
-                        <div class="funcionario-intro-divider"></div>
+                        <nav class="admin-sidebar-nav">
+                            <a href="{% url 'dashboard' %}" class="admin-nav-link active">
+                                <span class="admin-nav-icon"><i class="bi bi-house-door"></i></span>
+                                <span>Inicio</span>
+                            </a>
 
-                        <div class="funcionario-intro-meta">
-                            <span><strong>Usuario:</strong> {{ request.user.username }}</span>
-                            <span><strong>Rol:</strong> Funcionario</span>
-                        </div>
+                            <a href="{% url 'carpetas' %}" class="admin-nav-link">
+                                <span class="admin-nav-icon"><i class="bi bi-folder2-open"></i></span>
+                                <span>Carpetas</span>
+                            </a>
 
-                        <div class="funcionario-intro-divider funcionario-intro-divider-bottom"></div>
-                    </div>
+                            <a href="{% url 'crear_carpeta' %}" class="admin-nav-link">
+                                <span class="admin-nav-icon"><i class="bi bi-folder-plus"></i></span>
+                                <span>Nueva Carpeta</span>
+                            </a>
+
+                            <a href="{% url 'subir_plano' %}" class="admin-nav-link">
+                                <span class="admin-nav-icon"><i class="bi bi-upload"></i></span>
+                                <span>Subir plano</span>
+                            </a>
+                        </nav>
+                    </aside>
                 </div>
 
-                <div class="col-xl-9">
-                    <div class="funcionario-main-board">
+                <div class="col-12 col-xl-9">
+                    <div class="funcionario-content-stack">
 
-                        <a href="{% url 'crear_carpeta' %}" class="funcionario-feature-card funcionario-feature-create">
-                            <div class="feature-shine"></div>
-                            <div class="feature-glow"></div>
+                    <div class="funcionario-main-board funcionario-main-board-clean">
 
-                            <div class="feature-content">
-                                <div class="feature-badge">Paso 1</div>
-
-                                <div class="feature-icon feature-icon-create">
-                                    <i class="bi bi-folder-plus"></i>
-                                </div>
-
-                                <div class="feature-text">
-                                    <h4>Crear carpeta</h4>
-                                    <p>Inicia una nueva estructura de trabajo para organizar la carga y validación.</p>
-                                </div>
-
-                                <div class="feature-footer">
-                                    <span class="feature-tag">NUEVO REGISTRO</span>
-                                    <span class="feature-action">
-                                        <span>Ir</span>
-                                        <i class="bi bi-arrow-right-short"></i>
-                                    </span>
+                        <a href="{% url 'carpetas' %}" class="funcionario-feature-card funcionario-feature-review funcionario-feature-primary">
+                            <div class="folder-stack">
+                                <div class="folder-layer folder-layer-4"></div>
+                                <div class="folder-layer folder-layer-3"></div>
+                                <div class="folder-layer folder-layer-2"></div>
+                                <div class="folder-layer folder-layer-1">
+                                    <div class="folder-content">
+                                        <div class="folder-step">Principal</div>
+                                        <h4>Abrir carpetas</h4>
+                                        <p>Accede a carpetas existentes, crea nuevas estructuras y continúa la revisión de planos.</p>
+                                        <div class="feature-action feature-action-dark">
+                                            <span>ENTRAR A CARPETAS</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </a>
@@ -63,11 +74,11 @@
                             <div class="feature-corner feature-corner-bottom"></div>
 
                             <div class="feature-content">
-                                <div class="feature-mini-label">Paso 2</div>
+                                <div class="feature-mini-label">Operación</div>
 
                                 <div class="feature-text feature-text-compact">
                                     <h4>Subir plano</h4>
-                                    <p>Carga archivos al sistema para continuar con el procesamiento OCR.</p>
+                                    <p>Selecciona una carpeta y carga nuevos archivos para procesamiento y validación.</p>
                                 </div>
 
                                 <div class="feature-action feature-action-light">
@@ -77,84 +88,88 @@
                             </div>
                         </a>
 
-                        <a href="{% url 'carpetas' %}" class="funcionario-feature-card funcionario-feature-review">
-                            <div class="folder-stack">
-                                <div class="folder-layer folder-layer-4"></div>
-                                <div class="folder-layer folder-layer-3"></div>
-                                <div class="folder-layer folder-layer-2"></div>
-                                <div class="folder-layer folder-layer-1">
-                                    <div class="folder-content">
-                                        <div class="folder-step">Paso 3</div>
-                                        <h4>Abrir carpetas</h4>
-                                        <p>Consulta registros existentes, accede a detalles y continúa el flujo de trabajo.</p>
-                                        <div class="feature-action feature-action-dark">
-                                            <span>ABRIR ESTRUCTURAS</span>
-                                        </div>
-                                    </div>
+                        <a href="{% url 'reportes' %}" class="funcionario-feature-card funcionario-feature-create funcionario-feature-report">
+                            <div class="feature-shine"></div>
+                            <div class="feature-glow"></div>
+
+                            <div class="feature-content">
+                                <div class="feature-badge">Informe</div>
+
+                                <div class="feature-icon feature-icon-create">
+                                    <i class="bi bi-file-earmark-bar-graph"></i>
+                                </div>
+
+                                <div class="feature-text">
+                                    <h4>Reportes</h4>
+                                    <p>Consulta informes operacionales, resultados de validación y documentos institucionales.</p>
+                                </div>
+
+                                <div class="feature-footer">
+                                    <span class="feature-tag">INFORMES</span>
+                                    <span class="feature-action">
+                                        <span>Ver</span>
+                                        <i class="bi bi-arrow-right-short"></i>
+                                    </span>
                                 </div>
                             </div>
                         </a>
 
                     </div>
-                </div>
 
-            </div>
-        </section>
+                        <div class="funcionario-panel funcionario-panel-dark funcionario-panel-recientes">
+                            <div class="funcionario-panel-recientes-glow glow-a"></div>
+                            <div class="funcionario-panel-recientes-glow glow-b"></div>
+                            <div class="funcionario-panel-recientes-line"></div>
 
-        <section>
-            <div class="row g-4">
-                <div class="col-12">
-                    <div class="funcionario-panel funcionario-panel-dark funcionario-panel-recientes">
-                        <div class="funcionario-panel-recientes-glow glow-a"></div>
-                        <div class="funcionario-panel-recientes-glow glow-b"></div>
-                        <div class="funcionario-panel-recientes-line"></div>
+                            <div class="funcionario-panel-header">
+                                <div>
+                                    <div class="funcionario-panel-kicker">Seguimiento</div>
+                                    <h5 class="funcionario-panel-title mb-1">Carpetas recientes</h5>
+                                    <p class="funcionario-panel-subtitle mb-0">Últimos registros incorporados al sistema</p>
+                                </div>
 
-                        <div class="funcionario-panel-header">
-                            <div>
-                                <div class="funcionario-panel-kicker">Seguimiento</div>
-                                <h5 class="funcionario-panel-title mb-1">Carpetas recientes</h5>
-                                <p class="funcionario-panel-subtitle mb-0">Últimos registros incorporados al sistema</p>
+                                <a href="{% url 'carpetas' %}" class="funcionario-panel-link">
+                                    Ver todas
+                                </a>
                             </div>
 
-                            <a href="{% url 'carpetas' %}" class="funcionario-panel-link">
-                                Ver todas
-                            </a>
-                        </div>
+                            <div class="funcionario-panel-body">
+                                {% if carpetas_recientes %}
+                                    <div class="funcionario-list">
+                                        {% for carpeta in carpetas_recientes %}
+                                            <div class="funcionario-list-item funcionario-list-item-reciente">
+                                                <div class="funcionario-list-accent"></div>
 
-                        <div class="funcionario-panel-body">
-                            {% if carpetas_recientes %}
-                                <div class="funcionario-list">
-                                    {% for carpeta in carpetas_recientes %}
-                                        <div class="funcionario-list-item funcionario-list-item-reciente">
-                                            <div class="funcionario-list-accent"></div>
-
-                                            <div class="funcionario-list-main">
-                                                <div class="funcionario-list-code">{{ carpeta.codigo_carpeta }}</div>
-                                                <div class="funcionario-list-meta">
-                                                    <span>{{ carpeta.mes }}/{{ carpeta.anio }}</span>
-                                                    <span class="funcionario-dot"></span>
-                                                    <span>{{ carpeta.fecha_creacion|date:"d/m/Y %H:%M" }}</span>
+                                                <div class="funcionario-list-main">
+                                                    <div class="funcionario-list-code">{{ carpeta.codigo_carpeta }}</div>
+                                                    <div class="funcionario-list-meta">
+                                                        <span>{{ carpeta.mes }}/{{ carpeta.anio }}</span>
+                                                        <span class="funcionario-dot"></span>
+                                                        <span>{{ carpeta.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                                                    </div>
                                                 </div>
-                                            </div>
 
-                                            <a href="{% url 'detalle_carpeta' carpeta.id %}" class="btn btn-shadow btn-sm funcionario-open-btn">
-                                                Abrir
-                                            </a>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            {% else %}
-                                <div class="funcionario-empty funcionario-empty-recientes">
-                                    <div class="funcionario-empty-icon">
-                                        <i class="bi bi-folder2-open"></i>
+                                                <a href="{% url 'detalle_carpeta' carpeta.id %}" class="btn btn-shadow btn-sm funcionario-open-btn">
+                                                    Abrir
+                                                </a>
+                                            </div>
+                                        {% endfor %}
                                     </div>
-                                    <h6 class="mb-2">Aún no hay carpetas recientes</h6>
-                                    <p class="mb-0">Cuando se registren nuevas carpetas aparecerán aquí para acceso rápido.</p>
-                                </div>
-                            {% endif %}
+                                {% else %}
+                                    <div class="funcionario-empty funcionario-empty-recientes">
+                                        <div class="funcionario-empty-icon">
+                                            <i class="bi bi-folder2-open"></i>
+                                        </div>
+                                        <h6 class="mb-2">Aún no hay carpetas recientes</h6>
+                                        <p class="mb-0">Cuando se registren nuevas carpetas aparecerán aquí para acceso rápido.</p>
+                                    </div>
+                                {% endif %}
+                            </div>
                         </div>
+
                     </div>
                 </div>
+
             </div>
         </section>
 
@@ -169,7 +184,106 @@
         --func-muted: #667085;
         --func-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
     }
+    .admin-sidebar {
+        position: sticky;
+        top: 1rem;
+        border-radius: 26px;
+        padding: 1.2rem;
+        background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(247,250,253,0.92) 100%);
+        border: 1px solid rgba(255,255,255,0.24);
+        box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
 
+    .admin-sidebar-head {
+        margin-bottom: 1.2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(100, 116, 139, 0.10);
+    }
+
+    .admin-sidebar-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.5rem 0.85rem;
+        border-radius: 999px;
+        background: rgba(99, 102, 241, 0.10);
+        color: #4f46e5;
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-bottom: 0.9rem;
+    }
+
+    .admin-sidebar-badge-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6366f1, #22c55e);
+        box-shadow: 0 0 0 5px rgba(99, 102, 241, 0.10);
+    }
+
+    .admin-sidebar-title {
+        margin: 0 0 0.35rem 0;
+        color: #24324a;
+        font-size: 1.28rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+    }
+
+    .admin-sidebar-nav {
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .admin-nav-link {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        text-decoration: none;
+        border-radius: 18px;
+        padding: 0.88rem 0.95rem;
+        color: #334155;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.22s ease;
+        background: transparent;
+        border: 1px solid transparent;
+    }
+
+    .admin-nav-link:hover {
+        color: #0f172a;
+        background: rgba(248, 250, 252, 0.96);
+        border-color: rgba(148, 163, 184, 0.18);
+        transform: translateX(2px);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .admin-nav-link.active {
+        color: #0f172a;
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.08), rgba(59, 130, 246, 0.08));
+        border-color: rgba(59, 130, 246, 0.12);
+        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+    }
+
+    .admin-nav-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(248, 250, 252, 0.92);
+        color: #1e293b;
+        font-size: 1rem;
+        flex-shrink: 0;
+        border: 1px solid rgba(148, 163, 184, 0.12);
+    }
+
+    .admin-nav-link.active .admin-nav-icon {
+        background: rgba(255,255,255,0.90);
+        color: #0f172a;
+    }
     .funcionario-intro-card {
         padding: 1.75rem;
         border-radius: 28px;
@@ -476,9 +590,25 @@
     .funcionario-feature-review {
         min-height: 250px;
         display: flex;
-        align-items: center;
+        align-items: stretch;
         justify-content: center;
         background: transparent;
+    }
+
+    .funcionario-feature-primary {
+        padding: 0;
+    }
+
+    .funcionario-feature-primary .folder-stack {
+        height: 100%;
+        min-height: 250px;
+    }
+
+    .funcionario-feature-primary .folder-content {
+        left: 15px;
+        right: 15px;
+        bottom: 18px;
+        padding: 1rem;
     }
 
     .folder-stack {
@@ -764,6 +894,187 @@
         background: rgba(255,255,255,0.08);
         font-size: 1.4rem;
     }
+    .funcionario-content-stack {
+        display: grid;
+        gap: 1.35rem;
+    }
+
+    .funcionario-main-board-clean {
+        min-height: auto;
+        padding: 1rem;
+        border-radius: 30px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+        align-items: stretch;
+    }
+
+    .funcionario-main-board-clean::before {
+        opacity: 0.65;
+    }
+
+    .funcionario-op-card {
+        position: relative;
+        z-index: 1;
+        min-height: 190px;
+        padding: 1.15rem;
+        border-radius: 22px;
+        text-decoration: none;
+        color: #182033;
+        background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,255,0.96));
+        border: 1px solid rgba(226,232,240,0.95);
+        box-shadow: 0 12px 26px rgba(15,23,42,0.08);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+        overflow: hidden;
+    }
+
+    .funcionario-op-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(circle at 85% 0%, rgba(91,82,214,0.16), transparent 38%),
+            linear-gradient(135deg, rgba(91,82,214,0.05), transparent 48%);
+        opacity: 0;
+        transition: opacity 0.28s ease;
+        pointer-events: none;
+    }
+
+    .funcionario-op-card:hover {
+        transform: translateY(-4px);
+        color: #182033;
+        border-color: rgba(91,82,214,0.22);
+        box-shadow: 0 18px 36px rgba(15,23,42,0.13);
+    }
+
+    .funcionario-op-card:hover::before {
+        opacity: 1;
+    }
+
+    .funcionario-op-card-primary {
+        background: linear-gradient(145deg, #5b52d6, #8b7af0);
+        color: #ffffff;
+        border-color: rgba(255,255,255,0.20);
+        box-shadow: 0 18px 34px rgba(91,82,214,0.22);
+    }
+
+    .funcionario-op-card-primary:hover {
+        color: #ffffff;
+        box-shadow: 0 22px 42px rgba(91,82,214,0.28);
+    }
+
+    .funcionario-op-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 17px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #5b52d6;
+        background: rgba(91,82,214,0.10);
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .funcionario-op-card-primary .funcionario-op-icon {
+        color: #ffffff;
+        background: rgba(255,255,255,0.16);
+    }
+
+    .funcionario-op-body {
+        position: relative;
+        z-index: 1;
+    }
+
+    .funcionario-op-label {
+        display: inline-flex;
+        width: fit-content;
+        padding: 0.32rem 0.68rem;
+        border-radius: 999px;
+        background: rgba(91,82,214,0.10);
+        color: #5b52d6;
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.65rem;
+    }
+
+    .funcionario-op-card-primary .funcionario-op-label {
+        background: rgba(255,255,255,0.18);
+        color: rgba(255,255,255,0.96);
+    }
+
+    .funcionario-op-body h4 {
+        margin-bottom: 0.45rem;
+        font-size: 1.02rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+    }
+
+    .funcionario-op-body p {
+        margin-bottom: 0;
+        color: #667085;
+        font-size: 0.84rem;
+        line-height: 1.55;
+    }
+
+    .funcionario-op-card-primary .funcionario-op-body p {
+        color: rgba(255,255,255,0.86);
+    }
+
+    .funcionario-op-action {
+        position: relative;
+        z-index: 1;
+        margin-top: 1.1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: #5b52d6;
+        font-size: 0.82rem;
+        font-weight: 800;
+    }
+
+    .funcionario-op-card-primary .funcionario-op-action {
+        color: #ffffff;
+    }
+
+    .funcionario-op-card:hover .funcionario-op-action {
+        gap: 0.42rem;
+    }
+
+    .funcionario-main-board-clean {
+        min-height: auto;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    .funcionario-main-board-clean .funcionario-feature-card {
+        min-height: 245px;
+    }
+
+    .funcionario-main-board-clean .funcionario-feature-review {
+        align-items: stretch;
+    }
+
+    .funcionario-main-board-clean .folder-stack {
+        height: 100%;
+        min-height: 245px;
+    }
+
+    .funcionario-feature-report .feature-badge {
+        background: #5b52d6;
+    }
+
+    .funcionario-feature-report .feature-icon-create {
+        background: linear-gradient(135deg, #5b52d6, #8b7af0);
+    }
 
     @keyframes shineMove {
         0% { background-position: -160% 0; }
@@ -790,11 +1101,13 @@
     }
 
     @media (max-width: 1199.98px) {
-        .funcionario-main-board { grid-template-columns: 1fr; }
-        .funcionario-feature-create,
-        .funcionario-feature-upload,
-        .funcionario-feature-review { min-height: 250px; }
-        .folder-stack { height: 240px; }
+        .funcionario-main-board-clean {
+            grid-template-columns: 1fr;
+        }
+
+        .funcionario-op-card {
+            min-height: 170px;
+        }
     }
 
     @media (max-width: 991.98px) {

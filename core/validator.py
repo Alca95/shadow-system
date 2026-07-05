@@ -204,11 +204,15 @@ def _parse_materiales_plano(raw_value) -> List[dict]:
 
     normalized = (
         text.replace("\r", "\n")
-        .replace("|", ",")
-        .replace(";", ",")
-        .replace("\n", ",")
+        .replace("|", "\n")
+        .replace(";", "\n")
     )
-    parts = [p.strip(" -•\t") for p in normalized.split(",") if p.strip(" -•\t")]
+
+    parts = [
+        p.strip(" -•\t")
+        for p in normalized.split("\n")
+        if p.strip(" -•\t")
+    ]
 
     rows = []
     for idx, part in enumerate(parts, start=1):
@@ -216,8 +220,8 @@ def _parse_materiales_plano(raw_value) -> List[dict]:
         if item:
             item["orden"] = idx
             rows.append(item)
-    return rows
 
+    return rows
 
 def _get_materiales_bd_rows(nr_obj: Optional[NRMateriales]) -> List[dict]:
     if not nr_obj:

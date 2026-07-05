@@ -222,6 +222,20 @@
                 display: none;
             }
         }
+        .print-table th:first-child,
+        .print-table td:first-child{
+            width:120px;
+            min-width:120px;
+        }
+
+        .print-table th:nth-child(2),
+        .print-table td:nth-child(2){
+            width:120px;
+            min-width:120px;
+        }
+
+
+
     </style>
 
     {% block extra_css %}{% endblock %}
@@ -243,7 +257,7 @@
 
         <div class="print-header-center">
             <h1>{% block report_title %}Informe operativo{% endblock %}</h1>
-            <p>Shadow OCR · ANDE</p>
+            <p>Shadow · ANDE</p>
         </div>
 
         <div style="text-align:right;">
@@ -258,7 +272,7 @@
     {% block content %}{% endblock %}
 
     <footer class="print-footer">
-        <span>Shadow OCR · Reporte institucional</span>
+        <span>Shadow · Reporte institucional</span>
         <span>Generado automáticamente</span>
     </footer>
 

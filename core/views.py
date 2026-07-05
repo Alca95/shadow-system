@@ -8,6 +8,7 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q, Count
 from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
+from django.db import transaction
 from datetime import datetime
 from collections import Counter
 from django.db.models.functions import TruncMonth
@@ -366,6 +367,120 @@ def _material_matches_for_ui(descripcion_plano, materiales_bd_tabla):
 
     return False
 
+def _material_quantity_equal(a, b):
+    try:
+        return float(str(a).replace(",", ".")) == float(str(b).replace(",", "."))
+    except Exception:
+        return str(a or "").strip().lower() == str(b or "").strip().lower()
+
+
+def _material_unit_equal(a, b):
+    a_norm = _normalize_ui_material_text(a)
+    b_norm = _normalize_ui_material_text(b)
+
+    metros = {"m", "mt", "mts", "metro", "metros"}
+    unidad = {"u", "un", "und", "unidad", "unidades"}
+
+    if a_norm in metros and b_norm in metros:
+        return True
+
+    if a_norm in unidad and b_norm in unidad:
+        return True
+
+    return a_norm == b_norm
+
+
+def _material_desc_equal(a, b):
+    a_norm = _normalize_ui_material_text(a).replace("mm2", "").strip()
+    b_norm = _normalize_ui_material_text(b).replace("mm2", "").strip()
+
+    return a_norm == b_norm or a_norm in b_norm or b_norm in a_norm
+
+
+def _material_row_matches(plano_item, bd_item):
+    return (
+        _material_quantity_equal(plano_item.get("cantidad"), bd_item.get("cantidad"))
+        and _material_unit_equal(plano_item.get("unidad"), bd_item.get("unidad"))
+        and _material_desc_equal(plano_item.get("descripcion"), bd_item.get("descripcion"))
+    )
+
+
+def _ordenar_materiales_plano_por_bd(materiales_plano, materiales_bd):
+    materiales_plano = list(materiales_plano or [])
+    materiales_bd = list(materiales_bd or [])
+
+    usados = set()
+    ordenados = []
+
+    for bd_item in materiales_bd:
+        mejor_idx = None
+
+        for idx, plano_item in enumerate(materiales_plano):
+            if idx in usados:
+                continue
+
+            if _material_desc_equal(plano_item.get("descripcion"), bd_item.get("descripcion")):
+                mejor_idx = idx
+                break
+
+        if mejor_idx is not None:
+            item = materiales_plano[mejor_idx]
+            item["ui_match"] = _material_row_matches(item, bd_item)
+            ordenados.append(item)
+            usados.add(mejor_idx)
+
+    for idx, item in enumerate(materiales_plano):
+        if idx not in usados:
+            item["ui_match"] = False
+            ordenados.append(item)
+
+    return ordenados
+
+def _build_observacion_administrativa(r):
+    estado_final = r.get("estado_resultado_final")
+    fue_editado = r.get("fue_editado") or r.get("fue_editado_manual")
+    inconsistencias = []
+
+    if not r.get("ciudad_ok"):
+        inconsistencias.append("ciudad")
+    if not r.get("zona_ok"):
+        inconsistencias.append("zona")
+    if not r.get("fecha_ok"):
+        inconsistencias.append("fecha")
+    if not r.get("materiales_ok"):
+        inconsistencias.append("materiales")
+
+    if estado_final == "APROBADO":
+        if fue_editado:
+            return (
+                "El reclamo fue aprobado posterior a una corrección manual registrada "
+                "durante el proceso de validación administrativa."
+            )
+        return (
+            "El reclamo cumple con las validaciones operativas y administrativas "
+            "definidas por el sistema."
+        )
+
+    if estado_final == "RECHAZADO":
+        if inconsistencias:
+            return (
+                "El reclamo fue rechazado debido a inconsistencias detectadas en "
+                + ", ".join(inconsistencias)
+                + " respecto a la base de datos institucional."
+            )
+        return "El reclamo fue rechazado por inconsistencias detectadas durante la validación."
+
+    if fue_editado:
+        return (
+            "El reclamo permanece en estado EN VERIFICACIÓN debido a modificaciones "
+            "manuales pendientes de aprobación administrativa final."
+        )
+
+    return (
+        "El reclamo permanece en estado EN VERIFICACIÓN porque requiere revisión "
+        "administrativa antes de su aprobación final."
+    )
+
 def _build_resultado_detalle(resultado):
     nr_obj = _safe_getattr(resultado, "nr_materiales_encontrado", None)
     reclamo_obj = _safe_getattr(resultado, "reclamo_encontrado", None)
@@ -446,11 +561,10 @@ def _build_resultado_detalle(resultado):
     materiales_bd_tabla_text = _parse_material_text_to_rows(materiales_bd_texto)
     materiales_bd_tabla = _merge_material_rows(materiales_bd_tabla_rel, materiales_bd_tabla_text)
 
-    for item in materiales_plano_tabla:
-        item["ui_match"] = _material_matches_for_ui(
-            item.get("descripcion"),
-            materiales_bd_tabla,
-        )
+    materiales_plano_tabla = _ordenar_materiales_plano_por_bd(
+        materiales_plano_tabla,
+        materiales_bd_tabla,
+    )
 
     estado_resultado = _first_value(resultado, ["estado_resultado"], "EN_VERIFICACION")
     estado_resultado_final = _first_value(resultado, ["estado_resultado_final"], None) or _first_value(resultado, ["estado_resultado_manual"], None) or estado_resultado
@@ -487,6 +601,15 @@ def _build_resultado_detalle(resultado):
         ),
         "motivo_resultado": motivo_resultado,
         "motivo_resultado_limpio": _clean_motivo_text(motivo_resultado),
+        "observacion_administrativa": _build_observacion_administrativa({
+            "estado_resultado_final": estado_resultado_final,
+            "ciudad_ok": bool(_first_value(resultado, ["ciudad_ok"], False)),
+            "zona_ok": bool(_first_value(resultado, ["zona_ok"], False)),
+            "fecha_ok": bool(_first_value(resultado, ["fecha_ok"], False)),
+            "materiales_ok": bool(_first_value(resultado, ["materiales_ok"], False)),
+            "fue_editado": any(m.fue_editado for m in materiales_detectados_qs),
+            "fue_editado_manual": bool(_first_value(resultado, ["fue_editado_manual"], False)),
+        }),
         "materiales_plano": None if str(materiales_plano_texto).strip().lower() in {"ninguno", "-", "none", ""} else materiales_plano_texto,
         "materiales_plano_tabla": materiales_plano_tabla,
         "materiales_bd": None if str(materiales_bd_texto).strip().lower() in {"ninguno", "-", "none", ""} else materiales_bd_texto,
@@ -904,7 +1027,30 @@ def carpetas_view(request):
 
     carpetas = carpetas.order_by("-anio", "-mes", "-fecha_creacion")
     empresas = EmpresaContratista.objects.filter(activo=True).order_by("nombre")
+    meses_choices = [
+        (1, "Enero"),
+        (2, "Febrero"),
+        (3, "Marzo"),
+        (4, "Abril"),
+        (5, "Mayo"),
+        (6, "Junio"),
+        (7, "Julio"),
+        (8, "Agosto"),
+        (9, "Septiembre"),
+        (10, "Octubre"),
+        (11, "Noviembre"),
+        (12, "Diciembre"),
+    ]
 
+    anio_actual = timezone.localdate().year
+
+    anios_disponibles = list(range(anio_actual + 1, anio_actual - 4, -1))
+    meses_dict = dict(meses_choices)
+
+    carpetas = list(carpetas)
+
+    for carpeta in carpetas:
+        carpeta.mes_nombre = meses_dict.get(carpeta.mes, carpeta.mes)
     contexto = {
         "app_name": "Shadow",
         "titulo_pantalla": "Carpetas",
@@ -919,6 +1065,8 @@ def carpetas_view(request):
             "nr": nr_busqueda,
         },
         "estado_choices": Carpeta.ESTADO_CHOICES,
+        "meses_choices": meses_choices,
+        "anios_disponibles": anios_disponibles,
     }
 
     if user_is_contratista(request.user):
@@ -933,12 +1081,43 @@ def crear_carpeta_view(request):
 
     empresas = EmpresaContratista.objects.filter(activo=True).order_by("nombre")
     error = None
+    meses_choices = [
+        (1, "Enero"),
+        (2, "Febrero"),
+        (3, "Marzo"),
+        (4, "Abril"),
+        (5, "Mayo"),
+        (6, "Junio"),
+        (7, "Julio"),
+        (8, "Agosto"),
+        (9, "Septiembre"),
+        (10, "Octubre"),
+        (11, "Noviembre"),
+        (12, "Diciembre"),
+    ]
+
+    anio_actual = timezone.localdate().year
+    anios_disponibles = list(range(anio_actual + 1, anio_actual - 4, -1))
+
+    valores_form = {
+        "empresa": "",
+        "mes": "",
+        "anio": str(anio_actual),
+        "observacion_general": "",
+    }
+
 
     if request.method == "POST":
         mes = request.POST.get("mes")
         anio = request.POST.get("anio")
         empresa_id = request.POST.get("empresa")
         observacion_general = request.POST.get("observacion_general", "").strip()
+        valores_form = {
+            "empresa": empresa_id or "",
+            "mes": mes or "",
+            "anio": anio or "",
+            "observacion_general": observacion_general,
+        }
 
         if not mes or not anio or not empresa_id:
             error = "Debes completar mes, año y empresa."
@@ -981,6 +1160,9 @@ def crear_carpeta_view(request):
         "titulo_pantalla": "Crear carpeta",
         "empresas": empresas,
         "error": error,
+        "meses_choices": meses_choices,
+        "anios_disponibles": anios_disponibles,
+        "valores_form": valores_form,
     })
 
 
@@ -1012,6 +1194,23 @@ def detalle_carpeta_view(request, carpeta_id):
         planos = planos.filter(estado=estado_plano)
 
     planos = planos.order_by("-fecha_carga")
+
+    meses_dict = {
+        1: "Enero",
+        2: "Febrero",
+        3: "Marzo",
+        4: "Abril",
+        5: "Mayo",
+        6: "Junio",
+        7: "Julio",
+        8: "Agosto",
+        9: "Septiembre",
+        10: "Octubre",
+        11: "Noviembre",
+        12: "Diciembre",
+    }
+
+    carpeta.mes_nombre = meses_dict.get(carpeta.mes, carpeta.mes)
 
     contexto = {
         "app_name": "Shadow",
@@ -1400,9 +1599,7 @@ def procesar_plano_view(request, plano_id):
     if request.method == "POST":
         es_reproceso = bool(plano.procesado)
 
-        extractor = (request.POST.get("extractor") or "ocr").strip().lower()
-        if extractor not in {"ocr", "gpt"}:
-            extractor = "ocr"
+        extractor = "gpt"
 
         accion_base = "REPROCESAR_PLANO" if es_reproceso else "INICIAR_PROCESAMIENTO_PLANO"
         accion = f"{accion_base}_{extractor.upper()}"
@@ -1497,30 +1694,49 @@ def resumen_plano_view(request, plano_id):
     })
 
 @login_required
+@transaction.atomic
 def cancelar_plano_view(request, plano_id):
     require_admin_or_funcionario(request)
 
-    plano = get_object_or_404(Plano, id=plano_id, eliminado=False)
+    plano = get_object_or_404(
+        Plano,
+        id=plano_id,
+        eliminado=False
+    )
 
     if request.method == "POST":
-        _set_plano_en_edicion(request, plano.id, False)
-        plano.eliminado = True
-        plano.fecha_eliminacion = timezone.now()
-        plano.save()
 
+        carpeta_id = plano.carpeta.id
+        plano_codigo = plano.id_plano_deposito
+
+        _set_plano_en_edicion(request, plano.id, False)
+
+        # Eliminar archivo físico del storage
+        if plano.archivo:
+            plano.archivo.delete(save=False)
+
+        # Auditoría previa a eliminación
         Auditoria.objects.create(
-            plano=plano,
             carpeta=plano.carpeta,
             usuario=str(request.user),
-            accion="ELIMINAR_PLANO",
-            descripcion=f"Eliminación lógica del plano {plano.id_plano_deposito}",
+            accion="ELIMINAR_PLANO_FISICO",
+            descripcion=f"Plano eliminado físicamente: {plano_codigo}",
             entidad="Plano",
             entidad_id=str(plano.id),
         )
 
-        return redirect("detalle_carpeta", carpeta_id=plano.carpeta.id)
+        # Eliminación física completa
+        plano.delete()
 
-    return redirect("detalle_plano", plano_id=plano.id)
+        return redirect(
+            "detalle_carpeta",
+            carpeta_id=carpeta_id
+        )
+
+    return redirect(
+        "detalle_plano",
+        plano_id=plano.id
+    )
 
 
 @login_required

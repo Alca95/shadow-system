@@ -398,6 +398,7 @@ def _parse_gpt_fecha(fecha_raw):
 
 def _normalize_gpt_materiales(materiales):
     salida = []
+
     for item in materiales or []:
         if not isinstance(item, dict):
             continue
@@ -407,27 +408,42 @@ def _normalize_gpt_materiales(materiales):
             continue
 
         cantidad = item.get("cantidad", 1)
+
         try:
-            cantidad_num = float(cantidad)
+            cantidad_num = float(str(cantidad).replace(",", "."))
         except Exception:
             cantidad_num = 1.0
 
-        if cantidad_num.is_integer():
-            cantidad_mostrar = str(int(cantidad_num))
-        else:
-            cantidad_mostrar = str(cantidad_num).replace(".", ",")
+        cantidad_mostrar = str(int(cantidad_num)) if cantidad_num.is_integer() else str(cantidad_num).replace(".", ",")
 
-        salida.append(
-            {
-                "cantidad": cantidad_num,
-                "cantidad_mostrar": cantidad_mostrar,
-                "descripcion": descripcion,
-                "unidad_medida": "unidad",
-                "catalogo_match": True,
-                "score_catalogo": 100,
-                "texto_original": f"{cantidad_mostrar} {descripcion}",
-            }
-        )
+        descripcion_norm = descripcion.upper().replace("²", "2")
+        descripcion_norm = re.sub(r"\s+", " ", descripcion_norm).strip()
+
+        if "CABLE" in descripcion_norm:
+            unidad_medida = "metro" if cantidad_num == 1 else "metros"
+
+            descripcion_norm = (
+                descripcion_norm
+                .replace("2X25MM2", "2X2,5")
+                .replace("2X2.5MM2", "2X2,5")
+                .replace("2X2,5MM2", "2X2,5")
+                .replace("2X2 5MM2", "2X2,5")
+                .replace("2 X 2,5 MM2", "2X2,5")
+                .replace("2 X 25 MM2", "2X2,5")
+            )
+        else:
+            unidad_medida = "unidad"
+
+        salida.append({
+            "cantidad": cantidad_num,
+            "cantidad_mostrar": cantidad_mostrar,
+            "descripcion": descripcion_norm,
+            "unidad_medida": unidad_medida,
+            "catalogo_match": True,
+            "score_catalogo": 100,
+            "texto_original": f"{cantidad_mostrar} {descripcion}",
+        })
+
     return salida
 
 
@@ -625,7 +641,7 @@ def validar_plano_completo(plano: Plano):
             fecha_ocr = detalle_ocr.get("fecha")
             materiales_ocr = detalle_ocr.get("materiales", []) or []
 
-            materiales_plano_texto = ", ".join(
+            materiales_plano_texto = "\n".join(
                 f"{m.get('cantidad_mostrar') or m.get('cantidad') or '-'} {m.get('descripcion', '')}".strip()
                 for m in materiales_ocr
                 if (m.get("descripcion") or "").strip()
@@ -690,12 +706,8 @@ def procesar_plano_con_gpt(plano: Plano, usuario: str = "sistema"):
     try:
         file_path = plano.archivo.path
 
-        texto_ocr_local = ocr_text_from_file(file_path)
-        detalles_ocr_local = extract_detalles_por_nr(texto_ocr_local or "")
-
         payload = extract_with_gpt(file_path)
         nrs, detalles_gpt = _normalize_gpt_detalles_to_internal(payload)
-        detalles_gpt = _merge_gpt_with_ocr_support(nrs, detalles_gpt, detalles_ocr_local)
 
         primera_fecha = None
         for nr in nrs:
@@ -704,7 +716,7 @@ def procesar_plano_con_gpt(plano: Plano, usuario: str = "sistema"):
                 primera_fecha = fecha_nr
                 break
 
-        plano.texto_ocr = texto_ocr_local or json.dumps(payload, ensure_ascii=False, indent=2)
+        plano.texto_ocr = json.dumps(payload, ensure_ascii=False, indent=2)
         plano.nr_detectados = ",".join(nrs) if nrs else None
         plano.fecha_plano = primera_fecha
         plano.procesado = True

@@ -5,7 +5,7 @@
 
 {% block content %}
 
-<div class="row justify-content-center shadow-animate-in">
+<div class="row justify-content-center shadow-animate-in crear-carpeta-page">
     <div class="col-xl-9 col-xxl-8">
 
 ```
@@ -19,11 +19,6 @@
                 </div>
 
                 <div>
-                    <div class="shadow-header-badge mb-1">
-                        <i class="bi bi-stars"></i>
-                        Registro operativo
-                    </div>
-
                     <h2 class="shadow-title mb-0">Crear carpeta</h2>
                 </div>
             </div>
@@ -64,33 +59,35 @@
                     <select name="empresa" class="shadow-select contrast-input" required>
                         <option value="">Seleccionar empresa</option>
                         {% for empresa in empresas %}
-                            <option value="{{ empresa.id }}">{{ empresa.nombre }}</option>
+                            <option value="{{ empresa.id }}" {% if valores_form.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
+                                {{ empresa.nombre }}
+                            </option>
                         {% endfor %}
                     </select>
                 </div>
 
                 <div class="col-md-6">
                     <label class="shadow-form-label">Mes</label>
-                    <input
-                        type="number"
-                        name="mes"
-                        class="shadow-input contrast-input"
-                        min="1"
-                        max="12"
-                        placeholder="Ej: 3"
-                        required
-                    >
+                    <select name="mes" class="shadow-select contrast-input crear-carpeta-select" required>
+                        <option value="">Seleccionar mes</option>
+                        {% for mes_num, mes_nombre in meses_choices %}
+                            <option value="{{ mes_num }}" {% if valores_form.mes == mes_num|stringformat:"s" %}selected{% endif %}>
+                                {{ mes_nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div class="col-md-6">
                     <label class="shadow-form-label">Año</label>
-                    <input
-                        type="number"
-                        name="anio"
-                        class="shadow-input contrast-input"
-                        placeholder="Ej: 2026"
-                        required
-                    >
+                    <select name="anio" class="shadow-select contrast-input crear-carpeta-select" required>
+                        <option value="">Seleccionar año</option>
+                        {% for anio_item in anios_disponibles %}
+                            <option value="{{ anio_item }}" {% if valores_form.anio == anio_item|stringformat:"s" %}selected{% endif %}>
+                                {{ anio_item }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div class="col-12">
@@ -100,7 +97,7 @@
                         class="shadow-textarea contrast-input"
                         rows="4"
                         placeholder="Agregar alguna observación general sobre la carpeta..."
-                    ></textarea>
+                    >{{ valores_form.observacion_general }}</textarea>
                 </div>
 
                 <div class="col-12 d-flex justify-content-between flex-wrap gap-2 mt-2">
@@ -125,6 +122,11 @@
 </div>
 
 <style>
+
+.crear-carpeta-page {
+    margin-top: -1.6rem;
+}
+
 /* HEADER */
 .crear-carpeta-hero {
     border-radius: 28px;
@@ -189,6 +191,16 @@
         width: 100%;
     }
 }
+
+    .crear-carpeta-select {
+        min-height: 52px;
+        font-weight: 600;
+        color: #243247;
+    }
+
+
+
+
 </style>
 
 {% endblock %}

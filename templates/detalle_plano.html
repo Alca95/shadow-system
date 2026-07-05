@@ -1288,7 +1288,7 @@
     flex-wrap:wrap;
     justify-content:flex-end;
 }
-
+}
 .dp-admin-toolbar{
     display:flex;
     align-items:center;
@@ -1364,6 +1364,19 @@ inline-edit-
 
 .dp-table tbody tr td.dp-cell-first-warning{
     border-left:4px solid #ffc107 !important;
+}
+
+.dp-field-mismatch{
+    border-color:#f3b5b5 !important;
+    background:#fff1f1 !important;
+}
+.dp-field-mismatch label{
+    color:#b91c1c !important;
+}
+
+.dp-field-mismatch .dp-field-value{
+    color:#7f1d1d !important;
+    font-weight:900 !important;
 }
 
 }
@@ -1480,7 +1493,7 @@ inline-edit-
                                 <button type="submit" class="btn dp-action-btn dp-action-btn--primary dp-action-btn--xl">
                                     <span class="dp-action-btn__content">
                                         <span>Procesar</span>
-                                        <small>OCR</small>
+                                        <small>IA</small>
                                     </span>
                                     <i class="bi bi-stars"></i>
                                 </button>
@@ -1521,7 +1534,7 @@ inline-edit-
                             aria-expanded="false"
                             aria-controls="bloqueInfoExtra">
                             <i class="bi bi-file-earmark-text"></i>
-                            <span>Extraídos por OCR</span>
+                            <span>Extraídos por IA</span>
                         </button>
 
                         <a href="#resultados-nr" class="btn dp-action-btn dp-action-btn--white">
@@ -1704,7 +1717,7 @@ inline-edit-
                                                     </div>
 
                                                     <div class="dp-form-grid">
-                                                        <div class="dp-field">
+                                                        <div class="dp-field {% if not r.ciudad_ok %}dp-field-mismatch{% endif %}">
                                                             <label>Ciudad</label>
                                                             <div class="dp-field-value">{{ r.ciudad_plano }}</div>
 
@@ -1716,7 +1729,7 @@ inline-edit-
                                                             {% endif %}
                                                         </div>
 
-                                                        <div class="dp-field">
+                                                        <div class="dp-field {% if not r.zona_ok %}dp-field-mismatch{% endif %}">
                                                             <label>Zona</label>
                                                             <div class="dp-field-value">{{ r.zona_plano }}</div>
 
@@ -1728,7 +1741,7 @@ inline-edit-
                                                             {% endif %}
                                                         </div>
 
-                                                        <div class="dp-field">
+                                                        <div class="dp-field {% if not r.fecha_ok %}dp-field-mismatch{% endif %}">
                                                             <label>Fecha</label>
                                                             <div class="dp-field-value">{{ r.fecha_plano }}</div>
 

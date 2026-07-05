@@ -5,7 +5,7 @@ import json
 import os
 import re
 from typing import Any, Dict, List, Optional
-
+from pathlib import Path
 from openai import OpenAI
 
 
@@ -24,6 +24,41 @@ def _get_client() -> OpenAI:
 def _encode_file_base64(file_path: str) -> str:
     with open(file_path, "rb") as f:
         return base64.b64encode(f.read()).decode("utf-8")
+
+def _get_file_extension(file_path: str) -> str:
+    return Path(file_path).suffix.lower()
+
+
+def _build_file_content_part(file_path: str, file_b64: str) -> Dict[str, Any]:
+    extension = _get_file_extension(file_path)
+    filename = Path(file_path).name
+
+    if extension == ".pdf":
+        return {
+            "type": "input_file",
+            "filename": filename,
+            "file_data": f"data:application/pdf;base64,{file_b64}",
+        }
+
+    image_mime_by_ext = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".webp": "image/webp",
+    }
+
+    mime_type = image_mime_by_ext.get(extension)
+
+    if not mime_type:
+        raise RuntimeError(
+            f"Formato de archivo no soportado para extracción GPT: {extension}"
+        )
+
+    return {
+        "type": "input_image",
+        "image_url": f"data:{mime_type};base64,{file_b64}",
+        "detail": "high",
+    }
 
 
 def _build_prompt() -> str:
@@ -209,7 +244,8 @@ def _try_parse_json_from_text(text: str) -> Dict[str, Any]:
 
 def extract_with_gpt(file_path: str) -> Dict[str, Any]:
     client = _get_client()
-    image_b64 = _encode_file_base64(file_path)
+    file_b64 = _encode_file_base64(file_path)
+    file_content_part = _build_file_content_part(file_path, file_b64)
 
     response = client.responses.create(
         model=MODEL_NAME,
@@ -230,11 +266,7 @@ def extract_with_gpt(file_path: str) -> Dict[str, Any]:
                         "type": "input_text",
                         "text": _build_prompt(),
                     },
-                    {
-                        "type": "input_image",
-                        "image_url": f"data:image/png;base64,{image_b64}",
-                        "detail": "high",
-                    },
+                    file_content_part,
                 ],
             },
         ],

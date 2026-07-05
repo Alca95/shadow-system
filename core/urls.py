@@ -73,10 +73,10 @@ urlpatterns = [
     # =========================
     # 📄 PLANOS
     # =========================
-    path('planos/subir/<int:carpeta_id>/', views.subir_plano_view, name='subir_plano'),
-    path('planos/<int:plano_id>/', views.detalle_plano_view, name='detalle_plano'),
+    
     path('planos/subir/', views.subir_plano_view, name='subir_plano'),
     path('planos/subir/<int:carpeta_id>/', views.subir_plano_view, name='subir_plano_carpeta'),
+    path('planos/<int:plano_id>/', views.detalle_plano_view, name='detalle_plano'),
 
     # ✅ ELIMINACIÓN LÓGICA DE PLANO
     path('planos/<int:plano_id>/cancelar/', views.cancelar_plano_view, name='cancelar_plano'),
