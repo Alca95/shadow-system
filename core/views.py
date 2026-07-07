@@ -17,7 +17,7 @@ import json
 from collections import Counter, defaultdict
 from datetime import datetime
 from collections import defaultdict, Counter
-
+import os
 from .forms import UsuarioCrearForm, UsuarioEditarForm
 from .models import (
     Carpeta,
@@ -34,7 +34,9 @@ from .validator import (
     compare_text_fuzzy,
     compare_dates,
 )
+import fitz
 
+from django.conf import settings
 from core.models import (
     Plano,
     Carpeta,
@@ -306,7 +308,52 @@ def _extract_material_rows_from_related(nr_obj):
 
     return rows
 
+def _build_pdf_preview_image_url(plano):
+    """
+    Genera una imagen PNG de la primera página del PDF para vista previa.
+    No modifica el archivo original.
+    """
+    if not plano or not plano.archivo:
+        return ""
 
+    archivo_path = plano.archivo.path
+    archivo_nombre = plano.archivo.name
+    archivo_ext = os.path.splitext(archivo_nombre)[1].lower()
+
+    if archivo_ext != ".pdf":
+        return ""
+
+    preview_dir = os.path.join(settings.MEDIA_ROOT, "preview_planos")
+    os.makedirs(preview_dir, exist_ok=True)
+
+    preview_name = f"plano_{plano.id}_preview.png"
+    preview_path = os.path.join(preview_dir, preview_name)
+
+    try:
+        necesita_generar = (
+            not os.path.exists(preview_path)
+            or os.path.getmtime(preview_path) < os.path.getmtime(archivo_path)
+        )
+
+        if necesita_generar:
+            doc = fitz.open(archivo_path)
+
+            if doc.page_count == 0:
+                doc.close()
+                return ""
+
+            page = doc.load_page(0)
+            matrix = fitz.Matrix(2.8, 2.8)
+            pix = page.get_pixmap(matrix=matrix, alpha=False)
+            pix.save(preview_path)
+
+            doc.close()
+
+        return f"{settings.MEDIA_URL.rstrip('/')}/preview_planos/{preview_name}"
+
+    except Exception:
+        return ""
+    
 def _merge_material_rows(*groups):
     rows = []
     seen = set()
@@ -1351,7 +1398,14 @@ def detalle_plano_view(request, plano_id):
     plano_en_edicion = _plano_en_edicion(request, plano.id)
     puede_guardar_plano = bool(plano.procesado and plano_en_edicion and not user_is_contratista(request.user))
     puede_ver_resumen = bool(plano.procesado and not plano_en_edicion)
+    archivo_url = plano.archivo.url if plano.archivo else ""
+    archivo_nombre = os.path.basename(plano.archivo.name) if plano.archivo else ""
+    archivo_ext = os.path.splitext(archivo_nombre)[1].lower() if archivo_nombre else ""
 
+    es_imagen_preview = archivo_ext in [".jpg", ".jpeg", ".png", ".webp"]
+    es_pdf_preview = archivo_ext == ".pdf"
+    tiene_preview_plano = bool(archivo_url)
+    pdf_preview_image_url = _build_pdf_preview_image_url(plano) if es_pdf_preview else ""
     contexto = {
         "app_name": "Shadow",
         "titulo_pantalla": "Detalle del plano",
@@ -1366,6 +1420,13 @@ def detalle_plano_view(request, plano_id):
         "puede_ver_resumen": puede_ver_resumen,
         "puede_editar_materiales": _user_can_edit_materiales(request.user),
         "puede_cambiar_estado_nr": _user_can_change_nr_estado(request.user),
+        "archivo_url": archivo_url,
+        "archivo_nombre": archivo_nombre,
+        "archivo_ext": archivo_ext,
+        "es_imagen_preview": es_imagen_preview,
+        "es_pdf_preview": es_pdf_preview,
+        "tiene_preview_plano": tiene_preview_plano,
+        "pdf_preview_image_url": pdf_preview_image_url,
     }
 
     if user_is_contratista(request.user):

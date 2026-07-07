@@ -1379,6 +1379,63 @@ inline-edit-
     font-weight:900 !important;
 }
 
+.dp-status-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: .75rem;
+}
+
+.dp-status-back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .45rem;
+    min-height: 42px;
+    padding: .65rem .95rem;
+    border-radius: 999px;
+    color: #ffffff;
+    background: rgba(255,255,255,.10);
+    border: 1px solid rgba(255,255,255,.20);
+    font-weight: 800;
+    box-shadow: 0 10px 22px rgba(0,0,0,.12);
+}
+
+.dp-status-back-btn:hover,
+.dp-status-back-btn:focus {
+    color: #ffffff;
+    background: rgba(255,255,255,.16);
+    border-color: rgba(255,255,255,.30);
+    transform: translateY(-2px);
+}
+
+@media (max-width: 991.98px) {
+    .dp-status-actions {
+        align-items: flex-start;
+    }
+}
+
+.dp-preview-hide-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+    min-height: 38px;
+    padding: .55rem .85rem;
+    border-radius: 999px;
+    color: var(--dp-text-soft);
+    background: linear-gradient(180deg, #ffffff, #f6f7ff);
+    border: 1px solid rgba(63,59,151,.12);
+    font-weight: 800;
+}
+
+.dp-preview-hide-btn:hover,
+.dp-preview-hide-btn:focus {
+    color: var(--dp-text-soft);
+    border-color: rgba(63,59,151,.22);
+    transform: translateY(-1px);
+}
+
 }
 
     </style>
@@ -1407,34 +1464,41 @@ inline-edit-
                 </div>
 
                 <div class="dp-hero-board__status-slot">
-                    {% if plano.procesado or puede_guardar_plano or puede_ver_resumen %}
-                        {% if plano.estado == "APROBADO" %}
-                            <span class="dp-master-badge is-success">
-                                <i class="bi bi-patch-check-fill"></i>
-                                APROBADO
-                            </span>
-                        {% elif plano.estado == "RECHAZADO" %}
-                            <span class="dp-master-badge is-danger">
-                                <i class="bi bi-x-circle-fill"></i>
-                                RECHAZADO
-                            </span>
-                        {% elif plano.estado == "EN_REVISION" %}
-                            <span class="dp-master-badge is-info">
-                                <i class="bi bi-search"></i>
-                                EN REVISIÓN
-                            </span>
-                        {% elif plano.estado == "EN_ESPERA" %}
-                            <span class="dp-master-badge is-muted">
-                                <i class="bi bi-pause-circle"></i>
-                                EN ESPERA
-                            </span>
-                        {% else %}
-                            <span class="dp-master-badge is-warning">
-                                <i class="bi bi-exclamation-triangle-fill"></i>
-                                EN VERIFICACIÓN
-                            </span>
+                    <div class="dp-status-actions">
+                        {% if plano.procesado or puede_guardar_plano or puede_ver_resumen %}
+                            {% if plano.estado == "APROBADO" %}
+                                <span class="dp-master-badge is-success">
+                                    <i class="bi bi-patch-check-fill"></i>
+                                    APROBADO
+                                </span>
+                            {% elif plano.estado == "RECHAZADO" %}
+                                <span class="dp-master-badge is-danger">
+                                    <i class="bi bi-x-circle-fill"></i>
+                                    RECHAZADO
+                                </span>
+                            {% elif plano.estado == "EN_REVISION" %}
+                                <span class="dp-master-badge is-info">
+                                    <i class="bi bi-search"></i>
+                                    EN REVISIÓN
+                                </span>
+                            {% elif plano.estado == "EN_ESPERA" %}
+                                <span class="dp-master-badge is-muted">
+                                    <i class="bi bi-pause-circle"></i>
+                                    EN ESPERA
+                                </span>
+                            {% else %}
+                                <span class="dp-master-badge is-warning">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                    EN VERIFICACIÓN
+                                </span>
+                            {% endif %}
                         {% endif %}
-                    {% endif %}
+
+                        <a href="{% url 'detalle_carpeta' plano.carpeta.id %}" class="btn dp-status-back-btn">
+                            <i class="bi bi-arrow-left-circle"></i>
+                            <span>Volver a carpeta</span>
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -1526,6 +1590,19 @@ inline-edit-
                             </a>
                         {% endif %}
 
+                        {% if plano.archivo %}
+                        <button
+                            type="button"
+                            class="btn dp-action-btn dp-action-btn--white"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#vistaPreviaPlano"
+                            aria-expanded="false"
+                            aria-controls="vistaPreviaPlano">
+                            <i class="bi bi-eye"></i>
+                            <span>Mostrar plano</span>
+                        </button>
+                        {% endif %}
+
                         <button
                             type="button"
                             class="btn dp-action-btn dp-action-btn--white"
@@ -1545,7 +1622,7 @@ inline-edit-
                 </div>
             </div>
         </section>
-{% if tiene_preview_plano %}
+{% if plano.archivo %}
             <div class="collapse mb-4" id="vistaPreviaPlano">
                 <div class="dp-panel dp-preview-panel">
                     <div class="dp-panel__head dp-panel__head--tight">
@@ -1553,13 +1630,44 @@ inline-edit-
                             <div class="dp-section-label">Visualización</div>
                             <h5 class="dp-section-title mb-0">Vista previa del plano</h5>
                         </div>
+
+                        <button
+                            type="button"
+                            class="btn dp-preview-hide-btn"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#vistaPreviaPlano"
+                            aria-controls="vistaPreviaPlano">
+                            <i class="bi bi-chevron-up"></i>
+                            Ocultar
+                        </button>
                     </div>
 
                     <div class="dp-preview-wrap">
                         {% if es_imagen_preview %}
                             <img src="{{ archivo_url }}" alt="{{ archivo_nombre|default:'Plano' }}" class="dp-preview-image">
+
                         {% elif es_pdf_preview %}
-                            <iframe src="{{ archivo_url }}" class="dp-preview-frame" title="Vista previa del plano"></iframe>
+                            {% if pdf_preview_image_url %}
+                                <img src="{{ pdf_preview_image_url }}" alt="{{ archivo_nombre|default:'Plano PDF' }}" class="dp-preview-image">
+
+                                <div class="mt-3 d-flex justify-content-end">
+                                    <a href="{{ archivo_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-box-arrow-up-right me-1"></i>
+                                        Abrir PDF original
+                                    </a>
+                                </div>
+                            {% else %}
+                                <div class="dp-empty-main">
+                                    <i class="bi bi-file-earmark-pdf"></i>
+                                    <div>
+                                        <strong>Vista previa del PDF no disponible</strong>
+                                        <div>
+                                            <a href="{{ archivo_url }}" target="_blank" rel="noopener">Abrir PDF original</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+
                         {% else %}
                             <div class="dp-empty-main">
                                 <i class="bi bi-paperclip"></i>
@@ -1742,7 +1850,7 @@ inline-edit-
                                                         </div>
 
                                                         <div class="dp-field {% if not r.fecha_ok %}dp-field-mismatch{% endif %}">
-                                                            <label>Fecha</label>
+                                                            <label>Fecha de trabajo</label>
                                                             <div class="dp-field-value">{{ r.fecha_plano }}</div>
 
                                                             {% if r.fue_editado_manual %}
@@ -1822,7 +1930,7 @@ inline-edit-
                                                         </div>
 
                                                         <div class="dp-field">
-                                                            <label>Fecha reclamo / trabajo</label>
+                                                            <label>Fecha reclamo</label>
                                                             <div class="dp-field-value">{{ r.fecha_reclamo }}</div>
                                                         </div>
                                                     </div>

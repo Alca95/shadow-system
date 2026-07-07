@@ -653,11 +653,41 @@ def validar_plano_completo(plano: Plano):
 
             resultado_plano.reclamo_encontrado = reclamo
             resultado_plano.nr_materiales_encontrado = nr_obj
-            resultado_plano.save(update_fields=["reclamo_encontrado", "nr_materiales_encontrado"])
+
+            # Guardamos exactamente los valores extraídos del plano.
+            # Esto evita que la vista muestre datos de fallback desde la BD.
+            resultado_plano.ciudad_plano_original = reclamo.ciudad
+            resultado_plano.zona_plano_original = zona_ocr
+            resultado_plano.fecha_plano_original = fecha_ocr
+
+            # Si se reprocesa el plano, limpiamos correcciones manuales anteriores
+            # para que no queden datos viejos mezclados con una nueva extracción.
+            resultado_plano.ciudad_plano_editada = None
+            resultado_plano.zona_plano_editada = None
+            resultado_plano.fecha_plano_editada = None
+            resultado_plano.fue_editado_manual = False
+            resultado_plano.editado_manual_por = None
+            resultado_plano.fecha_edicion_manual = None
+            resultado_plano.motivo_edicion_manual = None
+
+            resultado_plano.save(update_fields=[
+                "reclamo_encontrado",
+                "nr_materiales_encontrado",
+                "ciudad_plano_original",
+                "zona_plano_original",
+                "fecha_plano_original",
+                "ciudad_plano_editada",
+                "zona_plano_editada",
+                "fecha_plano_editada",
+                "fue_editado_manual",
+                "editado_manual_por",
+                "fecha_edicion_manual",
+                "motivo_edicion_manual",
+            ])
 
             evaluar_resultado_nr(
                 resultado=resultado_plano,
-                ciudad_plano=reclamo.ciudad,   # mantienes tu lógica actual de ciudad confiable
+                ciudad_plano=reclamo.ciudad,
                 zona_plano=zona_ocr,
                 fecha_plano=fecha_ocr,
                 materiales_plano_texto=materiales_plano_texto,

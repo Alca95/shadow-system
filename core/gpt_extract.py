@@ -4,10 +4,12 @@ import base64
 import json
 import os
 import re
-from typing import Any, Dict, List, Optional
+import tempfile
 from pathlib import Path
-from openai import OpenAI
+from typing import Any, Dict, List, Optional
 
+import fitz
+from openai import OpenAI
 
 MODEL_NAME = "gpt-5.4"
 
@@ -25,20 +27,34 @@ def _encode_file_base64(file_path: str) -> str:
     with open(file_path, "rb") as f:
         return base64.b64encode(f.read()).decode("utf-8")
 
-def _get_file_extension(file_path: str) -> str:
-    return Path(file_path).suffix.lower()
+def _render_pdf_first_page_to_png(pdf_path: str) -> str:
+    """
+    Convierte la primera página de un PDF a PNG temporal.
+    Esto preserva la disposición visual del plano para GPT.
+    """
+    doc = fitz.open(pdf_path)
 
+    if doc.page_count == 0:
+        doc.close()
+        raise RuntimeError("El PDF no contiene páginas.")
 
-def _build_file_content_part(file_path: str, file_b64: str) -> Dict[str, Any]:
-    extension = _get_file_extension(file_path)
-    filename = Path(file_path).name
+    page = doc.load_page(0)
 
-    if extension == ".pdf":
-        return {
-            "type": "input_file",
-            "filename": filename,
-            "file_data": f"data:application/pdf;base64,{file_b64}",
-        }
+    # 3x mejora la resolución visual sin generar archivos excesivos.
+    matrix = fitz.Matrix(3, 3)
+    pix = page.get_pixmap(matrix=matrix, alpha=False)
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+    tmp_path = tmp.name
+    tmp.close()
+
+    pix.save(tmp_path)
+    doc.close()
+
+    return tmp_path
+
+def _build_image_content_part(file_path: str, file_b64: str) -> Dict[str, Any]:
+    extension = Path(file_path).suffix.lower()
 
     image_mime_by_ext = {
         ".png": "image/png",
@@ -51,7 +67,7 @@ def _build_file_content_part(file_path: str, file_b64: str) -> Dict[str, Any]:
 
     if not mime_type:
         raise RuntimeError(
-            f"Formato de archivo no soportado para extracción GPT: {extension}"
+            f"Formato de imagen no soportado para extracción GPT: {extension}"
         )
 
     return {
@@ -59,7 +75,6 @@ def _build_file_content_part(file_path: str, file_b64: str) -> Dict[str, Any]:
         "image_url": f"data:{mime_type};base64,{file_b64}",
         "detail": "high",
     }
-
 
 def _build_prompt() -> str:
     return """
@@ -244,44 +259,62 @@ def _try_parse_json_from_text(text: str) -> Dict[str, Any]:
 
 def extract_with_gpt(file_path: str) -> Dict[str, Any]:
     client = _get_client()
-    file_b64 = _encode_file_base64(file_path)
-    file_content_part = _build_file_content_part(file_path, file_b64)
 
-    response = client.responses.create(
-        model=MODEL_NAME,
-        input=[
-            {
-                "role": "system",
-                "content": [
-                    {
-                        "type": "input_text",
-                        "text": "Responde únicamente con JSON válido. No uses markdown."
-                    }
-                ],
-            },
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "input_text",
-                        "text": _build_prompt(),
-                    },
-                    file_content_part,
-                ],
-            },
-        ],
-    )
+    working_file_path = file_path
+    temp_file_path = None
 
-    output_text = _extract_output_text(response).strip()
-    if not output_text:
-        raise RuntimeError("GPT no devolvió texto en la respuesta.")
+    try:
+        extension = Path(file_path).suffix.lower()
 
-    payload = _try_parse_json_from_text(output_text)
-    normalized = _normalize_response_payload(payload)
+        if extension == ".pdf":
+            temp_file_path = _render_pdf_first_page_to_png(file_path)
+            working_file_path = temp_file_path
 
-    if not normalized["nrs"]:
-        raise RuntimeError(
-            f"GPT respondió pero no detectó NR. Respuesta: {json.dumps(payload, ensure_ascii=False)[:1500]}"
+        file_b64 = _encode_file_base64(working_file_path)
+        file_content_part = _build_image_content_part(working_file_path, file_b64)
+
+        response = client.responses.create(
+            model=MODEL_NAME,
+            input=[
+                {
+                    "role": "system",
+                    "content": [
+                        {
+                            "type": "input_text",
+                            "text": "Responde únicamente con JSON válido. No uses markdown."
+                        }
+                    ],
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "input_text",
+                            "text": _build_prompt(),
+                        },
+                        file_content_part,
+                    ],
+                },
+            ],
         )
 
-    return normalized
+        output_text = _extract_output_text(response).strip()
+        if not output_text:
+            raise RuntimeError("GPT no devolvió texto en la respuesta.")
+
+        payload = _try_parse_json_from_text(output_text)
+        normalized = _normalize_response_payload(payload)
+
+        if not normalized["nrs"]:
+            raise RuntimeError(
+                f"GPT respondió pero no detectó NR. Respuesta: {json.dumps(payload, ensure_ascii=False)[:1500]}"
+            )
+
+        return normalized
+
+    finally:
+        if temp_file_path:
+            try:
+                os.remove(temp_file_path)
+            except Exception:
+                pass
