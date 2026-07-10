@@ -177,6 +177,13 @@ class Plano(models.Model):
     )
     id_plano_deposito = models.CharField(max_length=50, unique=True)
 
+    referencia_plano = models.CharField(
+        max_length=150,
+        blank=True,
+        null=True,
+        help_text="Referencia descriptiva opcional del plano."
+    )
+
     archivo = models.FileField(upload_to="planos/")
     texto_ocr = models.TextField(blank=True, null=True)
 
@@ -201,6 +208,10 @@ class Plano(models.Model):
 
     eliminado = models.BooleanField(default=False)
     fecha_eliminacion = models.DateTimeField(blank=True, null=True)
+    revision_administrativa_cerrada = models.BooleanField(default=False)
+    revision_administrativa_cerrada_por = models.CharField(max_length=150, blank=True, null=True)
+    fecha_revision_administrativa_cerrada = models.DateTimeField(blank=True, null=True)
+    motivo_revision_administrativa_cerrada = models.TextField(blank=True, null=True)
 
     class Meta:
         ordering = ["-fecha_carga"]

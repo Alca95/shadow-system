@@ -23,9 +23,6 @@
                             </div>
 
                             <h2 class="shadow-title subir-plano-title mb-2">Subir plano</h2>
-                            <p class="shadow-subtitle mb-0">
-                                Carga archivos del plano con una interfaz guiada, consistente y alineada con la paleta del sistema.
-                            </p>
                         </div>
                     </div>
 
@@ -40,9 +37,6 @@
         <div class="shadow-surface-card shadow-card-hover subir-plano-card">
             <div class="subir-plano-card-header">
                 <h5 class="shadow-title mb-1">Datos del plano</h5>
-                <p class="shadow-helper-text mb-0">
-                    Completa la información necesaria para registrar el archivo en la carpeta correspondiente.
-                </p>
             </div>
 
             <div class="shadow-section-divider"></div>
@@ -75,7 +69,25 @@
 
                         <div class="subir-plano-info-item">
                             <span class="subir-plano-info-label">Período</span>
-                            <strong>{{ carpeta_actual.mes }}/{{ carpeta_actual.anio }}</strong>
+                            <strong>
+                                {% with mes=carpeta_actual.mes|stringformat:"s" %}
+                                    {% if mes == "1" %}Enero
+                                    {% elif mes == "2" %}Febrero
+                                    {% elif mes == "3" %}Marzo
+                                    {% elif mes == "4" %}Abril
+                                    {% elif mes == "5" %}Mayo
+                                    {% elif mes == "6" %}Junio
+                                    {% elif mes == "7" %}Julio
+                                    {% elif mes == "8" %}Agosto
+                                    {% elif mes == "9" %}Septiembre
+                                    {% elif mes == "10" %}Octubre
+                                    {% elif mes == "11" %}Noviembre
+                                    {% elif mes == "12" %}Diciembre
+                                    {% else %}{{ carpeta_actual.mes }}
+                                    {% endif %}
+                                    {{ carpeta_actual.anio }}
+                                {% endwith %}
+                            </strong>
                         </div>
                     </div>
                 {% endif %}
@@ -106,34 +118,70 @@
                     {% endif %}
 
                     <div class="col-12">
-                        <label for="id_plano_deposito" class="shadow-form-label">ID plano depósito</label>
-                        <input
-                            type="text"
-                            name="id_plano_deposito"
-                            id="id_plano_deposito"
-                            class="shadow-input"
-                            placeholder="Ej: PLANO-001"
-                            required
-                        >
+                        <div class="subir-plano-main-grid">
+
+                            <div class="subir-plano-auto-id-box">
+                                <div class="subir-plano-auto-id-main">
+                                    <div class="subir-plano-auto-id-icon">
+                                        <i class="bi bi-upc-scan"></i>
+                                    </div>
+
+                                    <div>
+                                        <span class="subir-plano-auto-id-label">ID técnico del plano</span>
+
+                                        <strong
+                                            class="subir-plano-auto-id-value"
+                                            id="previewIdPlano"
+                                            data-default-id="{{ proximo_id_plano|default:'' }}">
+                                            {% if proximo_id_plano %}
+                                                {{ proximo_id_plano }}
+                                            {% else %}
+                                                Seleccione una carpeta
+                                            {% endif %}
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="subir-plano-file-modern">
+                                <input
+                                    type="file"
+                                    name="archivo"
+                                    id="archivo"
+                                    class="subir-plano-file-native"
+                                    accept=".jpg,.jpeg,.png,.pdf"
+                                    required
+                                >
+
+                                <label for="archivo" class="subir-plano-file-card">
+                                    <div class="subir-plano-file-card-icon">
+                                        <i class="bi bi-cloud-arrow-up"></i>
+                                    </div>
+
+                                    <div class="subir-plano-file-card-content">
+                                        <strong>Seleccionar archivo</strong>
+                                        <span id="archivoNombre">Ningún archivo seleccionado</span>
+                                    </div>
+
+                                    <div class="subir-plano-file-card-action">
+                                        <i class="bi bi-plus-lg"></i>
+                                    </div>
+                                </label>
+                            </div>
+
+                        </div>
                     </div>
 
                     <div class="col-12">
-                        <label for="archivo" class="shadow-form-label">Archivo</label>
-
-                        <div class="subir-plano-file-wrap">
-                            <input
-                                type="file"
-                                name="archivo"
-                                id="archivo"
-                                class="shadow-input subir-plano-file-input"
-                                accept=".jpg,.jpeg,.png,.pdf"
-                                required
-                            >
-                            <div class="subir-plano-file-hint">
-                                <i class="bi bi-file-earmark-arrow-up me-2"></i>
-                                Formatos permitidos: JPG, JPEG, PNG y PDF
-                            </div>
-                        </div>
+                        <label for="referencia_plano" class="shadow-form-label">Referencia opcional</label>
+                        <input
+                            type="text"
+                            name="referencia_plano"
+                            id="referencia_plano"
+                            class="shadow-input"
+                            placeholder="Ej: Plano zona centro, lote 1, sector norte"
+                            maxlength="150"
+                        >
                     </div>
 
                     <div class="col-12 d-flex justify-content-between flex-wrap gap-2 mt-2">
@@ -245,21 +293,88 @@
         text-transform: uppercase;
     }
 
-    .subir-plano-file-wrap {
-        display: grid;
-        gap: 0.7rem;
-    }
+.subir-plano-file-modern {
+    width: 100%;
+}
 
-    .subir-plano-file-input {
-        padding-top: 0.85rem;
-        padding-bottom: 0.85rem;
-        background: linear-gradient(180deg, #f9faff, #f1f4ff);
-        border: 1px dashed rgba(91,82,214,0.28);
-    }
+.subir-plano-file-native {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 1px;
+    height: 1px;
+}
 
-    .subir-plano-file-input:hover {
-        border-color: rgba(91,82,214,0.42);
-    }
+.subir-plano-file-card {
+    width: 100%;
+    min-height: 86px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    background: linear-gradient(180deg, #ffffff, #f7f8ff);
+    border: 1px dashed rgba(91,82,214,0.35);
+    box-shadow: 0 14px 30px rgba(15,23,42,0.05);
+    transition: all .18s ease;
+}
+
+.subir-plano-file-card:hover {
+    border-color: rgba(91,82,214,0.58);
+    background: linear-gradient(180deg, #ffffff, #f3f4ff);
+    transform: translateY(-1px);
+}
+
+.subir-plano-file-card-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 18px;
+    display: grid;
+    place-items: center;
+    color: #ffffff;
+    background: linear-gradient(135deg, #5b52d6, #7c73ff);
+    box-shadow: 0 14px 26px rgba(91,82,214,0.24);
+    font-size: 1.45rem;
+    flex: 0 0 auto;
+}
+
+.subir-plano-file-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: .18rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.subir-plano-file-card-content strong {
+    color: var(--shadow-primary-dark);
+    font-size: 1rem;
+    font-weight: 900;
+}
+
+.subir-plano-file-card-content span {
+    color: var(--shadow-text-muted);
+    font-size: .9rem;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.subir-plano-file-card-action {
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    color: var(--shadow-primary);
+    background: rgba(91,82,214,0.08);
+    border: 1px solid rgba(91,82,214,0.12);
+    font-size: 1rem;
+    flex: 0 0 auto;
+}
 
     .subir-plano-file-hint {
         display: inline-flex;
@@ -294,7 +409,240 @@
         .subir-plano-card-body .btn {
             width: 100%;
         }
+
+        .subir-plano-file-card {
+            align-items: flex-start;
+        }
+
+        .subir-plano-file-card-action {
+            display: none;
+        }
+
+
     }
+
+    .subir-plano-auto-id-box {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.95rem;
+        padding: 1rem;
+        border-radius: 18px;
+        background: linear-gradient(135deg, rgba(91,82,214,0.08), rgba(14,165,233,0.08));
+        border: 1px solid rgba(91,82,214,0.14);
+    }
+
+    .subir-plano-auto-id-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 16px;
+        display: grid;
+        place-items: center;
+        color: var(--shadow-primary);
+        background: rgba(255,255,255,0.82);
+        border: 1px solid rgba(226,232,240,0.9);
+        font-size: 1.25rem;
+        flex: 0 0 auto;
+    }
+
+    .subir-plano-auto-id-label {
+        display: block;
+        color: var(--shadow-text-muted);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 0.2rem;
+    }
+
+    .subir-plano-auto-id-value {
+        display: block;
+        color: var(--shadow-primary-dark);
+        font-size: 1.05rem;
+        font-weight: 900;
+        margin-bottom: 0.25rem;
+    }
+
+    .subir-plano-auto-id-help {
+        color: var(--shadow-text-muted);
+        font-size: 0.88rem;
+        line-height: 1.55;
+    }
+
+    .subir-plano-main-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(320px, .95fr);
+        gap: 1rem;
+        align-items: stretch;
+    }
+
+    .subir-plano-auto-id-box {
+        display: flex;
+        align-items: center;
+        min-height: 94px;
+        padding: 1rem;
+        border-radius: 18px;
+        background: linear-gradient(135deg, rgba(91,82,214,0.08), rgba(14,165,233,0.08));
+        border: 1px solid rgba(91,82,214,0.14);
+    }
+
+    .subir-plano-auto-id-main {
+        display: flex;
+        align-items: center;
+        gap: 0.95rem;
+        min-width: 0;
+    }
+
+    .subir-plano-auto-id-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 16px;
+        display: grid;
+        place-items: center;
+        color: var(--shadow-primary);
+        background: rgba(255,255,255,0.82);
+        border: 1px solid rgba(226,232,240,0.9);
+        font-size: 1.25rem;
+        flex: 0 0 auto;
+    }
+
+    .subir-plano-auto-id-label {
+        display: block;
+        color: var(--shadow-text-muted);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 0.2rem;
+    }
+
+    .subir-plano-auto-id-value {
+        display: block;
+        color: var(--shadow-primary-dark);
+        font-size: 1.08rem;
+        font-weight: 900;
+        line-height: 1.25;
+    }
+
+    .subir-plano-file-modern {
+        width: 100%;
+    }
+
+    .subir-plano-file-native {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+        width: 1px;
+        height: 1px;
+    }
+
+    .subir-plano-file-card {
+        width: 100%;
+        min-height: 94px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 1.1rem;
+        border-radius: 18px;
+        cursor: pointer;
+        background: linear-gradient(180deg, #ffffff, #f7f8ff);
+        border: 1px dashed rgba(91,82,214,0.35);
+        box-shadow: 0 14px 30px rgba(15,23,42,0.05);
+        transition: all .18s ease;
+    }
+
+    .subir-plano-file-card:hover {
+        border-color: rgba(91,82,214,0.58);
+        background: linear-gradient(180deg, #ffffff, #f3f4ff);
+        transform: translateY(-1px);
+    }
+
+    .subir-plano-file-card-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 17px;
+        display: grid;
+        place-items: center;
+        color: #ffffff;
+        background: linear-gradient(135deg, #5b52d6, #7c73ff);
+        box-shadow: 0 14px 26px rgba(91,82,214,0.24);
+        font-size: 1.35rem;
+        flex: 0 0 auto;
+    }
+
+    .subir-plano-file-card-content {
+        display: flex;
+        flex-direction: column;
+        gap: .18rem;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .subir-plano-file-card-content strong {
+        color: var(--shadow-primary-dark);
+        font-size: 1rem;
+        font-weight: 900;
+    }
+
+    .subir-plano-file-card-content span {
+        color: var(--shadow-text-muted);
+        font-size: .86rem;
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .subir-plano-file-card-action {
+        width: 36px;
+        height: 36px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        color: var(--shadow-primary);
+        background: rgba(91,82,214,0.08);
+        border: 1px solid rgba(91,82,214,0.12);
+        font-size: 1rem;
+        flex: 0 0 auto;
+    }
+
+
 </style>
+
+{{ proximos_ids_por_carpeta|json_script:"proximosIdsPorCarpeta" }}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const carpetaSelect = document.getElementById("carpeta");
+    const previewIdPlano = document.getElementById("previewIdPlano");
+    const dataScript = document.getElementById("proximosIdsPorCarpeta");
+
+    if (!previewIdPlano || !dataScript) return;
+
+    const proximosIds = JSON.parse(dataScript.textContent || "{}");
+
+    if (!carpetaSelect) return;
+
+    carpetaSelect.addEventListener("change", function () {
+        const carpetaId = this.value;
+        previewIdPlano.textContent = proximosIds[carpetaId] || "Seleccione una carpeta";
+    });
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const archivoInput = document.getElementById("archivo");
+    const archivoNombre = document.getElementById("archivoNombre");
+
+    if (!archivoInput || !archivoNombre) return;
+
+    archivoInput.addEventListener("change", function () {
+        const archivo = this.files && this.files.length ? this.files[0] : null;
+        archivoNombre.textContent = archivo ? archivo.name : "Ningún archivo seleccionado";
+    });
+});
+</script>
 
 {% endblock %}

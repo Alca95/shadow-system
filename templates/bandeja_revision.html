@@ -1,0 +1,801 @@
+{% extends "base.html" %}
+
+{% block title %}Bandeja de revisión{% endblock %}
+
+{% block show_page_header %}{% endblock %}
+
+{% block content %}
+
+<div class="revision-shell">
+
+    <section class="revision-hero">
+        <div class="revision-hero-main">
+            <div class="revision-chip">
+                <span class="revision-chip-dot"></span>
+                Control administrativo
+            </div>
+
+            <h1>Bandeja de revisión</h1>
+
+            <p>
+                Planos que requieren verificación administrativa por cambios manuales,
+                estados en verificación o rechazos pendientes de control.
+            </p>
+        </div>
+
+        <div class="revision-hero-actions">
+            <a href="{% url 'dashboard' %}" class="revision-btn revision-btn-light">
+                <i class="bi bi-arrow-left"></i>
+                Volver al inicio
+            </a>
+
+            <a href="{% url 'carpetas' %}" class="revision-btn revision-btn-dark">
+                <i class="bi bi-folder2-open"></i>
+                Ver carpetas
+            </a>
+        </div>
+    </section>
+
+    <section class="revision-kpi-grid">
+        <article class="revision-kpi-card revision-kpi-primary revision-kpi-total">
+            <div class="revision-kpi-icon">
+                <i class="bi bi-inboxes"></i>
+            </div>
+            <div>
+                <span>Pendientes totales</span>
+                <strong>{{ dashboard_revision.total|default:0 }}</strong>
+            </div>
+        </article>
+
+        <article class="revision-kpi-card revision-kpi-funcionario">
+            <div class="revision-kpi-icon">
+                <i class="bi bi-pencil-square"></i>
+            </div>
+            <div>
+                <span>Modificados por funcionario</span>
+                <strong>{{ dashboard_revision.modificados_funcionario|default:0 }}</strong>
+            </div>
+        </article>
+
+        <article class="revision-kpi-card revision-kpi-materiales">
+            <div class="revision-kpi-icon">
+                <i class="bi bi-tools"></i>
+            </div>
+            <div>
+                <span>Materiales editados</span>
+                <strong>{{ dashboard_revision.materiales_editados|default:0 }}</strong>
+            </div>
+        </article>
+
+        <article class="revision-kpi-card revision-kpi-verificacion">
+            <div class="revision-kpi-icon">
+                <i class="bi bi-exclamation-diamond"></i>
+            </div>
+            <div>
+                <span>En verificación</span>
+                <strong>{{ dashboard_revision.en_verificacion|default:0 }}</strong>
+            </div>
+        </article>
+
+        <article class="revision-kpi-card revision-kpi-rechazados">
+            <div class="revision-kpi-icon">
+                <i class="bi bi-x-octagon"></i>
+            </div>
+            <div>
+                <span>Rechazados</span>
+                <strong>{{ dashboard_revision.rechazados|default:0 }}</strong>
+            </div>
+        </article>
+    </section>
+
+    <section class="revision-panel">
+        <div class="revision-panel-head">
+            <div>
+                <h2>Carpetas con pendientes</h2>
+                <p>
+                    {{ total_carpetas_revision|default:0 }} carpeta{% if total_carpetas_revision != 1 %}s{% endif %}
+                    con planos que requieren revisión.
+                </p>
+            </div>
+        </div>
+
+        {% if carpetas_revision %}
+            <div class="revision-folder-list">
+                {% for item in carpetas_revision %}
+                    <article class="revision-folder-card">
+                        <button
+                            class="revision-folder-toggle"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#revisionCarpeta{{ forloop.counter }}"
+                            aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}"
+                            aria-controls="revisionCarpeta{{ forloop.counter }}"
+                        >
+                            <div class="revision-folder-main">
+                                <div class="revision-folder-icon">
+                                    <i class="bi bi-folder2-open"></i>
+                                </div>
+
+                                <div>
+                                    <div class="revision-folder-code">{{ item.codigo }}</div>
+                                    <div class="revision-folder-meta">
+                                        {{ item.empresa }} · {{ item.periodo }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="revision-folder-summary">
+                                <span>{{ item.total_planos }} plano{% if item.total_planos != 1 %}s{% endif %}</span>
+
+                                {% if item.total_modificados %}
+                                    <span class="revision-pill revision-pill-danger">
+                                        {{ item.total_modificados }} dato{% if item.total_modificados != 1 %}s{% endif %} editado{% if item.total_modificados != 1 %}s{% endif %}
+                                    </span>
+                                {% endif %}
+
+                                {% if item.total_materiales %}
+                                    <span class="revision-pill revision-pill-warning">
+                                        {{ item.total_materiales }} material{% if item.total_materiales != 1 %}es{% endif %}
+                                    </span>
+                                {% endif %}
+
+                                <i class="bi bi-chevron-down revision-chevron"></i>
+                            </div>
+                        </button>
+
+                        <div
+                            id="revisionCarpeta{{ forloop.counter }}"
+                            class="collapse {% if forloop.first %}show{% endif %}"
+                        >
+                            <div class="revision-plan-list">
+                                {% for plano in item.planos %}
+                                    <div class="revision-plan-row">
+                                        <div class="revision-plan-main">
+                                            <div class="revision-plan-code">
+                                                {{ plano.id_plano_deposito|default:plano.id }}
+
+                                                {% if plano.total_tareas_revision %}
+                                                    <span class="revision-priority-dot"></span>
+                                                {% endif %}
+                                            </div>
+
+                                            {% if plano.referencia_plano %}
+                                                <div class="revision-plan-ref">
+                                                    <i class="bi bi-tag"></i>
+                                                    {{ plano.referencia_plano }}
+                                                </div>
+                                            {% endif %}
+
+                                            <div class="revision-plan-meta">
+                                                <span>
+                                                    <i class="bi bi-calendar3"></i>
+                                                    {{ plano.fecha_carga|date:"d/m/Y H:i" }}
+                                                </span>
+
+                                                {% if plano.nr_modificados_funcionario %}
+                                                    <span>
+                                                        <i class="bi bi-pencil-square"></i>
+                                                        {{ plano.nr_modificados_funcionario }} NR modificado{% if plano.nr_modificados_funcionario != 1 %}s{% endif %}
+                                                    </span>
+                                                {% endif %}
+
+                                                {% if plano.materiales_modificados %}
+                                                    <span>
+                                                        <i class="bi bi-tools"></i>
+                                                        {{ plano.materiales_modificados }} material{% if plano.materiales_modificados != 1 %}es{% endif %} editado{% if plano.materiales_modificados != 1 %}s{% endif %}
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <div class="revision-plan-side">
+                                            {% if plano.estado == "EN_VERIFICACION" %}
+                                                <span class="revision-status revision-status-warning">
+                                                    En verificación
+                                                </span>
+                                            {% elif plano.estado == "RECHAZADO" %}
+                                                <span class="revision-status revision-status-danger">
+                                                    Rechazado
+                                                </span>
+                                            {% elif plano.estado == "APROBADO" %}
+                                                <span class="revision-status revision-status-success">
+                                                    Aprobado
+                                                </span>
+                                            {% else %}
+                                                <span class="revision-status revision-status-neutral">
+                                                    {{ plano.estado }}
+                                                </span>
+                                            {% endif %}
+
+                                            <a href="{% url 'detalle_plano' plano.id %}?from=bandeja_revision" class="revision-verify-btn">
+                                                <i class="bi bi-shield-check"></i>
+                                                Verificar
+                                            </a>
+
+                                            {% if plano.estado == "RECHAZADO" and not plano.total_tareas_revision %}
+                                                <form
+                                                    method="post"
+                                                    action="{% url 'cerrar_revision_plano' plano.id %}"
+                                                    class="revision-close-form"
+                                                >
+                                                    {% csrf_token %}
+
+                                                    <input
+                                                        type="hidden"
+                                                        name="motivo_cierre"
+                                                        value="El administrador confirmó que el rechazo generado por el sistema es correcto."
+                                                    >
+
+                                                    <button
+                                                        type="submit"
+                                                        class="revision-close-btn"
+                                                        onclick="return confirm('¿Cerrar esta revisión? El plano seguirá rechazado, pero dejará de aparecer en la bandeja.');"
+                                                    >
+                                                        <i class="bi bi-check2-circle"></i>
+                                                        Cerrar revisión
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="revision-empty">
+                <div class="revision-empty-icon">
+                    <i class="bi bi-check2-circle"></i>
+                </div>
+
+                <h3>No hay pendientes de revisión</h3>
+
+                <p>
+                    Actualmente no existen planos con modificaciones pendientes,
+                    verificaciones abiertas o rechazos por revisar.
+                </p>
+
+                <a href="{% url 'dashboard' %}" class="revision-btn revision-btn-dark">
+                    <i class="bi bi-house-door"></i>
+                    Volver al inicio
+                </a>
+            </div>
+        {% endif %}
+    </section>
+
+</div>
+
+<style>
+    .revision-shell {
+        display: grid;
+        gap: 1.35rem;
+    }
+
+    .revision-hero {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.25rem;
+        padding: 1.6rem;
+        border-radius: 28px;
+        background:
+            radial-gradient(circle at top right, rgba(239, 68, 68, .12), transparent 34%),
+            linear-gradient(135deg, rgba(255,255,255,.96), rgba(246,248,252,.92));
+        border: 1px solid rgba(255,255,255,.28);
+        box-shadow: 0 24px 52px rgba(15, 23, 42, .13);
+    }
+
+    .revision-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .55rem;
+        padding: .52rem .85rem;
+        border-radius: 999px;
+        background: rgba(109, 93, 252, .10);
+        color: #4f46e5;
+        font-size: .82rem;
+        font-weight: 900;
+        margin-bottom: .85rem;
+    }
+
+    .revision-chip-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #5b4ec6, #312e81);
+        box-shadow: none;
+    }
+
+    .revision-hero h1 {
+        margin: 0 0 .45rem 0;
+        color: #1e293b;
+        font-size: clamp(1.8rem, 3vw, 2.55rem);
+        font-weight: 900;
+        letter-spacing: -.04em;
+    }
+
+    .revision-hero p {
+        margin: 0;
+        max-width: 720px;
+        color: #64748b;
+        line-height: 1.65;
+        font-size: .98rem;
+    }
+
+    .revision-hero-actions {
+        display: flex;
+        gap: .75rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .revision-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .48rem;
+        min-height: 42px;
+        padding: .68rem 1rem;
+        border-radius: 999px;
+        text-decoration: none;
+        font-weight: 900;
+        transition: all .2s ease;
+    }
+
+    .revision-btn-light {
+        color: #334155;
+        background: rgba(255,255,255,.82);
+        border: 1px solid rgba(148,163,184,.18);
+    }
+
+    .revision-btn-dark {
+        color: #ffffff;
+        background: linear-gradient(135deg, #1e293b, #0f172a);
+        border: 1px solid rgba(15,23,42,.18);
+        box-shadow: 0 14px 28px rgba(15,23,42,.18);
+    }
+
+    .revision-btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .revision-btn-light:hover {
+        color: #0f172a;
+    }
+
+    .revision-btn-dark:hover {
+        color: #ffffff;
+    }
+
+    .revision-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .revision-kpi-card {
+        display: flex;
+        align-items: center;
+        gap: .9rem;
+        padding: 1rem;
+        border-radius: 22px;
+        background: rgba(255,255,255,.94);
+        border: 1px solid rgba(255,255,255,.22);
+        box-shadow: 0 16px 34px rgba(15,23,42,.09);
+    }
+
+    .revision-kpi-primary {
+        background:
+            radial-gradient(circle at top right, rgba(109, 93, 252, .10), transparent 42%),
+            rgba(255,255,255,.96);
+    }
+
+    .revision-kpi-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .revision-kpi-total .revision-kpi-icon {
+        color: #5b4ec6;
+        background: rgba(109, 93, 252, 0.10);
+    }
+
+    .revision-kpi-funcionario .revision-kpi-icon {
+        color: #0f766e;
+        background: rgba(13, 148, 136, 0.12);
+    }
+
+    .revision-kpi-materiales .revision-kpi-icon {
+        color: #c2410c;
+        background: rgba(249, 115, 22, 0.12);
+    }
+
+    .revision-kpi-verificacion .revision-kpi-icon {
+        color: #b45309;
+        background: rgba(245, 158, 11, 0.14);
+    }
+
+    .revision-kpi-rechazados .revision-kpi-icon {
+        color: #dc2626;
+        background: rgba(239, 68, 68, 0.12);
+    }
+
+    .revision-kpi-card span {
+        display: block;
+        color: #64748b;
+        font-size: .78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        line-height: 1.25;
+    }
+
+    .revision-kpi-card strong {
+        display: block;
+        margin-top: .2rem;
+        color: #1e293b;
+        font-size: 1.65rem;
+        font-weight: 950;
+        letter-spacing: -.04em;
+    }
+
+    .revision-panel {
+        border-radius: 26px;
+        overflow: hidden;
+        background: rgba(255,255,255,.94);
+        border: 1px solid rgba(255,255,255,.22);
+        box-shadow: 0 20px 42px rgba(15,23,42,.11);
+    }
+
+    .revision-panel-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.15rem 1.25rem;
+        background: linear-gradient(135deg, rgba(8,20,43,.96), rgba(30,41,59,.92));
+        color: #ffffff;
+    }
+
+    .revision-panel-head h2 {
+        margin: 0;
+        font-size: 1.15rem;
+        font-weight: 900;
+        letter-spacing: -.02em;
+    }
+
+    .revision-panel-head p {
+        margin: .2rem 0 0;
+        opacity: .76;
+        font-size: .88rem;
+    }
+
+    .revision-folder-list {
+        display: grid;
+        gap: .95rem;
+        padding: 1.1rem;
+    }
+
+    .revision-folder-card {
+        border-radius: 22px;
+        overflow: hidden;
+        border: 1px solid #dbe5f0;
+        background: linear-gradient(135deg, rgba(248,250,252,.98), rgba(241,245,249,.96));
+    }
+
+    .revision-folder-toggle {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        text-align: left;
+    }
+
+    .revision-folder-main {
+        display: flex;
+        align-items: center;
+        gap: .85rem;
+        min-width: 0;
+    }
+
+    .revision-folder-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #4338ca;
+        background: rgba(79,70,229,.10);
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .revision-folder-code {
+        color: #1e293b;
+        font-weight: 950;
+        font-size: 1.14rem;
+        letter-spacing: -.02em;
+    }
+
+    .revision-folder-meta {
+        margin-top: .15rem;
+        color: #64748b;
+        font-size: .9rem;
+        font-weight: 700;
+    }
+
+    .revision-folder-summary {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: .55rem;
+        flex-wrap: wrap;
+        color: #475569;
+        font-size: .86rem;
+        font-weight: 900;
+    }
+
+    .revision-pill {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: .38rem .62rem;
+        font-size: .78rem;
+        font-weight: 950;
+    }
+
+    .revision-pill-danger {
+        color: #b91c1c;
+        background: rgba(239,68,68,.12);
+    }
+
+    .revision-pill-warning {
+        color: #a16207;
+        background: rgba(245,158,11,.16);
+    }
+
+    .revision-chevron {
+        color: #64748b;
+        transition: transform .2s ease;
+    }
+
+    .revision-folder-toggle[aria-expanded="true"] .revision-chevron {
+        transform: rotate(180deg);
+    }
+
+    .revision-plan-list {
+        display: grid;
+        gap: .75rem;
+        padding: 0 1rem 1rem;
+    }
+
+    .revision-plan-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 1rem;
+        align-items: center;
+        padding: .95rem;
+        border-radius: 18px;
+        background: rgba(255,255,255,.92);
+        border: 1px solid rgba(203,213,225,.7);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.65);
+    }
+
+    .revision-plan-code {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        color: #1e293b;
+        font-size: 1.02rem;
+        font-weight: 950;
+    }
+
+    .revision-priority-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: #f59e0b;
+        box-shadow: none;
+    }
+
+    .revision-plan-ref {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        margin-top: .25rem;
+        color: #64748b;
+        font-size: .82rem;
+        font-weight: 800;
+    }
+
+    .revision-plan-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .75rem;
+        margin-top: .5rem;
+        color: #64748b;
+        font-size: .84rem;
+        font-weight: 700;
+    }
+
+    .revision-plan-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+    }
+
+    .revision-plan-side {
+        display: flex;
+        align-items: center;
+        gap: .7rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .revision-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: .45rem .75rem;
+        font-size: .78rem;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .revision-status-warning {
+        color: #a16207;
+        background: rgba(245,158,11,.16);
+    }
+
+    .revision-status-danger {
+        color: #b91c1c;
+        background: rgba(239,68,68,.13);
+    }
+
+    .revision-status-success {
+        color: #15803d;
+        background: rgba(34,197,94,.14);
+    }
+
+    .revision-status-neutral {
+        color: #475569;
+        background: rgba(100,116,139,.14);
+    }
+
+    .revision-verify-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .45rem;
+        min-height: 40px;
+        padding: .6rem .85rem;
+        border-radius: 999px;
+        color: #ffffff;
+        background: linear-gradient(135deg, #4f46e5, #1d4ed8);
+        text-decoration: none;
+        font-size: .86rem;
+        font-weight: 950;
+        box-shadow: 0 12px 24px rgba(79,70,229,.20);
+        transition: all .2s ease;
+        white-space: nowrap;
+    }
+
+    .revision-verify-btn:hover {
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 16px 30px rgba(79,70,229,.26);
+    }
+
+    .revision-empty {
+        text-align: center;
+        padding: 3rem 1.25rem;
+    }
+
+    .revision-empty-icon {
+        color: #22c55e;
+        font-size: 3rem;
+        margin-bottom: .75rem;
+    }
+
+    .revision-empty h3 {
+        margin: 0 0 .35rem;
+        color: #1e293b;
+        font-weight: 950;
+    }
+
+    .revision-empty p {
+        margin: 0 auto 1.2rem;
+        max-width: 520px;
+        color: #64748b;
+        line-height: 1.6;
+    }
+
+    @media (max-width: 1199.98px) {
+        .revision-kpi-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 991.98px) {
+        .revision-hero {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .revision-hero-actions {
+            justify-content: flex-start;
+        }
+
+        .revision-kpi-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .revision-plan-row {
+            grid-template-columns: 1fr;
+        }
+
+        .revision-plan-side {
+            justify-content: flex-start;
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .revision-kpi-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .revision-folder-toggle {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .revision-folder-summary {
+            justify-content: flex-start;
+        }
+    }
+
+    .revision-close-form {
+        margin: 0;
+    }
+
+    .revision-close-btn {
+        min-height: 40px;
+        padding: .6rem .85rem;
+        border-radius: 999px;
+        border: 1px solid rgba(34,197,94,.18);
+        color: #ffffff;
+        background: linear-gradient(135deg, #16a34a, #166534);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .45rem;
+        font-size: .86rem;
+        font-weight: 950;
+        box-shadow: 0 12px 24px rgba(22,163,74,.20);
+        transition: all .2s ease;
+        white-space: nowrap;
+    }
+
+    .revision-close-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 30px rgba(22,163,74,.26);
+    }
+
+
+</style>
+
+{% endblock %}

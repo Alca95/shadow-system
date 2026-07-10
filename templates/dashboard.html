@@ -23,24 +23,16 @@
 
                 <nav class="admin-sidebar-nav">
 
-                    <a href="{% url 'dashboard' %}" class="admin-nav-link active">
-                        <span class="admin-nav-icon"><i class="bi bi-house-door"></i></span>
-                        <span>Inicio</span>
-                    </a>
+                    <a href="{% url 'bandeja_revision' %}" class="admin-nav-link">
+                        <span class="admin-nav-icon">
+                            <i class="bi bi-clipboard-check"></i>
+                        </span>
 
-                    <a href="{% url 'carpetas' %}" class="admin-nav-link">
-                        <span class="admin-nav-icon"><i class="bi bi-folder2-open"></i></span>
-                        <span>Carpetas</span>
-                    </a>
+                        <span>Bandeja de revisión</span>
 
-                    <a href="{% url 'crear_carpeta' %}" class="admin-nav-link">
-                        <span class="admin-nav-icon"><i class="bi bi-folder-plus"></i></span>
-                        <span>Crear carpeta</span>
-                    </a>
-
-                    <a href="{% url 'subir_plano' %}" class="admin-nav-link">
-                        <span class="admin-nav-icon"><i class="bi bi-upload"></i></span>
-                        <span>Subir plano</span>
+                        {% if dashboard_revision.total %}
+                            <span class="admin-nav-counter">{{ dashboard_revision.total }}</span>
+                        {% endif %}
                     </a>
 
                     {% with current_url=request.resolver_match.url_name %}
@@ -163,23 +155,24 @@
                 <section class="mb-4">
                     <div class="row g-4">
                         <div class="col-md-6 col-xl-4">
-                            <a href="{% url 'crear_carpeta' %}" class="command-card command-card-primary">
+                            <a href="{% url 'bandeja_revision' %}" class="command-card command-card-review">
                                 <div class="command-card-top">
                                     <div class="command-icon-wrap">
-                                        <i class="bi bi-folder-plus"></i>
+                                        <i class="bi bi-clipboard-check"></i>
                                     </div>
-                                    <div class="command-arrow">
-                                        <i class="bi bi-arrow-up-right"></i>
+
+                                    <div class="review-counter">
+                                        {{ dashboard_revision.total|default:0 }}
                                     </div>
                                 </div>
 
-                                <div class="command-title">Crear carpeta</div>
+                                <div class="command-title">Bandeja de revisión</div>
                                 <div class="command-text">
-                                    Registrar una nueva carpeta de trabajo para organizar planos y seguimiento.
+                                    Supervisa planos en verificación, cambios manuales del funcionario y decisiones administrativas pendientes.
                                 </div>
 
                                 <div class="command-footer">
-                                    <span>Nuevo registro</span>
+                                    <span>Revisar pendientes</span>
                                 </div>
                             </a>
                         </div>
@@ -407,6 +400,22 @@
         transition: all 0.22s ease;
         background: transparent;
         border: 1px solid transparent;
+    }
+
+    .admin-nav-counter {
+        margin-left: auto;
+        min-width: 26px;
+        height: 26px;
+        padding: 0 .45rem;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        background: linear-gradient(135deg, #ef4444, #b91c1c);
+        font-size: .76rem;
+        font-weight: 900;
+        box-shadow: 0 10px 20px rgba(239, 68, 68, .22);
     }
 
     .admin-nav-link:hover {
@@ -724,16 +733,44 @@
     .command-card-reports {
     border-bottom: 3px solid #8b5cf6;
 }
+    .command-card-review {
+        border-bottom: 3px solid #02501c;
+    }
 
-.command-card-reports .command-icon-wrap {
-    background: rgba(139, 92, 246, 0.12);
-    color: #6d28d9;
-}
+    .command-card-review .command-icon-wrap {
+        background: rgba(75, 61, 96, 0.1);
+        color: #044328;
+    }
 
-.command-card-reports:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 22px 48px rgba(79, 70, 229, 0.18);
-}
+    .command-card-review:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 22px 48px rgba(239, 68, 68, 0.16);
+    }
+
+    .review-counter {
+        min-width: 46px;
+        height: 46px;
+        padding: 0 .75rem;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        background: linear-gradient(135deg, #314e41, #2d4539);
+        font-size: 1.15rem;
+        font-weight: 900;
+        box-shadow: none;
+    }
+
+    .command-card-reports .command-icon-wrap {
+        background: rgba(139, 92, 246, 0.12);
+        color: #6d28d9;
+    }
+
+    .command-card-reports:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 22px 48px rgba(79, 70, 229, 0.18);
+    }
 
     .command-card-top {
         display: flex;

@@ -11,13 +11,39 @@ Orden de pago operacional
 {% block report_meta %}
 
 <div class="meta-item">
-    <span>Plano</span>
+    <span>ID plano</span>
     <strong>{{ plano.id_plano_deposito|default:plano.id }}</strong>
+
+    {% if plano.referencia_plano %}
+        <div class="print-meta-reference">
+            {{ plano.referencia_plano }}
+        </div>
+    {% endif %}
 </div>
 
 <div class="meta-item">
     <span>Carpeta</span>
     <strong>{{ plano.carpeta.codigo_carpeta|default:"-" }}</strong>
+
+    <div style="margin-top:3px; font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase;">
+    {% with mes=plano.carpeta.mes|stringformat:"s" %}
+        {% if mes == "1" %}Enero
+        {% elif mes == "2" %}Febrero
+        {% elif mes == "3" %}Marzo
+        {% elif mes == "4" %}Abril
+        {% elif mes == "5" %}Mayo
+        {% elif mes == "6" %}Junio
+        {% elif mes == "7" %}Julio
+        {% elif mes == "8" %}Agosto
+        {% elif mes == "9" %}Septiembre
+        {% elif mes == "10" %}Octubre
+        {% elif mes == "11" %}Noviembre
+        {% elif mes == "12" %}Diciembre
+        {% else %}{{ plano.carpeta.mes }}
+        {% endif %}
+        {{ plano.carpeta.anio }}
+    {% endwith %}
+    </div>
 </div>
 
 <div class="meta-item">
@@ -43,7 +69,44 @@ Orden de pago operacional
 {% endblock %}
 
 {% block content %}
+<style>
+    .print-field-line {
+        display: block;
+        margin-bottom: 3px;
+        padding: 2px 4px;
+        border-radius: 4px;
+    }
 
+    .print-field-line.is-invalid {
+        color: #be5454;
+        background: #fee2e2;
+        font-weight: 800;
+    }
+
+    .print-observation-strong {
+        color: #be5454;
+        font-weight: 800;
+    }
+
+    .print-observation-audit {
+        color: #334155;
+        font-weight: 800;
+    }
+    
+    .print-meta-reference {
+        margin-top: 4px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1.3;
+    }
+
+    .print-meta-reference span {
+        color: #475569;
+        font-weight: 800;
+    }
+
+</style>
 <h3 class="print-section-title">
     Resumen ejecutivo
 </h3>
@@ -71,10 +134,18 @@ Orden de pago operacional
 </div>
 
 <h3 class="print-section-title">
-    Validación administrativa por reclamo
+    Resultado de validación por NR
 </h3>
 
 <table class="print-table">
+    <colgroup>
+        <col style="width:16%;">
+        <col style="width:14%;">
+        <col style="width:19%;">
+        <col style="width:19%;">
+        <col style="width:32%;">
+    </colgroup>
+
     <thead>
         <tr>
             <th>NR</th>
@@ -103,19 +174,103 @@ Orden de pago operacional
             </td>
 
             <td>
-                <strong>Ciudad:</strong> {{ r.ciudad_plano }}<br>
-                <strong>Zona:</strong> {{ r.zona_plano }}<br>
-                <strong>Fecha:</strong> {{ r.fecha_plano }}
+                <span class="print-field-line {% if not r.ciudad_ok %}is-invalid{% endif %}">
+                    <strong>Ciudad:</strong> {{ r.ciudad_plano }}
+                </span>
+
+                <span class="print-field-line {% if not r.zona_ok %}is-invalid{% endif %}">
+                    <strong>Zona:</strong> {{ r.zona_plano }}
+                </span>
+
+                <span class="print-field-line {% if not r.fecha_ok %}is-invalid{% endif %}">
+                    <strong>Fecha de trabajo:</strong> {{ r.fecha_plano }}
+                </span>
             </td>
 
             <td>
-                <strong>Ciudad:</strong> {{ r.ciudad_reclamo }}<br>
-                <strong>Zona:</strong> {{ r.zona_reclamo }}<br>
-                <strong>Fecha:</strong> {{ r.fecha_reclamo }}
+                <span class="print-field-line {% if not r.ciudad_ok %}is-invalid{% endif %}">
+                    <strong>Ciudad:</strong> {{ r.ciudad_reclamo }}
+                </span>
+
+                <span class="print-field-line {% if not r.zona_ok %}is-invalid{% endif %}">
+                    <strong>Zona:</strong> {{ r.zona_reclamo }}
+                </span>
+
+                <span class="print-field-line {% if not r.fecha_ok %}is-invalid{% endif %}">
+                    <strong>Fecha del reclamo:</strong> {{ r.fecha_reclamo }}
+                </span>
             </td>
 
             <td>
-                {{ r.observacion_administrativa|default:r.motivo_resultado_limpio }}
+                {% if r.fue_editado_manual and r.estado_resultado_manual == "APROBADO" %}
+                    <span class="print-observation-audit">
+                        Se modificaron los datos extraídos del plano. El administrador cambió manualmente el estado del NR a APROBADO.
+                    </span>
+
+                {% elif r.fue_editado_manual and r.estado_resultado_manual == "RECHAZADO" %}
+                    <span class="print-observation-audit">
+                        Se modificaron los datos extraídos del plano. El administrador cambió manualmente el estado del NR a RECHAZADO.
+                    </span>
+
+                {% elif r.fue_editado_manual and r.estado_resultado_manual == "EN_VERIFICACION" %}
+                    <span class="print-observation-audit">
+                        Se modificaron los datos extraídos del plano. El administrador mantuvo manualmente el NR en verificación.
+                    </span>
+
+                {% elif r.fue_editado_manual and r.ciudad_ok and r.zona_ok and r.fecha_ok and r.materiales_ok %}
+                    <span class="print-observation-audit">
+                        Los datos corregidos manualmente por el funcionario coinciden actualmente con la base de datos. El NR permanece en verificación hasta aprobación manual del administrador.
+                    </span>
+
+                {% elif r.fue_editado_manual %}
+                    <span class="print-observation-audit">
+                        El funcionario realizó correcciones manuales en los datos detectados del plano. El NR requiere revisión del administrador antes de su aprobación final.
+                    </span>
+
+                {% elif r.estado_resultado_manual == "APROBADO" %}
+                    <span class="print-observation-audit">
+                        El administrador cambió manualmente el estado del NR a APROBADO.
+                    </span>
+
+                {% elif r.estado_resultado_manual == "RECHAZADO" %}
+                    <span class="print-observation-audit">
+                        El administrador cambió manualmente el estado del NR a RECHAZADO.
+                    </span>
+
+                {% elif r.estado_resultado_manual == "EN_VERIFICACION" %}
+                    <span class="print-observation-audit">
+                        El administrador cambió manualmente el estado del NR a EN VERIFICACIÓN.
+                    </span>
+
+                {% elif r.estado_resultado_final == "APROBADO" %}
+                    El NR cumple con las validaciones operativas y administrativas definidas por el sistema.
+
+                {% elif r.estado_resultado_final == "RECHAZADO" %}
+                    <span class="print-observation-strong">
+                        El NR fue rechazado debido a inconsistencias detectadas en
+                        {% if not r.ciudad_ok and not r.zona_ok and not r.fecha_ok %}
+                            ciudad, zona y fecha
+                        {% elif not r.ciudad_ok and not r.zona_ok %}
+                            ciudad y zona
+                        {% elif not r.ciudad_ok and not r.fecha_ok %}
+                            ciudad y fecha
+                        {% elif not r.zona_ok and not r.fecha_ok %}
+                            zona y fecha
+                        {% elif not r.ciudad_ok %}
+                            ciudad
+                        {% elif not r.zona_ok %}
+                            zona
+                        {% elif not r.fecha_ok %}
+                            fecha de trabajo
+                        {% else %}
+                            los datos del plano
+                        {% endif %}
+                        respecto a la base de datos institucional.
+                    </span>
+
+                {% else %}
+                    El NR queda en verificación porque requiere revisión administrativa adicional.
+                {% endif %}
             </td>
         </tr>
         {% empty %}

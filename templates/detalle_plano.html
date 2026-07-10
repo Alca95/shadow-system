@@ -774,7 +774,10 @@
     font-weight:600;
     vertical-align:middle;
 }
-
+.dp-materials-shell .dp-form-panel--materials .dp-table tbody tr:not(.collapse) > td {
+    height: 64px;
+    vertical-align: middle;
+}
 .dp-raw-box,
 .dp-empty-box{
     margin:1rem;
@@ -1112,6 +1115,33 @@
     line-height:1.3;
     word-break:break-word;
 }
+
+.dp-data-tile--id {
+    justify-content: flex-start;
+    gap: .55rem;
+}
+
+.dp-data-tile--id .dp-data-tile__value {
+    margin-top: auto;
+    margin-bottom: 0;
+}
+
+.dp-id-reference {
+    display: inline-flex;
+    align-items: center;
+    gap: .38rem;
+    margin-top: .1rem;
+    color: #6b7280;
+    font-size: .78rem;
+    font-weight: 800;
+    line-height: 1.3;
+}
+
+.dp-id-reference i {
+    color: #5a53cf;
+    font-size: .78rem;
+}
+
 .dp-workboard__right{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -1401,6 +1431,29 @@ inline-edit-
     box-shadow: 0 10px 22px rgba(0,0,0,.12);
 }
 
+.dp-status-cancel-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .45rem;
+    min-height: 42px;
+    padding: .65rem 1rem;
+    border-radius: 999px;
+    color: #fff;
+    background: linear-gradient(135deg, #dc2626, #991b1b);
+    border: 1px solid rgba(254,202,202,.26);
+    font-weight: 900;
+    box-shadow: 0 12px 24px rgba(220,38,38,.22);
+    transition: all .18s ease;
+}
+
+.dp-status-cancel-btn:hover,
+.dp-status-cancel-btn:focus {
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 16px 30px rgba(220,38,38,.28);
+}
+
 .dp-status-back-btn:hover,
 .dp-status-back-btn:focus {
     color: #ffffff;
@@ -1435,6 +1488,7 @@ inline-edit-
     border-color: rgba(63,59,151,.22);
     transform: translateY(-1px);
 }
+
 
 }
 
@@ -1494,10 +1548,32 @@ inline-edit-
                             {% endif %}
                         {% endif %}
 
-                        <a href="{% url 'detalle_carpeta' plano.carpeta.id %}" class="btn dp-status-back-btn">
-                            <i class="bi bi-arrow-left-circle"></i>
-                            <span>Volver a carpeta</span>
-                        </a>
+                        {% if volver_bandeja_revision %}
+                            <a href="{% url 'bandeja_revision' %}" class="btn dp-status-back-btn">
+                                <i class="bi bi-arrow-left-circle"></i>
+                                <span>Volver a bandeja</span>
+                            </a>
+                        {% elif puede_ver_resumen %}
+                            <a href="{% url 'detalle_carpeta' plano.carpeta.id %}" class="btn dp-status-back-btn">
+                                <i class="bi bi-arrow-left-circle"></i>
+                                <span>Volver a carpeta</span>
+                            </a>
+                        {% endif %}
+
+                        {% if not plano.procesado %}
+                            <form method="post" action="{% url 'cancelar_plano' plano.id %}" class="m-0">
+                                {% csrf_token %}
+                                <button
+                                    type="submit"
+                                    class="btn dp-status-cancel-btn"
+                                    onclick="return confirm('¿Deseas cancelar y eliminar este plano? Esta acción quitará el archivo cargado.');">
+                                    <i class="bi bi-trash3"></i>
+                                    <span>Cancelar</span>
+                                </button>
+                            </form>
+                        {% endif %}
+
+
                     </div>
                 </div>
             </div>
@@ -1508,10 +1584,18 @@ inline-edit-
                         <div class="dp-data-card__label">Resultado del plano</div>
 
                         <div class="dp-data-grid">
-                            <div class="dp-data-tile">
-                                <span class="dp-data-tile__title">Id plano</span>
-                                <strong class="dp-data-tile__value">{{ plano.id_plano_deposito|default:plano.id }}</strong>
-                            </div>
+                        <div class="dp-data-tile dp-data-tile--id">
+                            <span class="dp-data-tile__title">Id plano</span>
+
+                            <strong class="dp-data-tile__value">{{ plano.id_plano_deposito|default:plano.id }}</strong>
+
+                            {% if plano.referencia_plano %}
+                                <div class="dp-id-reference">
+                                    <i class="bi bi-tag"></i>
+                                    <span>{{ plano.referencia_plano }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
 
                             <div class="dp-data-tile">
                                 <span class="dp-data-tile__title">Carpeta</span>
@@ -1640,6 +1724,14 @@ inline-edit-
                             <i class="bi bi-chevron-up"></i>
                             Ocultar
                         </button>
+
+                         <div class="mt-3 d-flex justify-content-end">
+                            <a href="{{ archivo_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>
+                                 Abrir PDF original
+                            </a>
+                        </div>
+
                     </div>
 
                     <div class="dp-preview-wrap">
@@ -1650,12 +1742,6 @@ inline-edit-
                             {% if pdf_preview_image_url %}
                                 <img src="{{ pdf_preview_image_url }}" alt="{{ archivo_nombre|default:'Plano PDF' }}" class="dp-preview-image">
 
-                                <div class="mt-3 d-flex justify-content-end">
-                                    <a href="{{ archivo_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-box-arrow-up-right me-1"></i>
-                                        Abrir PDF original
-                                    </a>
-                                </div>
                             {% else %}
                                 <div class="dp-empty-main">
                                     <i class="bi bi-file-earmark-pdf"></i>
@@ -1829,7 +1915,7 @@ inline-edit-
                                                             <label>Ciudad</label>
                                                             <div class="dp-field-value">{{ r.ciudad_plano }}</div>
 
-                                                            {% if r.fue_editado_manual %}
+                                                            {% if r.ciudad_plano_editada and r.ciudad_plano_editada != "-" and r.ciudad_plano_editada != r.ciudad_plano_original %}
                                                                 <div class="small text-muted mt-2">
                                                                     <div><strong>Original:</strong> {{ r.ciudad_plano_original }}</div>
                                                                     <div><strong>Editado:</strong> {{ r.ciudad_plano_editada }}</div>
@@ -1841,7 +1927,7 @@ inline-edit-
                                                             <label>Zona</label>
                                                             <div class="dp-field-value">{{ r.zona_plano }}</div>
 
-                                                            {% if r.fue_editado_manual %}
+                                                            {% if r.zona_plano_editada and r.zona_plano_editada != "-" and r.zona_plano_editada != r.zona_plano_original %}
                                                                 <div class="small text-muted mt-2">
                                                                     <div><strong>Original:</strong> {{ r.zona_plano_original }}</div>
                                                                     <div><strong>Editado:</strong> {{ r.zona_plano_editada }}</div>
@@ -1853,7 +1939,7 @@ inline-edit-
                                                             <label>Fecha de trabajo</label>
                                                             <div class="dp-field-value">{{ r.fecha_plano }}</div>
 
-                                                            {% if r.fue_editado_manual %}
+                                                            {% if r.fecha_plano_editada and r.fecha_plano_editada != "-" and r.fecha_plano_editada != r.fecha_plano_original %}
                                                                 <div class="small text-muted mt-2">
                                                                     <div><strong>Original:</strong> {{ r.fecha_plano_original }}</div>
                                                                     <div><strong>Editado:</strong> {{ r.fecha_plano_editada }}</div>
@@ -1940,29 +2026,41 @@ inline-edit-
                                         <div class="dp-field">
                                             <label>Observación validación</label>
                                             <div class="dp-field-value">
-                                                {% if r.motivo_revision_manual and r.motivo_revision_manual != "-" %}
-                                                    {{ r.motivo_revision_manual }}
+                                                {% if r.estado_resultado_manual == "APROBADO" %}
+                                                    Se modificaron los datos extraidos del plano.
+                                                    {% if r.motivo_revision_manual and r.motivo_revision_manual != "-" %}
+                                                        {{ r.motivo_revision_manual }}
+                                                    {% endif %}
+
+                                                {% elif r.estado_resultado_manual == "RECHAZADO" %}
+                                                    Se modificaron los datos extraidos del plano.
+                                                    {% if r.motivo_revision_manual and r.motivo_revision_manual != "-" %}
+                                                        {{ r.motivo_revision_manual }}
+                                                    {% endif %}
+
+                                                {% elif r.estado_resultado_manual == "EN_VERIFICACION" %}
+                                                    Se modificaron los datos extraidos del plano.
+                                                    {% if r.motivo_revision_manual and r.motivo_revision_manual != "-" %}
+                                                        {{ r.motivo_revision_manual }}
+                                                    {% endif %}
+
+                                                {% elif r.fue_editado_manual and r.ciudad_ok and r.zona_ok and r.fecha_ok and r.materiales_ok %}
+                                                    Los datos corregidos manualmente coinciden actualmente con la base de datos. El NR permanece en verificación hasta aprobación manual del administrador.
+
+                                                {% elif r.fue_editado_manual %}
+                                                    El funcionario realizó correcciones manuales en los datos detectados del plano. El NR requiere revisión del administrador antes de su aprobación final.
+
+                                                {% elif r.materiales_ok and r.fue_editado %}
+                                                    Los materiales fueron corregidos manualmente y ahora coinciden con la base de datos. El NR permanece en verificación hasta aprobación manual del administrador.
 
                                                 {% elif r.observacion and r.observacion != "-" %}
                                                     {{ r.observacion }}
-
-                                                {% elif r.estado_resultado_manual == "APROBADO" %}
-                                                    El administrador cambió manualmente el estado a APROBADO.
-
-                                                {% elif r.estado_resultado_manual == "RECHAZADO" %}
-                                                    El administrador cambió manualmente el estado a RECHAZADO.
-
-                                                {% elif r.estado_resultado_manual == "EN_VERIFICACION" %}
-                                                    El administrador cambió manualmente el estado a EN VERIFICACIÓN.
 
                                                 {% elif r.estado_resultado == "RECHAZADO" %}
                                                     Rechazado porque existe inconsistencia entre los datos del plano y la base de datos de reclamos.
 
                                                 {% elif r.estado_resultado == "APROBADO" and r.materiales_ok %}
                                                     Aprobado porque ciudad, zona, fecha y materiales coinciden correctamente con la base de datos.
-
-                                                {% elif r.materiales_ok and r.fue_editado %}
-                                                    Los materiales fueron corregidos y ahora coinciden con la base de datos. El NR permanece en verificación hasta aprobación manual del administrador.
 
                                                 {% elif r.materiales_ok %}
                                                     Ciudad, zona, fecha y materiales coinciden correctamente con la base de datos.

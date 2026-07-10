@@ -104,8 +104,95 @@ def _user_can_edit_datos_nr(user):
 
 def _user_can_change_nr_estado(user):
     return user_is_admin(user)
+def _generar_id_plano_deposito(carpeta):
+    """
+    Genera un identificador técnico correlativo por carpeta.
+    Ejemplo: CARP016-P001, CARP016-P002.
+    """
+    prefijo = f"{carpeta.codigo_carpeta}-P"
+
+    codigos_existentes = (
+        Plano.objects
+        .filter(
+            carpeta=carpeta,
+            id_plano_deposito__startswith=prefijo,
+        )
+        .values_list("id_plano_deposito", flat=True)
+    )
+
+    mayor_numero = 0
+
+    for codigo in codigos_existentes:
+        match = re.match(rf"^{re.escape(prefijo)}(\d+)$", str(codigo).strip())
+        if match:
+            mayor_numero = max(mayor_numero, int(match.group(1)))
+
+    return f"{prefijo}{mayor_numero + 1:03d}"
+
+def _get_planos_pendientes_revision_queryset():
+    """
+    Devuelve planos que requieren decisión administrativa.
+
+    Criterios:
+    - Plano en EN_VERIFICACION.
+    - Plano RECHAZADO.
+    - NR editado por funcionario sin revisión manual del administrador.
+    - Material editado por funcionario sin revisión manual del administrador.
+    """
+
+    pendiente_datos_editados = Q(
+        resultados_validacion__fue_editado_manual=True,
+        resultados_validacion__estado_resultado_manual__isnull=True,
+    )
+
+    pendiente_materiales_editados = Q(
+        resultados_validacion__materiales_detectados__fue_editado=True,
+        resultados_validacion__estado_resultado_manual__isnull=True,
+    )
+
+    return (
+        Plano.objects
+        .filter(
+            eliminado=False,
+            procesado=True,
+            revision_administrativa_cerrada=False,
+        )
+        .filter(
+            Q(estado="EN_VERIFICACION") |
+            Q(estado="RECHAZADO") |
+            pendiente_datos_editados |
+            pendiente_materiales_editados
+        )
+        .distinct()
+    )
 
 
+def _build_dashboard_revision():
+    planos_pendientes = _get_planos_pendientes_revision_queryset()
+
+    return {
+        "total": planos_pendientes.count(),
+        "modificados_funcionario": (
+            planos_pendientes
+            .filter(
+                resultados_validacion__fue_editado_manual=True,
+                resultados_validacion__estado_resultado_manual__isnull=True,
+            )
+            .distinct()
+            .count()
+        ),
+        "materiales_editados": (
+            planos_pendientes
+            .filter(
+                resultados_validacion__materiales_detectados__fue_editado=True,
+                resultados_validacion__estado_resultado_manual__isnull=True,
+            )
+            .distinct()
+            .count()
+        ),
+        "en_verificacion": planos_pendientes.filter(estado="EN_VERIFICACION").count(),
+        "rechazados": planos_pendientes.filter(estado="RECHAZADO").count(),
+    }
 # =========================================================
 # HELPERS DETALLE PLANO
 # =========================================================
@@ -960,12 +1047,68 @@ def dashboard_view(request):
         .order_by("-fecha_creacion")[:5]
     )
 
+    dashboard_revision = {
+        "total": 0,
+        "modificados_funcionario": 0,
+        "materiales_editados": 0,
+        "en_verificacion": 0,
+        "rechazados": 0,
+    }
+
     if request.user.is_superuser:
-        return render(request, "dashboard.html", {
-            "app_name": "Shadow",
-            "titulo_pantalla": "Inicio administrador",
-            "carpetas_recientes": carpetas_recientes,
-        })
+        planos_pendientes_revision = (
+            Plano.objects
+            .filter(eliminado=False)
+            .filter(
+                Q(estado="EN_VERIFICACION") |
+                Q(estado="RECHAZADO") |
+                Q(resultados_validacion__fue_editado_manual=True) |
+                Q(resultados_validacion__materiales_detectados__fue_editado=True)
+            )
+            .distinct()
+        )
+
+        dashboard_revision = {
+            "total": planos_pendientes_revision.count(),
+            "modificados_funcionario": (
+                Plano.objects
+                .filter(
+                    eliminado=False,
+                    resultados_validacion__fue_editado_manual=True,
+                )
+                .distinct()
+                .count()
+            ),
+            "materiales_editados": (
+                Plano.objects
+                .filter(
+                    eliminado=False,
+                    resultados_validacion__materiales_detectados__fue_editado=True,
+                )
+                .distinct()
+                .count()
+            ),
+            "en_verificacion": (
+                Plano.objects
+                .filter(eliminado=False, estado="EN_VERIFICACION")
+                .count()
+            ),
+            "rechazados": (
+                Plano.objects
+                .filter(eliminado=False, estado="RECHAZADO")
+                .count()
+            ),
+        }
+
+        if request.user.is_superuser:
+            dashboard_revision = _build_dashboard_revision()
+
+            return render(request, "dashboard.html", {
+                "app_name": "Shadow",
+                "titulo_pantalla": "Inicio administrador",
+                "carpetas_recientes": carpetas_recientes,
+                "dashboard_revision": dashboard_revision,
+            })
 
     perfil, _ = PerfilUsuario.objects.get_or_create(user=request.user)
 
@@ -980,7 +1123,195 @@ def dashboard_view(request):
         "app_name": "Shadow",
         "titulo_pantalla": "Inicio",
         "carpetas_recientes": carpetas_recientes,
+        "dashboard_revision": dashboard_revision,
     })
+
+
+@login_required
+@user_passes_test(user_is_admin)
+def bandeja_revision_view(request):
+    planos_revision = (
+        _get_planos_pendientes_revision_queryset()
+        .select_related("carpeta", "carpeta__empresa")
+        .annotate(
+            nr_modificados_funcionario=Count(
+                "resultados_validacion",
+                filter=Q(
+                    resultados_validacion__fue_editado_manual=True,
+                    resultados_validacion__estado_resultado_manual__isnull=True,
+                ),
+                distinct=True,
+            ),
+            materiales_modificados=Count(
+                "resultados_validacion__materiales_detectados",
+                filter=Q(
+                    resultados_validacion__materiales_detectados__fue_editado=True,
+                    resultados_validacion__estado_resultado_manual__isnull=True,
+                ),
+                distinct=True,
+            ),
+            nr_en_verificacion=Count(
+                "resultados_validacion",
+                filter=(
+                    Q(resultados_validacion__estado_resultado="EN_VERIFICACION") |
+                    Q(resultados_validacion__estado_resultado_manual="EN_VERIFICACION")
+                ),
+                distinct=True,
+            ),
+            nr_rechazados=Count(
+                "resultados_validacion",
+                filter=(
+                    Q(resultados_validacion__estado_resultado="RECHAZADO") |
+                    Q(resultados_validacion__estado_resultado_manual="RECHAZADO")
+                ),
+                distinct=True,
+            ),
+        )
+        .order_by(
+            "carpeta__codigo_carpeta",
+            "-nr_modificados_funcionario",
+            "-materiales_modificados",
+            "-fecha_carga",
+        )
+    )
+
+    meses_dict = {
+        1: "Enero",
+        2: "Febrero",
+        3: "Marzo",
+        4: "Abril",
+        5: "Mayo",
+        6: "Junio",
+        7: "Julio",
+        8: "Agosto",
+        9: "Septiembre",
+        10: "Octubre",
+        11: "Noviembre",
+        12: "Diciembre",
+    }
+
+    carpetas_revision_map = {}
+
+    for plano in planos_revision:
+        carpeta = plano.carpeta
+
+        if carpeta.id not in carpetas_revision_map:
+            carpetas_revision_map[carpeta.id] = {
+                "carpeta": carpeta,
+                "codigo": carpeta.codigo_carpeta,
+                "empresa": carpeta.empresa.nombre if carpeta.empresa else "Sin empresa",
+                "periodo": f"{meses_dict.get(carpeta.mes, carpeta.mes)} {carpeta.anio}",
+                "total_planos": 0,
+                "total_modificados": 0,
+                "total_materiales": 0,
+                "total_verificacion": 0,
+                "total_rechazados": 0,
+                "planos": [],
+            }
+
+        item = carpetas_revision_map[carpeta.id]
+
+        plano.total_tareas_revision = (
+            int(plano.nr_modificados_funcionario or 0) +
+            int(plano.materiales_modificados or 0)
+        )
+
+        item["total_planos"] += 1
+        item["total_modificados"] += int(plano.nr_modificados_funcionario or 0)
+        item["total_materiales"] += int(plano.materiales_modificados or 0)
+
+        if plano.estado == "EN_VERIFICACION":
+            item["total_verificacion"] += 1
+
+        if plano.estado == "RECHAZADO":
+            item["total_rechazados"] += 1
+
+        item["planos"].append(plano)
+
+    carpetas_revision = list(carpetas_revision_map.values())
+
+    dashboard_revision = _build_dashboard_revision()
+
+    return render(request, "bandeja_revision.html", {
+        "app_name": "Shadow",
+        "titulo_pantalla": "Bandeja de revisión",
+        "dashboard_revision": dashboard_revision,
+        "carpetas_revision": carpetas_revision,
+        "total_carpetas_revision": len(carpetas_revision),
+    })
+
+@login_required
+@user_passes_test(user_is_admin)
+@transaction.atomic
+def cerrar_revision_plano_view(request, plano_id):
+    plano = get_object_or_404(
+        Plano.objects.select_related("carpeta"),
+        id=plano_id,
+        eliminado=False,
+    )
+
+    if request.method == "POST":
+        tiene_datos_modificados_pendientes = plano.resultados_validacion.filter(
+            fue_editado_manual=True,
+            estado_resultado_manual__isnull=True,
+        ).exists()
+
+        tiene_materiales_modificados_pendientes = MaterialDetectadoPlano.objects.filter(
+            resultado_validacion__plano=plano,
+            fue_editado=True,
+            resultado_validacion__estado_resultado_manual__isnull=True,
+        ).exists()
+
+        if plano.estado != "RECHAZADO":
+            messages.warning(
+                request,
+                "Solo se puede cerrar directamente la revisión de planos rechazados."
+            )
+            return redirect("bandeja_revision")
+
+        if tiene_datos_modificados_pendientes or tiene_materiales_modificados_pendientes:
+            messages.warning(
+                request,
+                "Este plano tiene modificaciones pendientes. Primero debe verificarse desde el detalle del plano."
+            )
+            return redirect("bandeja_revision")
+
+        motivo = (request.POST.get("motivo_cierre") or "").strip()
+
+        plano.revision_administrativa_cerrada = True
+        plano.revision_administrativa_cerrada_por = str(request.user)
+        plano.fecha_revision_administrativa_cerrada = timezone.now()
+        plano.motivo_revision_administrativa_cerrada = (
+            motivo or "El administrador confirmó que el rechazo del plano es correcto."
+        )
+
+        plano.save(update_fields=[
+            "revision_administrativa_cerrada",
+            "revision_administrativa_cerrada_por",
+            "fecha_revision_administrativa_cerrada",
+            "motivo_revision_administrativa_cerrada",
+        ])
+
+        Auditoria.objects.create(
+            plano=plano,
+            carpeta=plano.carpeta,
+            usuario=str(request.user),
+            accion="CERRAR_REVISION_ADMINISTRATIVA_PLANO",
+            descripcion=(
+                f"El administrador cerró la revisión administrativa del plano "
+                f"{plano.id_plano_deposito}. Motivo: "
+                f"{plano.motivo_revision_administrativa_cerrada}"
+            ),
+            entidad="Plano",
+            entidad_id=str(plano.id),
+        )
+
+        messages.success(
+            request,
+            f"Revisión cerrada correctamente para el plano {plano.id_plano_deposito}."
+        )
+
+    return redirect("bandeja_revision")
 
 
 @login_required
@@ -1327,21 +1658,29 @@ def subir_plano_view(request, carpeta_id=None):
 
     if request.method == "POST":
         carpeta_id_post = request.POST.get("carpeta")
-        id_plano_deposito = request.POST.get("id_plano_deposito")
+        referencia_plano = (request.POST.get("referencia_plano") or "").strip()
         archivo = request.FILES.get("archivo")
 
-        if not carpeta_id_post or not id_plano_deposito or not archivo:
-            error = "Debes completar carpeta, ID del plano y archivo."
+        if not carpeta_id_post or not archivo:
+            error = "Debes seleccionar una carpeta y cargar el archivo del plano."
         else:
             try:
-                carpeta_obj = Carpeta.objects.get(id=carpeta_id_post, eliminada=False)
+                with transaction.atomic():
+                    carpeta_obj = (
+                        Carpeta.objects
+                        .select_for_update()
+                        .get(id=carpeta_id_post, eliminada=False)
+                    )
 
-                plano = Plano.objects.create(
-                    carpeta=carpeta_obj,
-                    id_plano_deposito=id_plano_deposito,
-                    archivo=archivo,
-                    estado="EN_ESPERA",
-                )
+                    id_plano_deposito = _generar_id_plano_deposito(carpeta_obj)
+
+                    plano = Plano.objects.create(
+                        carpeta=carpeta_obj,
+                        id_plano_deposito=id_plano_deposito,
+                        referencia_plano=referencia_plano or None,
+                        archivo=archivo,
+                        estado="EN_ESPERA",
+                    )
 
                 Auditoria.objects.create(
                     plano=plano,
@@ -1360,12 +1699,21 @@ def subir_plano_view(request, carpeta_id=None):
             except Exception as e:
                 error = f"No se pudo guardar el plano: {e}"
 
+    proximo_id_plano = _generar_id_plano_deposito(carpeta) if carpeta else ""
+
+    proximos_ids_por_carpeta = {
+        str(c.id): _generar_id_plano_deposito(c)
+        for c in carpetas
+    }
+
     return render(request, "subir_plano.html", {
         "app_name": "Shadow",
         "titulo_pantalla": "Subir plano",
         "carpeta_actual": carpeta,
         "carpetas": carpetas,
         "error": error,
+        "proximo_id_plano": proximo_id_plano,
+        "proximos_ids_por_carpeta": proximos_ids_por_carpeta,
     })
 
 
@@ -1420,6 +1768,8 @@ def detalle_plano_view(request, plano_id):
         "puede_ver_resumen": puede_ver_resumen,
         "puede_editar_materiales": _user_can_edit_materiales(request.user),
         "puede_cambiar_estado_nr": _user_can_change_nr_estado(request.user),
+        "puede_editar_referencia_plano": _user_can_edit_materiales(request.user),
+        "volver_bandeja_revision": request.GET.get("from") == "bandeja_revision",
         "archivo_url": archivo_url,
         "archivo_nombre": archivo_nombre,
         "archivo_ext": archivo_ext,
@@ -1433,6 +1783,41 @@ def detalle_plano_view(request, plano_id):
         return render(request, "detalle_plano_contratista.html", contexto)
 
     return render(request, "detalle_plano.html", contexto)
+
+@login_required
+def editar_referencia_plano_view(request, plano_id):
+    require_admin_or_funcionario(request)
+
+    plano = get_object_or_404(
+        Plano.objects.select_related("carpeta"),
+        id=plano_id,
+        eliminado=False,
+    )
+
+    if request.method == "POST":
+        referencia_anterior = plano.referencia_plano or "-"
+        nueva_referencia = (request.POST.get("referencia_plano") or "").strip() or None
+
+        plano.referencia_plano = nueva_referencia
+        plano.save(update_fields=["referencia_plano"])
+
+        Auditoria.objects.create(
+            plano=plano,
+            carpeta=plano.carpeta,
+            usuario=str(request.user),
+            accion="EDITAR_REFERENCIA_PLANO",
+            descripcion=(
+                f"Se editó la referencia del plano {plano.id_plano_deposito}. "
+                f"Anterior: {referencia_anterior}. "
+                f"Nueva: {nueva_referencia or '-'}."
+            ),
+            entidad="Plano",
+            entidad_id=str(plano.id),
+        )
+
+        messages.success(request, "Referencia del plano actualizada correctamente.")
+
+    return redirect("detalle_plano", plano_id=plano.id)
 
 
 @login_required
