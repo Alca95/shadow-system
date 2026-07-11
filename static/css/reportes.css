@@ -1025,47 +1025,54 @@ body.report-modal-open {
     color: rgba(255, 255, 255, 0.72) !important;
 }
 
+/* =========================================================
+   GRID ESTABLE DE REPORTES DISPONIBLES
+   Mantiene orden DOM: 1, 2, 3, 4, 5.
+========================================================= */
+
 .report-card-grid {
-    grid-auto-flow: dense;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
     align-items: stretch;
+    grid-auto-flow: row;
 }
 
-.report-card {
+.report-card-grid > .report-card,
+.report-card-grid > .report-card-wide {
+    grid-column: auto;
+    width: 100%;
+    min-width: 0;
     min-height: 220px;
+    height: 100%;
 }
 
-.report-card-wide {
-    grid-column: span 5;
+.report-card-grid > .report-card:nth-child(1) { order: 1; }
+.report-card-grid > .report-card:nth-child(2) { order: 2; }
+.report-card-grid > .report-card:nth-child(3) { order: 3; }
+.report-card-grid > .report-card:nth-child(4) { order: 4; }
+.report-card-grid > .report-card:nth-child(5) { order: 5; }
+
+.report-card-content,
+.report-card-footer {
+    min-width: 0;
 }
 
-.report-card:nth-child(2),
-.report-card:nth-child(3),
-.report-card:nth-child(4),
-.report-card:nth-child(6),
-.report-card:nth-child(7) {
-    grid-column: span 4;
+.report-card-content strong,
+.report-card-content small {
+    overflow-wrap: anywhere;
 }
 
-.report-card:nth-child(5) {
-    grid-column: span 5;
+.report-card-footer span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-@media (min-width: 1400px) {
+@media (max-width: 900px) {
     .report-card-grid {
-        grid-template-columns: repeat(10, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 1399.98px) {
-    .report-card,
-    .report-card-wide,
-    .report-card:nth-child(2),
-    .report-card:nth-child(3),
-    .report-card:nth-child(4),
-    .report-card:nth-child(5),
-    .report-card:nth-child(6),
-    .report-card:nth-child(7) {
-        grid-column: span 6;
+        grid-template-columns: 1fr;
     }
 }
 
@@ -1886,3 +1893,71 @@ body.report-modal-open {
     width: 100%;
     max-width: 120px;
 }
+/* =========================================================
+   FIX DEFINITIVO - CARDS DE REPORTES DISPONIBLES
+   Evita desorden por zoom anulando grid-column/nth-child.
+   Mantiene orden visual según el HTML.
+========================================================= */
+
+.report-objectives-panel .report-card-grid {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 1rem !important;
+    align-items: stretch !important;
+    grid-template-columns: none !important;
+    grid-auto-flow: row !important;
+}
+
+.report-objectives-panel .report-card-grid > .report-card,
+.report-objectives-panel .report-card-grid > .report-card-wide,
+.report-objectives-panel .report-card-grid > .report-card:nth-child(n) {
+    flex: 0 0 calc(50% - 0.5rem) !important;
+    width: calc(50% - 0.5rem) !important;
+    max-width: calc(50% - 0.5rem) !important;
+
+    grid-column: auto !important;
+    order: initial !important;
+
+    min-width: 0 !important;
+    min-height: 220px !important;
+    height: auto !important;
+}
+
+.report-objectives-panel .report-card-grid > .report-card {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.report-objectives-panel .report-card-content,
+.report-objectives-panel .report-card-footer {
+    min-width: 0 !important;
+}
+
+.report-objectives-panel .report-card-content strong,
+.report-objectives-panel .report-card-content small {
+    overflow-wrap: break-word !important;
+    word-break: normal !important;
+}
+
+.report-objectives-panel .report-card-footer {
+    margin-top: auto !important;
+}
+
+.report-objectives-panel .report-card-footer span {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+/* Pantallas chicas */
+@media (max-width: 900px) {
+    .report-objectives-panel .report-card-grid > .report-card,
+    .report-objectives-panel .report-card-grid > .report-card-wide,
+    .report-objectives-panel .report-card-grid > .report-card:nth-child(n) {
+        flex-basis: 100% !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+

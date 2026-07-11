@@ -18,6 +18,55 @@ Efectividad mensual por empresa
 </div>
 
 <div class="meta-item">
+    <span>Empresa</span>
+    <strong>
+        {% if filtros.empresa_nombre %}
+            {{ filtros.empresa_nombre }}
+        {% else %}
+            Todas las empresas
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Nivel</span>
+    <strong>
+        {% if filtros.efectividad_mensual_nivel %}
+            {% if filtros.efectividad_mensual_nivel == "EXCELENTE" %}
+                Excelente
+            {% elif filtros.efectividad_mensual_nivel == "OPTIMO" %}
+                Óptimo
+            {% elif filtros.efectividad_mensual_nivel == "RIESGO" %}
+                Riesgo
+            {% elif filtros.efectividad_mensual_nivel == "CRITICO" %}
+                Crítico
+            {% else %}
+                {{ filtros.efectividad_mensual_nivel }}
+            {% endif %}
+        {% else %}
+            Todos los niveles
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Orden</span>
+    <strong>
+        {% if filtros.efectividad_mensual_orden == "periodo_desc" %}
+            Mes más reciente
+        {% elif filtros.efectividad_mensual_orden == "periodo_asc" %}
+            Mes más antiguo
+        {% elif filtros.efectividad_mensual_orden == "nr_desc" %}
+            Mayor NR procesados
+        {% elif filtros.efectividad_mensual_orden == "rechazos_desc" %}
+            Mayor no concretados
+        {% else %}
+            Mayor efectividad
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
     <span>Fecha emisión</span>
     <strong>{% now "d/m/Y H:i" %}</strong>
 </div>
@@ -25,6 +74,88 @@ Efectividad mensual por empresa
 {% endblock %}
 
 {% block content %}
+<style>
+    .efectividad-mensual-print-table {
+        width: 100%;
+        table-layout: fixed;
+        font-size: 8px;
+    }
+
+    .efectividad-mensual-print-table th,
+    .efectividad-mensual-print-table td {
+        padding: 6px 5px;
+        line-height: 1.2;
+        vertical-align: middle;
+        word-break: normal;
+        overflow-wrap: break-word;
+    }
+
+    .efectividad-mensual-print-table th:nth-child(1),
+    .efectividad-mensual-print-table td:nth-child(1) {
+        width: 10%;
+    }
+
+    .efectividad-mensual-print-table th:nth-child(2),
+    .efectividad-mensual-print-table td:nth-child(2) {
+        width: 15%;
+    }
+
+    .efectividad-mensual-print-table th:nth-child(3),
+    .efectividad-mensual-print-table td:nth-child(3) {
+        width: 11%;
+    }
+
+    .efectividad-mensual-print-table th:nth-child(4),
+    .efectividad-mensual-print-table td:nth-child(4) {
+        width: 7%;
+        text-align: center;
+    }
+
+    .efectividad-mensual-print-table th:nth-child(5),
+    .efectividad-mensual-print-table td:nth-child(5) {
+        width: 6%;
+        text-align: center;
+    }
+
+    .efectividad-mensual-print-table th:nth-child(6),
+    .efectividad-mensual-print-table td:nth-child(6) {
+        width: 10%;
+        text-align: center;
+    }
+
+    .efectividad-mensual-print-table th:nth-child(7),
+    .efectividad-mensual-print-table td:nth-child(7) {
+        width: 11%;
+        text-align: center;
+    }
+
+    .efectividad-mensual-print-table th:nth-child(8),
+    .efectividad-mensual-print-table td:nth-child(8) {
+        width: 10%;
+        text-align: center;
+    }
+
+    .efectividad-mensual-print-table th:nth-child(9),
+    .efectividad-mensual-print-table td:nth-child(9) {
+        width: 10%;
+        text-align: center;
+    }
+
+    .efectividad-mensual-print-table th:nth-child(10),
+    .efectividad-mensual-print-table td:nth-child(10) {
+        width: 10%;
+        text-align: center;
+    }
+
+    .efectividad-mensual-print-table .badge {
+        display: inline-block;
+        max-width: 100%;
+        padding: 3px 5px;
+        font-size: 7px;
+        line-height: 1.1;
+        white-space: normal;
+    }
+</style>
 
 <h3 class="print-section-title">
     Resumen ejecutivo
@@ -58,7 +189,7 @@ Efectividad mensual por empresa
     Detalle mensual por empresa
 </h3>
 
-<table class="print-table">
+<table class="print-table efectividad-mensual-print-table">
 
     <thead>
         <tr>

@@ -4,7 +4,7 @@
 {% block title %}Reportes{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260519">
+<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260709-3">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 {% endblock %}
 
@@ -75,10 +75,13 @@
                     </label>
 
                     <select name="empresa" class="form-select">
-                        <option value="">Todas las empresas</option>
+                        <option value="" {% if not filtros.empresa %}selected{% endif %}>
+                            Todas las empresas
+                        </option>
+
                         {% for empresa in empresas %}
                             <option value="{{ empresa.id }}"
-                                {% if filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
+                                {% if filtros.empresa and filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
                                 {{ empresa.nombre }}
                             </option>
                         {% endfor %}
@@ -187,6 +190,26 @@
                 </span>
             </button>
 
+
+            <button type="button" class="report-card report-card-wide" data-report-modal="modalEstados">
+                <span class="report-card-icon is-success">
+                    <i class="bi bi-geo-alt"></i>
+                </span>
+
+                <span class="report-card-content">
+                    <strong>Reclamos por localidad, barrio y empresa</strong>
+                    <small>
+                        Cantidad de reclamos atendidos, concretados, no concretados
+                        y en verificación agrupados por ciudad, zona y empresa.
+                    </small>
+                </span>
+
+                <span class="report-card-footer">
+                    <span>{{ reporte_reclamos|length }} registros territoriales</span>
+                    <i class="bi bi-arrow-up-right"></i>
+                </span>
+            </button>
+
             <button type="button" class="report-card report-card-wide" data-report-modal="modalEfectividad">
                 <span class="report-card-icon is-primary">
                     <i class="bi bi-graph-up-arrow"></i>
@@ -280,7 +303,9 @@
                     <a
                         href="{% url 'reporte_materiales_print' %}?{{ request.GET.urlencode }}"
                         target="_blank"
-                        class="report-print-btn"
+                        class="report-print-btn report-print-current-form"
+                        data-print-url="{% url 'reporte_materiales_print' %}"
+                        data-print-form="form-materiales-report"
                         title="Imprimir reporte"
                     >
                         <i class="bi bi-printer"></i>
@@ -341,18 +366,18 @@
                         </label>
 
                         <select name="empresa" class="form-select materiales-empresa-filter">
-
-                            <option value="">Todas las empresas</option>
+                            <option value="" {% if not filtros.empresa %}selected{% endif %}>
+                                Todas las empresas
+                            </option>
 
                             {% for empresa in empresas %}
                                 <option
                                     value="{{ empresa.id }}"
-                                    {% if filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}
+                                    {% if filtros.empresa and filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}
                                 >
                                     {{ empresa.nombre }}
                                 </option>
                             {% endfor %}
-
                         </select>
                     </div>
 
@@ -364,12 +389,15 @@
 
                         <select name="carpeta" class="form-select materiales-carpeta-filter">
 
-                            <option value="">Todas las carpetas</option>
+                            <option value="" {% if not filtros.carpeta %}selected{% endif %}>
+                                Todas las carpetas
+                            </option>
 
                             {% for carpeta in carpetas %}
                                 <option
                                     value="{{ carpeta.id }}"
                                     data-empresa="{{ carpeta.empresa.id }}"
+                                    {% if filtros.carpeta == carpeta.id|stringformat:"s" %}selected{% endif %}
                                 >
                                     {{ carpeta.codigo_carpeta }}
                                 </option>
@@ -596,10 +624,13 @@
                             Empresa
                         </label>
                         <select name="empresa" class="form-select">
-                            <option value="">Todas las empresas</option>
+                            <option value="" {% if not filtros.empresa %}selected{% endif %}>
+                                Todas las empresas
+                            </option>
+
                             {% for empresa in empresas %}
                                 <option value="{{ empresa.id }}"
-                                    {% if filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
+                                    {% if filtros.empresa and filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
                                     {{ empresa.nombre }}
                                 </option>
                             {% endfor %}
@@ -731,18 +762,57 @@
         <section class="report-modal" id="modalEstados" data-report-key="estados">
             <div class="report-modal-header">
                 <div class="report-modal-title">
-                    <span class="report-card-icon is-success"><i class="bi bi-check2-square"></i></span>
+                    <span class="report-card-icon is-success">
+                        <i class="bi bi-geo-alt"></i>
+                    </span>
+
                     <div>
-                        <h3>Reclamos atendidos, concretados y no concretados</h3>
-                        <p>Resumen ejecutivo de estados operativos.</p>
+                        <h3>Reclamos por localidad, barrio y empresa</h3>
+                        <p>
+                            Distribución territorial de reclamos atendidos según ciudad,
+                            zona, empresa y estado operativo.
+                        </p>
                     </div>
                 </div>
-                <button type="button" class="report-modal-close" data-report-close>
-                    <i class="bi bi-x-lg"></i>
-                </button>
+
+                <div class="report-modal-header-actions">
+
+                    <a
+                        href="{% url 'reporte_reclamos_territorial_print' %}?{{ request.GET.urlencode }}"
+                        target="_blank"
+                        class="report-print-btn report-print-current-form"
+                        data-print-url="{% url 'reporte_reclamos_territorial_print' %}"
+                        data-print-form="form-estados-report"
+                        title="Imprimir reporte"
+                    >
+                        <i class="bi bi-printer"></i>
+                    </a>
+
+                    <button
+                        type="submit"
+                        form="form-estados-report"
+                        class="report-action-btn primary"
+                    >
+                        <i class="bi bi-funnel"></i>
+                        Aplicar filtros
+                    </button>
+
+                    <button
+                        type="button"
+                        class="report-action-btn secondary report-reset-modal"
+                    >
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Limpiar
+                    </button>
+
+                    <button type="button" class="report-modal-close" data-report-close>
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+
+                </div>
             </div>
 
-            <form method="get" class="report-modal-filters">
+            <form method="get" class="report-modal-filters" id="form-estados-report">
 
                 <input type="hidden" name="tab" value="estados">
 
@@ -773,11 +843,13 @@
                         </label>
 
                         <select name="empresa" class="form-select">
-                            <option value="">Todas las empresas</option>
+                            <option value="" {% if not filtros.empresa %}selected{% endif %}>
+                                Todas las empresas
+                            </option>
 
                             {% for empresa in empresas %}
                                 <option value="{{ empresa.id }}"
-                                    {% if filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
+                                    {% if filtros.empresa and filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
                                     {{ empresa.nombre }}
                                 </option>
                             {% endfor %}
@@ -850,20 +922,6 @@
 
                 </div>
 
-                <div class="modal-filter-actions">
-
-                    <button type="submit" class="btn btn-shadow">
-                        <i class="bi bi-funnel"></i>
-                        Generar reporte
-                    </button>
-
-                    <button type="button" class="btn btn-outline-secondary report-reset-modal">
-                        <i class="bi bi-arrow-clockwise"></i>
-                        Limpiar
-                    </button>
-
-                </div>
-
             </form>
 
             <div class="report-modal-body">
@@ -894,7 +952,7 @@
                                 <th>Localidad / Ciudad</th>
                                 <th>Barrio / Zona</th>
                                 <th>Empresa</th>
-                                <th>Total</th>
+                                <th>Atendidos</th>
                                 <th>Concretados</th>
                                 <th>No concretados</th>
                                 <th>Verificación</th>
@@ -994,11 +1052,13 @@
                         </label>
 
                         <select name="empresa" class="form-select">
-                            <option value="">Todas las empresas</option>
+                            <option value="" {% if not filtros.empresa %}selected{% endif %}>
+                                Todas las empresas
+                            </option>
 
                             {% for empresa in empresas %}
                                 <option value="{{ empresa.id }}"
-                                    {% if filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
+                                    {% if filtros.empresa and filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
                                     {{ empresa.nombre }}
                                 </option>
                             {% endfor %}
@@ -1284,9 +1344,11 @@
                 <div class="report-modal-header-actions">
 
                     <a
-                        href="{% url 'reporte_efectividad_mensual_print' %}?{{ request.GET.urlencode }}"
+                        href="{% url 'reporte_rechazos_print' %}?{{ request.GET.urlencode }}"
                         target="_blank"
-                        class="report-print-btn"
+                        class="report-print-btn report-print-current-form"
+                        data-print-url="{% url 'reporte_rechazos_print' %}"
+                        data-print-form="form-rechazos-report"
                         title="Imprimir reporte"
                     >
                         <i class="bi bi-printer"></i>
@@ -1331,13 +1393,20 @@
                             Año
                         </label>
 
-                        <input
-                            type="number"
-                            name="efectividad_mensual_anio"
-                            class="form-control"
-                            placeholder="Ej: 2026"
-                            value="{{ filtros.efectividad_mensual_anio }}"
-                        >
+                        <select name="efectividad_mensual_anio" class="form-select">
+                            <option value="" {% if not filtros.efectividad_mensual_anio %}selected{% endif %}>
+                                Todos los años
+                            </option>
+
+                            {% for anio in anios_efectividad_mensual %}
+                                <option
+                                    value="{{ anio }}"
+                                    {% if filtros.efectividad_mensual_anio == anio|stringformat:"s" %}selected{% endif %}
+                                >
+                                    {{ anio }}
+                                </option>
+                            {% endfor %}
+                        </select>
                     </div>
 
                     <div class="modal-filter-item">
@@ -1371,11 +1440,13 @@
                         </label>
 
                         <select name="empresa" class="form-select">
-                            <option value="">Todas las empresas</option>
+                            <option value="" {% if not filtros.empresa %}selected{% endif %}>
+                                Todas las empresas
+                            </option>
 
                             {% for empresa in empresas %}
                                 <option value="{{ empresa.id }}"
-                                    {% if filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
+                                    {% if filtros.empresa and filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
                                     {{ empresa.nombre }}
                                 </option>
                             {% endfor %}
@@ -1541,7 +1612,9 @@
                     <a
                         href="{% url 'reporte_rechazos_print' %}?{{ request.GET.urlencode }}"
                         target="_blank"
-                        class="report-print-btn"
+                        class="report-print-btn report-print-current-form"
+                        data-print-url="{% url 'reporte_rechazos_print' %}"
+                        data-print-form="form-rechazos-report"
                         title="Imprimir reporte"
                     >
                         <i class="bi bi-printer"></i>
@@ -1606,12 +1679,34 @@
                         </label>
 
                         <select name="empresa" class="form-select">
-                            <option value="">Todas las empresas</option>
+                            <option value="" {% if not filtros.empresa %}selected{% endif %}>
+                                Todas las empresas
+                            </option>
 
                             {% for empresa in empresas %}
                                 <option value="{{ empresa.id }}"
-                                    {% if filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
+                                    {% if filtros.empresa and filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
                                     {{ empresa.nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="modal-filter-item">
+                        <label>
+                            <i class="bi bi-folder2-open"></i>
+                            Carpeta
+                        </label>
+
+                        <select name="carpeta" class="form-select">
+                            <option value="" {% if not filtros.carpeta %}selected{% endif %}>
+                                Todas las carpetas
+                            </option>
+
+                            {% for carpeta in carpetas %}
+                                <option value="{{ carpeta.id }}"
+                                    {% if filtros.carpeta == carpeta.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ carpeta.codigo_carpeta }}
                                 </option>
                             {% endfor %}
                         </select>
@@ -1701,12 +1796,12 @@
 
                             <option value="mayor"
                                 {% if filtros.orden_rechazo == "mayor" or not filtros.orden_rechazo %}selected{% endif %}>
-                                Mayor cantidad de casos
+                                Mayor cantidad de Ocurrencias
                             </option>
 
                             <option value="menor"
                                 {% if filtros.orden_rechazo == "menor" %}selected{% endif %}>
-                                Menor cantidad de casos
+                                Menor cantidad de Ocurrencias
                             </option>
 
                             <option value="tipo_az"
@@ -1731,19 +1826,19 @@
 
                     <div class="response-kpi-card critical">
                         <span>Total inconsistencias</span>
-                        <strong>{{ resumen.total_rechazados }}</strong>
+                        <strong>{{ resumen_rechazos.total_inconsistencias }}</strong>
                     </div>
 
                     <div class="response-kpi-card">
                         <span>Tipos detectados</span>
-                        <strong>{{ reporte_tipos_rechazo|length }}</strong>
+                        <strong>{{ resumen_rechazos.tipos_detectados }}</strong>
                     </div>
 
                     <div class="response-kpi-card">
                         <span>Tipo predominante</span>
                         <strong>
-                            {% if reporte_tipos_rechazo %}
-                                {{ reporte_tipos_rechazo.0.tipo }}
+                            {% if resumen_rechazos.tipo_predominante %}
+                                {{ resumen_rechazos.tipo_predominante }}
                             {% else %}
                                 —
                             {% endif %}
@@ -1752,17 +1847,7 @@
 
                     <div class="response-kpi-card">
                         <span>Impacto operacional</span>
-                        <strong>
-                            {% if resumen.total_rechazados >= 15 %}
-                                Crítico
-                            {% elif resumen.total_rechazados >= 8 %}
-                                Alto
-                            {% elif resumen.total_rechazados >= 3 %}
-                                Moderado
-                            {% else %}
-                                Bajo
-                            {% endif %}
-                        </strong>
+                        <strong>{{ resumen_rechazos.impacto_operacional }}</strong>
                     </div>
 
                 </div>
@@ -1776,13 +1861,13 @@
 
                                     <div class="reason-header">
                                         <strong>{{ item.tipo }}</strong>
-                                        <span>{{ item.total }} caso{% if item.total != 1 %}s{% endif %}</span>
+                                        <span>{{ item.total }} ocurrencia{% if item.total != 1 %}s{% endif %}</span>
                                     </div>
 
                                     <div class="reason-bar">
                                         <div
                                             class="reason-bar-fill"
-                                            style="width: {% widthratio item.total resumen.total_rechazados 100 %}%;">
+                                            style="width: {% widthratio item.total resumen_rechazos.total_inconsistencias 100 %}%;">
                                         </div>
                                     </div>
 
@@ -1844,7 +1929,9 @@
                     <a
                         href="{% url 'reporte_tiempos_print' %}?{{ request.GET.urlencode }}"
                         target="_blank"
-                        class="report-print-btn"
+                        class="report-print-btn report-print-current-form"
+                        data-print-url="{% url 'reporte_tiempos_print' %}"
+                        data-print-form="form-respuesta-report"
                         title="Imprimir reporte"
                     >
                         <i class="bi bi-printer"></i>
@@ -1908,7 +1995,9 @@
                         </label>
 
                         <select name="empresa" class="form-select">
-                            <option value="">Todas las empresas</option>
+                            <option value="" {% if not filtros.empresa %}selected{% endif %}>
+                                Todas las empresas
+                            </option>
 
                             {% for empresa in empresas %}
                                 <option value="{{ empresa.id }}"
@@ -2317,6 +2406,39 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    function initializePrintFromCurrentForm(scope) {
+        const root = scope || document;
+
+        root.querySelectorAll(".report-print-current-form").forEach(function (printLink) {
+            printLink.addEventListener("click", function (event) {
+                const formId = printLink.dataset.printForm;
+                const printUrl = printLink.dataset.printUrl;
+                const form = document.getElementById(formId);
+
+                if (!form || !printUrl) return;
+
+                event.preventDefault();
+
+                const params = new URLSearchParams();
+                const formData = new FormData(form);
+
+                formData.forEach(function (value, key) {
+                    const cleanValue = String(value || "").trim();
+
+                    if (cleanValue) {
+                        params.append(key, cleanValue);
+                    }
+                });
+
+                const targetUrl = params.toString()
+                    ? printUrl + "?" + params.toString()
+                    : printUrl;
+
+                window.open(targetUrl, "_blank");
+            });
+        });
+    }
+
 
     function initializeReportDateRanges(scope) {
         const root = scope || document;
@@ -2378,6 +2500,7 @@ document.addEventListener("DOMContentLoaded", function () {
         applyEffectivenessBars(scope);
         initializeCarpetaFilters(scope);
         initializeTerritorialFilters(scope);
+        initializePrintFromCurrentForm(scope);
     }
 
     function openReportModal(modalId) {

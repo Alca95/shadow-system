@@ -167,6 +167,12 @@ urlpatterns = [
     ),   
 
     path(
+        "reportes/print/reclamos-territorial/",
+        views.reporte_reclamos_territorial_print_view,
+        name="reporte_reclamos_territorial_print"
+    ),
+
+    path(
         "reportes/print/efectividad-mensual/",
         views.reporte_efectividad_mensual_print_view,
         name="reporte_efectividad_mensual_print"

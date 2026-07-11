@@ -80,17 +80,17 @@ Reporte de tiempo de respuesta
 
     <div class="print-kpi">
         <span>Tiempo promedio</span>
-        <strong>{{ resumen.promedio_respuesta|floatformat:0 }}</strong>
+        <strong>{{ resumen.promedio_respuesta|floatformat:0 }} días</strong>
     </div>
 
     <div class="print-kpi">
         <span>Respuesta rápida</span>
-        <strong>{{ resumen.respuesta_rapida }}</strong>
+        <strong>{{ resumen.respuesta_rapida }} días</strong>
     </div>
 
     <div class="print-kpi">
         <span>Respuesta lenta</span>
-        <strong>{{ resumen.respuesta_lenta }}</strong>
+        <strong>{{ resumen.respuesta_lenta }} días</strong>
     </div>
 
     <div class="print-kpi">
@@ -168,7 +168,11 @@ Reporte de tiempo de respuesta
                         badge-critical
                     {% endif %}
                 ">
-                    {{ item.nivel_respuesta }}
+                    {% if item.nivel_respuesta == "ACEPTABLE" %}
+                        RIESGO
+                    {% else %}
+                        {{ item.nivel_respuesta }}
+                    {% endif %}
                 </span>
 
             </td>

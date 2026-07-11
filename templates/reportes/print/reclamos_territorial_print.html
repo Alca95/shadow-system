@@ -1,0 +1,270 @@
+{% extends "reportes/print/base_print.html" %}
+
+{% block title %}
+Reporte de reclamos por localidad, barrio y empresa
+{% endblock %}
+
+{% block report_title %}
+Reclamos por localidad, barrio y empresa
+{% endblock %}
+
+{% block report_meta %}
+
+<div class="meta-item">
+    <span>Empresa</span>
+    <strong>
+        {% if filtros.empresa_nombre %}
+            {{ filtros.empresa_nombre }}
+        {% else %}
+            Todas las empresas
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Localidad / Ciudad</span>
+    <strong>
+        {% if filtros.localidad %}
+            {{ filtros.localidad }}
+        {% else %}
+            Todas las localidades
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Barrio / Zona</span>
+    <strong>
+        {% if filtros.zona %}
+            {{ filtros.zona }}
+        {% else %}
+            Todas las zonas
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Periodo</span>
+    <strong>
+        {% if filtros.fecha_desde and filtros.fecha_hasta %}
+            {{ filtros.fecha_desde }} → {{ filtros.fecha_hasta }}
+        {% else %}
+            Periodo completo
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Estado operativo</span>
+    <strong>
+        {% if filtros.estado_operativo == "aprobados" %}
+            Concretados
+        {% elif filtros.estado_operativo == "no_concretados" %}
+            No concretados
+        {% elif filtros.estado_operativo == "verificacion" %}
+            En verificación
+        {% else %}
+            Resumen completo
+        {% endif %}
+    </strong>
+</div>
+
+<div class="meta-item">
+    <span>Fecha emisión</span>
+    <strong>{% now "d/m/Y H:i" %}</strong>
+</div>
+
+{% endblock %}
+
+{% block content %}
+
+<h3 class="print-section-title">
+    Resumen ejecutivo
+</h3>
+
+
+<div class="territorial-kpi-layout">
+
+    <div class="territorial-kpi-main">
+        <span>Reclamos atendidos</span>
+        <strong>{{ resumen.total_atendidos }}</strong>
+    </div>
+
+    <div class="territorial-kpi-secondary-grid">
+
+        <div class="territorial-kpi">
+            <span>Concretados</span>
+            <strong>{{ resumen.total_aprobados }}</strong>
+        </div>
+
+        <div class="territorial-kpi">
+            <span>No concretados</span>
+            <strong>{{ resumen.total_rechazados }}</strong>
+        </div>
+
+        <div class="territorial-kpi">
+            <span>En verificación</span>
+            <strong>{{ resumen.total_verificacion }}</strong>
+        </div>
+
+        <div class="territorial-kpi">
+            <span>Localidades</span>
+            <strong>{{ resumen.total_localidades }}</strong>
+        </div>
+
+        <div class="territorial-kpi">
+            <span>Barrios / Zonas</span>
+            <strong>{{ resumen.total_zonas }}</strong>
+        </div>
+
+        <div class="territorial-kpi">
+            <span>Empresas</span>
+            <strong>{{ resumen.total_empresas }}</strong>
+        </div>
+
+    </div>
+
+</div>
+
+
+<h3 class="print-section-title">
+    Detalle territorial operativo
+</h3>
+
+<table class="print-table">
+
+    <thead>
+        <tr>
+            <th>Localidad / Ciudad</th>
+            <th>Barrio / Zona</th>
+            <th>Empresa</th>
+            <th>Atendidos</th>
+            <th>Concretados</th>
+            <th>No concretados</th>
+            <th>Verificación</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+        {% for item in reporte_reclamos %}
+
+        <tr>
+            <td>
+                <strong>{{ item.ciudad }}</strong>
+            </td>
+
+            <td>
+                {{ item.zona }}
+            </td>
+
+            <td>
+                {{ item.empresa }}
+            </td>
+
+            <td>
+                <strong>{{ item.total }}</strong>
+            </td>
+
+            <td>
+                <span class="badge badge-excellent">
+                    {{ item.aprobados }}
+                </span>
+            </td>
+
+            <td>
+                <span class="badge badge-critical">
+                    {{ item.rechazados }}
+                </span>
+            </td>
+
+            <td>
+                <span class="badge badge-acceptable">
+                    {{ item.verificacion }}
+                </span>
+            </td>
+        </tr>
+
+        {% empty %}
+
+        <tr>
+            <td colspan="7" style="text-align:center;">
+                No existen datos para el reporte.
+            </td>
+        </tr>
+
+        {% endfor %}
+
+    </tbody>
+
+</table>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.territorial-kpi-layout {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 12px;
+    margin: 12px 0 18px;
+    break-inside: avoid;
+}
+
+.territorial-kpi-main,
+.territorial-kpi {
+    border: 1px solid #d7dce5;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.territorial-kpi-main {
+    min-height: 128px;
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.territorial-kpi-main span,
+.territorial-kpi span {
+    display: block;
+    color: #64748b;
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.territorial-kpi-main strong {
+    display: block;
+    margin-top: 10px;
+    color: #0f172a;
+    font-size: 34px;
+    font-weight: 950;
+    line-height: 1;
+}
+
+.territorial-kpi-secondary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.territorial-kpi {
+    min-height: 58px;
+    padding: 11px 12px;
+}
+
+.territorial-kpi strong {
+    display: block;
+    margin-top: 7px;
+    color: #0f172a;
+    font-size: 18px;
+    font-weight: 950;
+    line-height: 1;
+}
+</style>
+{% endblock %}
