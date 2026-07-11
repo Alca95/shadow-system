@@ -272,7 +272,14 @@
     {% block content %}{% endblock %}
 
     <footer class="print-footer">
-        <span>Shadow · Reporte institucional</span>
+        <span>
+            {% if es_contratista %}
+                Shadow · Informe de validación
+            {% else %}
+                Shadow · Reporte institucional
+            {% endif %}
+        </span>
+
         <span>Generado automáticamente</span>
     </footer>
 

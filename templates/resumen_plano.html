@@ -1,11 +1,19 @@
 {% extends "reportes/print/base_print.html" %}
 
 {% block title %}
-Orden de pago operacional
+    {% if es_contratista %}
+        Informe de validación del plano
+    {% else %}
+        Orden de pago operacional
+    {% endif %}
 {% endblock %}
 
 {% block report_title %}
-Orden de pago operacional
+    {% if es_contratista %}
+        Informe de validación del plano
+    {% else %}
+        Orden de pago operacional
+    {% endif %}
 {% endblock %}
 
 {% block report_meta %}
@@ -152,7 +160,13 @@ Orden de pago operacional
             <th>Estado</th>
             <th>Datos del plano</th>
             <th>Base de datos</th>
-            <th>Observación administrativa</th>
+            <th>
+                {% if es_contratista %}
+                    Resultado de la validación
+                {% else %}
+                    Observación administrativa
+                {% endif %}
+            </th>
         </tr>
     </thead>
 

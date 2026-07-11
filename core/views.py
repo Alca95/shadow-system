@@ -2196,6 +2196,7 @@ def resumen_plano_view(request, plano_id):
         "total_aprobados": total_aprobados,
         "total_rechazados": total_rechazados,
         "total_en_verificacion": total_en_verificacion,
+        "es_contratista": user_is_contratista(request.user),
     })
 
 @login_required

@@ -5,270 +5,1123 @@
 
 {% block content %}
 
-<div class="row justify-content-center">
-    <div class="col-xl-10">
+<div class="contract-folder-detail-page">
+    <div class="contract-folder-detail-container">
 
-        <!-- TÍTULO -->
-        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-            <div class="page-title-wrap mb-0">
-                <div class="page-title-icon floating-icon">
+        <!-- HERO -->
+        <section class="contract-folder-hero">
+            <div class="contract-folder-hero-main">
+                <div class="contract-folder-hero-icon">
                     <i class="bi bi-folder2-open"></i>
                 </div>
-                <div>
-                    <h3 class="page-title mb-0">Carpeta {{ carpeta.codigo_carpeta }}</h3>
+
+                <div class="contract-folder-hero-copy">
+                    <span class="contract-folder-eyebrow">
+                        <i class="bi bi-shield-check"></i>
+                        Seguimiento de carpeta
+                    </span>
+
+                    <h1>{{ carpeta.codigo_carpeta }}</h1>
+
+                    <p>
+                        Consulta la información general y el estado actualizado
+                        de los planos asociados a esta carpeta.
+                    </p>
                 </div>
             </div>
-        </div>
 
-        <!-- RESUMEN DE CARPETA -->
-        <div class="card shadow-card shadow-lift card-clean mb-4">
-            <div class="card-header shadow-section-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Resumen de carpeta</h5>
-                <span class="section-chip">
-                    <i class="bi bi-info-circle me-1"></i> Consulta
-                </span>
-            </div>
+            <div class="contract-folder-hero-status">
+                <span>Estado de carpeta</span>
 
-            <div class="card-body shadow-section-body">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <div class="summary-info-card">
-                            <div class="summary-info-label">Empresa</div>
-                            <div class="summary-info-value">{{ carpeta.empresa.nombre }}</div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        <div class="summary-info-card">
-                            <div class="summary-info-label">Período</div>
-                            <div class="summary-info-value">{{ carpeta.mes }}/{{ carpeta.anio }}</div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        <div class="summary-info-card">
-                            <div class="summary-info-label">Estado</div>
-                            <div class="summary-info-value">
-                                {% if carpeta.estado == "ABIERTA" %}
-                                    <span class="contract-badge contract-badge-primary">Abierta</span>
-                                {% elif carpeta.estado == "EN_REVISION" %}
-                                    <span class="contract-badge contract-badge-warning">En revisión</span>
-                                {% elif carpeta.estado == "CERRADA" %}
-                                    <span class="contract-badge contract-badge-success">Cerrada</span>
-                                {% elif carpeta.estado == "OBSERVADA" %}
-                                    <span class="contract-badge contract-badge-danger">Observada</span>
-                                {% else %}
-                                    <span class="contract-badge contract-badge-neutral">{{ carpeta.estado }}</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- LISTA DE PLANOS -->
-        <div class="card shadow-card shadow-lift card-clean">
-            <div class="card-header shadow-section-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Planos de la carpeta</h5>
-                <span class="section-chip">
-                    <i class="bi bi-files me-1"></i> {{ planos|length }} registro{{ planos|length|pluralize }}
-                </span>
-            </div>
-
-            <div class="card-body shadow-section-body">
-                {% if planos %}
-                    <div class="table-responsive">
-                        <table class="table contract-table align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th>ID plano</th>
-                                    <th>Fecha</th>
-                                    <th>Estado</th>
-                                    <th class="text-end">Ver</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for plano in planos %}
-                                    <tr>
-                                        <td>
-                                            <div class="contract-code">{{ plano.id_plano_deposito }}</div>
-                                        </td>
-                                        <td>{{ plano.fecha_carga|date:"d/m/Y H:i" }}</td>
-                                        <td>
-                                            {% if plano.estado == "APROBADO" %}
-                                                <span class="contract-badge contract-badge-success">Aprobado</span>
-                                            {% elif plano.estado == "RECHAZADO" %}
-                                                <span class="contract-badge contract-badge-danger">Rechazado</span>
-                                            {% elif plano.estado == "EN_VERIFICACION" %}
-                                                <span class="contract-badge contract-badge-warning">En verificación</span>
-                                            {% elif plano.estado == "EN_REVISION" %}
-                                                <span class="contract-badge contract-badge-primary">En revisión</span>
-                                            {% else %}
-                                                <span class="contract-badge contract-badge-neutral">{{ plano.estado }}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="text-end">
-                                            <a href="{% url 'detalle_plano' plano.id %}" class="btn btn-sm btn-shadow">
-                                                Ver
-                                            </a>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                {% if carpeta.estado == "ABIERTA" %}
+                    <strong class="folder-status folder-status-open">
+                        <span></span>
+                        Abierta
+                    </strong>
+                {% elif carpeta.estado == "EN_REVISION" %}
+                    <strong class="folder-status folder-status-review">
+                        <span></span>
+                        En revisión
+                    </strong>
+                {% elif carpeta.estado == "CERRADA" %}
+                    <strong class="folder-status folder-status-closed">
+                        <span></span>
+                        Cerrada
+                    </strong>
+                {% elif carpeta.estado == "OBSERVADA" %}
+                    <strong class="folder-status folder-status-observed">
+                        <span></span>
+                        Observada
+                    </strong>
                 {% else %}
-                    <div class="empty-state-panel">
-                        <div class="empty-state-icon">
-                            <i class="bi bi-file-earmark-x"></i>
-                        </div>
-                        <div class="empty-state-title">No hay planos en esta carpeta</div>
-                        <div class="empty-state-text">
-                            Cuando existan planos asociados a esta carpeta, aparecerán aquí para consulta.
-                        </div>
-                    </div>
+                    <strong class="folder-status folder-status-neutral">
+                        <span></span>
+                        {{ carpeta.estado }}
+                    </strong>
                 {% endif %}
             </div>
-        </div>
+            <a href="{% url 'carpetas' %}" class="contract-folder-hero-back">
+                <i class="bi bi-arrow-left"></i>
+                Volver a carpetas
+            </a>
+
+        </section>
+
+        <!-- INFORMACIÓN GENERAL -->
+        <section class="contract-folder-overview">
+            <div class="contract-folder-overview-main">
+                <div class="contract-overview-heading">
+                    <div>
+                        <span class="contract-folder-eyebrow">Información general</span>
+                        <h2>Resumen de la carpeta</h2>
+                    </div>
+                </div>
+
+                <div class="contract-folder-info-grid">
+                    <article class="contract-folder-info-item">
+                        <div class="contract-folder-info-icon">
+                            <i class="bi bi-building"></i>
+                        </div>
+
+                        <div>
+                            <span>Empresa</span>
+                            <strong>{{ carpeta.empresa.nombre }}</strong>
+                        </div>
+                    </article>
+
+                    <article class="contract-folder-info-item">
+                        <div class="contract-folder-info-icon">
+                            <i class="bi bi-calendar3"></i>
+                        </div>
+
+                        <div>
+                            <span>Período</span>
+                            <strong>{{ carpeta.mes_nombre }} {{ carpeta.anio }}</strong>
+                        </div>
+                    </article>
+
+                    <article class="contract-folder-info-item">
+                        <div class="contract-folder-info-icon">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+
+                        <div>
+                            <span>Fecha de creación</span>
+                            <strong>{{ carpeta.fecha_creacion|date:"d/m/Y H:i" }}</strong>
+                        </div>
+                    </article>
+                </div>
+            </div>
+
+            <aside class="contract-folder-total">
+                <div class="contract-folder-total-icon">
+                    <i class="bi bi-files"></i>
+                </div>
+
+                <div>
+                    <span>Total de planos</span>
+                    <strong>{{ total_planos }}</strong>
+                    <small>
+                        plano{{ total_planos|pluralize }} registrado{{ total_planos|pluralize }}
+                    </small>
+                </div>
+            </aside>
+        </section>
+
+        <!-- ESTADOS -->
+        <section class="contract-folder-stats">
+            <article class="contract-stat-card contract-stat-approved">
+                <div class="contract-stat-icon">
+                    <i class="bi bi-check2-circle"></i>
+                </div>
+
+                <div>
+                    <span>Aprobados</span>
+                    <strong>{{ planos_aprobados }}</strong>
+                </div>
+            </article>
+
+            <article class="contract-stat-card contract-stat-review">
+                <div class="contract-stat-icon">
+                    <i class="bi bi-search"></i>
+                </div>
+
+                <div>
+                    <span>En revisión</span>
+                    <strong>{{ planos_en_revision }}</strong>
+                </div>
+            </article>
+
+            <article class="contract-stat-card contract-stat-verification">
+                <div class="contract-stat-icon">
+                    <i class="bi bi-exclamation-circle"></i>
+                </div>
+
+                <div>
+                    <span>En verificación</span>
+                    <strong>{{ planos_en_verificacion }}</strong>
+                </div>
+            </article>
+
+            <article class="contract-stat-card contract-stat-rejected">
+                <div class="contract-stat-icon">
+                    <i class="bi bi-x-circle"></i>
+                </div>
+
+                <div>
+                    <span>Rechazados</span>
+                    <strong>{{ planos_rechazados }}</strong>
+                </div>
+            </article>
+        </section>
+
+        <!-- PLANOS -->
+        <section class="contract-plans-panel">
+            <div class="contract-plans-head">
+                <div>
+                    <span class="contract-folder-eyebrow">Seguimiento operativo</span>
+                    <h2>Planos de la carpeta</h2>
+                    <p>Consulta el estado actual de cada plano presentado.</p>
+                </div>
+
+                <form method="get" class="contract-plan-filter">
+                    <div class="contract-plan-filter-select">
+                        <i class="bi bi-funnel"></i>
+
+                        <select name="estado" onchange="this.form.submit()">
+                            <option value="">Todos los estados</option>
+
+                            {% for value, label in estado_choices_plano %}
+                                <option
+                                    value="{{ value }}"
+                                    {% if estado_plano == value %}selected{% endif %}
+                                >
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    {% if estado_plano %}
+                        <a
+                            href="{% url 'detalle_carpeta' carpeta.id %}"
+                            class="contract-plan-filter-reset"
+                            title="Limpiar filtro"
+                        >
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    {% endif %}
+                </form>
+            </div>
+
+            {% if planos %}
+                <div class="contract-plan-list">
+
+                    {% for plano in planos %}
+                        <article
+                            class="
+                                contract-plan-row
+                                {% if plano.estado == 'APROBADO' %}
+                                    contract-plan-approved
+                                {% elif plano.estado == 'RECHAZADO' %}
+                                    contract-plan-rejected
+                                {% elif plano.estado == 'EN_VERIFICACION' %}
+                                    contract-plan-verification
+                                {% elif plano.estado == 'EN_REVISION' %}
+                                    contract-plan-review
+                                {% else %}
+                                    contract-plan-waiting
+                                {% endif %}
+                            "
+                        >
+                            <div class="contract-plan-main">
+                                <div class="contract-plan-symbol">
+                                    <i class="bi bi-file-earmark-text"></i>
+                                </div>
+
+                                <div>
+                                    <span>ID del plano</span>
+                                    <h3>{{ plano.id_plano_deposito }}</h3>
+                                </div>
+                            </div>
+
+                            <div class="contract-plan-data">
+                                <div class="contract-plan-data-item">
+                                    <i class="bi bi-calendar3"></i>
+
+                                    <div>
+                                        <span>Fecha de carga</span>
+                                        <strong>{{ plano.fecha_carga|date:"d/m/Y" }}</strong>
+                                    </div>
+                                </div>
+
+                                <div class="contract-plan-data-item">
+                                    <i class="bi bi-clock"></i>
+
+                                    <div>
+                                        <span>Hora</span>
+                                        <strong>{{ plano.fecha_carga|date:"H:i" }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="contract-plan-end">
+                                {% if plano.estado == "APROBADO" %}
+                                    <span class="plan-status plan-status-approved">
+                                        <span></span>
+                                        Aprobado
+                                    </span>
+                                {% elif plano.estado == "RECHAZADO" %}
+                                    <span class="plan-status plan-status-rejected">
+                                        <span></span>
+                                        Rechazado
+                                    </span>
+                                {% elif plano.estado == "EN_VERIFICACION" %}
+                                    <span class="plan-status plan-status-verification">
+                                        <span></span>
+                                        En verificación
+                                    </span>
+                                {% elif plano.estado == "EN_REVISION" %}
+                                    <span class="plan-status plan-status-review">
+                                        <span></span>
+                                        En revisión
+                                    </span>
+                                {% else %}
+                                    <span class="plan-status plan-status-waiting">
+                                        <span></span>
+                                        En espera
+                                    </span>
+                                {% endif %}
+
+                                <a
+                                    href="{% url 'resumen_plano' plano.id %}"
+                                    class="contract-plan-view"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title="Ver informe de validación"
+                                >
+                                    Ver
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                            </div>
+                        </article>
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+                <div class="contract-plan-empty">
+                    <div class="contract-plan-empty-icon">
+                        <i class="bi bi-file-earmark-x"></i>
+                    </div>
+
+                    <div>
+                        <h3>No hay planos disponibles</h3>
+
+                        {% if estado_plano %}
+                            <p>
+                                No existen planos para el estado seleccionado.
+                            </p>
+                        {% else %}
+                            <p>
+                                Actualmente esta carpeta no contiene planos registrados.
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    {% if estado_plano %}
+                        <a href="{% url 'detalle_carpeta' carpeta.id %}">
+                            Limpiar filtro
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </section>
 
     </div>
 </div>
 
 <style>
-    html {
-        scroll-behavior: smooth;
+    .contract-folder-detail-page {
+        padding: 0.15rem 0 2rem;
     }
 
-    .floating-icon {
-        animation: floatIcon 3.2s ease-in-out infinite;
+    .contract-folder-detail-container {
+        width: min(100%, 1180px);
+        margin: 0 auto;
     }
 
-    @keyframes floatIcon {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-4px); }
+    /* =====================================================
+       HERO
+       ===================================================== */
+
+    .contract-folder-hero {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 2rem;
+        padding: 1.65rem 1.9rem;
+        border-radius: 24px;
+        background:
+            radial-gradient(
+                circle at 90% 15%,
+                rgba(99, 102, 241, 0.12),
+                transparent 34%
+            ),
+            rgba(255, 255, 255, 0.98);
+        border: 1px solid rgba(226, 232, 240, 0.94);
+        box-shadow: 0 20px 48px rgba(15, 23, 42, 0.15);
     }
 
-    .shadow-lift {
-        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    .contract-folder-hero-main {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 0;
     }
 
-    .shadow-lift:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.08);
+    .contract-folder-hero-icon {
+        width: 70px;
+        height: 70px;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        border-radius: 20px;
+        color: #4f46e5;
+        background: linear-gradient(145deg, #f1f3ff, #e7ebff);
+        border: 1px solid #d9e0ff;
+        box-shadow: 0 14px 30px rgba(79, 70, 229, 0.12);
+        font-size: 1.8rem;
     }
 
-    .card-clean,
-    .badge,
-    .alert {
-        border-radius: 0.75rem !important;
-    }
-
-    .section-chip {
-        font-size: 0.82rem;
-        padding: 0.42rem 0.78rem;
-        border-radius: 0.75rem;
-        background: rgba(255,255,255,0.14);
-        color: #ffffff;
-        border: 1px solid rgba(255,255,255,0.18);
+    .contract-folder-eyebrow {
         display: inline-flex;
         align-items: center;
+        gap: 0.42rem;
+        color: #6366f1;
+        font-size: 0.69rem;
+        font-weight: 850;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+
+    .contract-folder-hero h1 {
+        margin: 0.3rem 0 0.25rem;
+        color: #172033;
+        font-size: clamp(1.9rem, 3vw, 2.6rem);
+        font-weight: 900;
+        letter-spacing: -0.045em;
+    }
+
+    .contract-folder-hero p {
+        max-width: 680px;
+        margin: 0;
+        color: #64748b;
+        font-size: 0.92rem;
+        line-height: 1.55;
         font-weight: 500;
     }
 
-    .summary-info-card {
-        background: linear-gradient(135deg, #f8fbff, #eef4fb);
-        border: 1px solid #dde7f1;
-        border-radius: 0.9rem;
-        padding: 1rem;
-        min-height: 108px;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+    .contract-folder-hero-status {
+        min-width: 190px;
+        padding: 0.85rem 1rem;
+        border-radius: 17px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
     }
 
-    .summary-info-label {
+    .contract-folder-hero-status > span {
+        display: block;
+        margin-bottom: 0.4rem;
+        color: #94a3b8;
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+    }
+
+    .folder-status,
+    .plan-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.44rem;
+        width: fit-content;
+        padding: 0.42rem 0.68rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 850;
+        white-space: nowrap;
+    }
+
+    .folder-status > span,
+    .plan-status > span {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: currentColor;
+    }
+
+    .folder-status-open {
+        color: #4338ca;
+        background: #eef2ff;
+    }
+
+    .folder-status-review {
+        color: #a16207;
+        background: #fef3c7;
+    }
+
+    .folder-status-closed {
+        color: #15803d;
+        background: #dcfce7;
+    }
+
+    .folder-status-observed {
+        color: #b91c1c;
+        background: #fee2e2;
+    }
+
+    .folder-status-neutral {
+        color: #475569;
+        background: #e2e8f0;
+    }
+
+    /* =====================================================
+       OVERVIEW
+       ===================================================== */
+
+    .contract-folder-overview {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 1rem;
+        margin-top: 1.25rem;
+    }
+
+    .contract-folder-overview-main,
+    .contract-folder-total {
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.98);
+        border: 1px solid rgba(226, 232, 240, 0.94);
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+    }
+
+    .contract-folder-overview-main {
+        padding: 1.3rem;
+    }
+
+    .contract-overview-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .contract-overview-heading h2,
+    .contract-plans-head h2 {
+        margin: 0.15rem 0 0;
+        color: #1e293b;
+        font-size: 1.25rem;
+        font-weight: 900;
+        letter-spacing: -0.03em;
+    }
+
+    .contract-back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.42rem;
+        color: #475569;
+        text-decoration: none;
         font-size: 0.76rem;
-        font-weight: 700;
+        font-weight: 800;
+    }
+
+    .contract-back-link:hover {
+        color: #312e81;
+    }
+
+    .contract-folder-info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .contract-folder-info-item {
+        display: flex;
+        align-items: center;
+        gap: 0.72rem;
+        min-width: 0;
+        padding: 0.9rem;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid #e5eaf1;
+    }
+
+    .contract-folder-info-icon {
+        width: 40px;
+        height: 40px;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        border-radius: 13px;
+        color: #4f46e5;
+        background: #eef2ff;
+        border: 1px solid #dbe3ff;
+    }
+
+    .contract-folder-info-item span,
+    .contract-folder-info-item strong {
+        display: block;
+    }
+
+    .contract-folder-info-item span {
+        color: #94a3b8;
+        font-size: 0.62rem;
+        font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.06em;
+    }
+
+    .contract-folder-info-item strong {
+        overflow: hidden;
+        margin-top: 0.12rem;
+        color: #334155;
+        font-size: 0.8rem;
+        font-weight: 850;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .contract-folder-total {
+        min-width: 225px;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 1rem 1.15rem;
+        background:
+            radial-gradient(
+                circle at top right,
+                rgba(99, 102, 241, 0.18),
+                transparent 50%
+            ),
+            linear-gradient(145deg, #f6f7ff, #edf0ff);
+    }
+
+    .contract-folder-total-icon {
+        width: 52px;
+        height: 52px;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        border-radius: 16px;
+        color: #4f46e5;
+        background: #ffffff;
+        border: 1px solid #dbe3ff;
+        font-size: 1.25rem;
+    }
+
+    .contract-folder-total span,
+    .contract-folder-total strong,
+    .contract-folder-total small {
+        display: block;
+    }
+
+    .contract-folder-total span {
+        color: #7c89a2;
+        font-size: 0.65rem;
+        font-weight: 850;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .contract-folder-total strong {
+        margin: 0.08rem 0;
+        color: #4f46e5;
+        font-size: 1.65rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .contract-folder-total small {
         color: #64748b;
-        margin-bottom: 0.4rem;
+        font-size: 0.7rem;
+        font-weight: 650;
     }
 
-    .summary-info-value {
-        color: #1e293b;
-        font-size: 1.05rem;
+    /* =====================================================
+       STATS
+       ===================================================== */
+
+    .contract-folder-stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.8rem;
+        margin-top: 1rem;
+    }
+
+    .contract-stat-card {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.9rem;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.98);
+        border: 1px solid #e5eaf1;
+        border-bottom: 4px solid var(--stat-accent);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.09);
+    }
+
+    .contract-stat-icon {
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        border-radius: 13px;
+        color: var(--stat-accent);
+        background: color-mix(in srgb, var(--stat-accent) 10%, white);
+        font-size: 1rem;
+    }
+
+    .contract-stat-card span,
+    .contract-stat-card strong {
+        display: block;
+    }
+
+    .contract-stat-card span {
+        color: #94a3b8;
+        font-size: 0.65rem;
         font-weight: 800;
-        line-height: 1.35;
-        word-break: break-word;
-    }
-
-    .contract-table thead th {
-        background: #edf2f7 !important;
-        color: #475569;
-        font-size: 0.84rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        font-weight: 800;
-        border-bottom: none;
     }
 
-    .contract-table tbody td {
+    .contract-stat-card strong {
+        margin-top: 0.05rem;
         color: #1e293b;
+        font-size: 1.25rem;
+        font-weight: 900;
+    }
+
+    .contract-stat-approved {
+        --stat-accent: #22c55e;
+    }
+
+    .contract-stat-review {
+        --stat-accent: #6366f1;
+    }
+
+    .contract-stat-verification {
+        --stat-accent: #f59e0b;
+    }
+
+    .contract-stat-rejected {
+        --stat-accent: #ef4444;
+    }
+
+    /* =====================================================
+       PLANS
+       ===================================================== */
+
+    .contract-plans-panel {
+        margin-top: 1rem;
+        padding: 1.35rem;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.98);
+        border: 1px solid rgba(226, 232, 240, 0.94);
+        box-shadow: 0 22px 48px rgba(15, 23, 42, 0.14);
+    }
+
+    .contract-plans-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .contract-plans-head p {
+        margin: 0.2rem 0 0;
+        color: #64748b;
+        font-size: 0.8rem;
         font-weight: 500;
-        border-color: rgba(148, 163, 184, 0.18);
     }
 
-    .contract-code {
-        color: #24324a;
+    .contract-plan-filter {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .contract-plan-filter-select {
+        position: relative;
+    }
+
+    .contract-plan-filter-select > i {
+        position: absolute;
+        top: 50%;
+        left: 0.82rem;
+        transform: translateY(-50%);
+        color: #818cf8;
+        pointer-events: none;
+    }
+
+    .contract-plan-filter select {
+        min-width: 190px;
+        min-height: 42px;
+        padding: 0.58rem 0.8rem 0.58rem 2.25rem;
+        border-radius: 12px;
+        color: #334155;
+        background: #f8fafc;
+        border: 1px solid #dbe3ec;
+        outline: none;
+        font-size: 0.76rem;
+        font-weight: 750;
+    }
+
+    .contract-plan-filter-reset {
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        border-radius: 12px;
+        color: #64748b;
+        background: #f8fafc;
+        border: 1px solid #dbe3ec;
+        text-decoration: none;
+    }
+
+    .contract-plan-list {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .contract-plan-row {
+        position: relative;
+        display: grid;
+        grid-template-columns:
+            minmax(200px, 1fr)
+            minmax(280px, 1.2fr)
+            minmax(220px, auto);
+        align-items: center;
+        gap: 1rem;
+        overflow: hidden;
+        padding: 0.92rem 1rem 0.92rem 1.15rem;
+        border-radius: 17px;
+        background: #ffffff;
+        border: 1px solid #e6ebf1;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.055);
+        transition:
+            transform 0.22s ease,
+            box-shadow 0.22s ease;
+    }
+
+    .contract-plan-row::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 4px;
+        background: var(--plan-accent);
+    }
+
+    .contract-plan-row:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.1);
+    }
+
+    .contract-plan-approved {
+        --plan-accent: #22c55e;
+    }
+
+    .contract-plan-rejected {
+        --plan-accent: #ef4444;
+    }
+
+    .contract-plan-verification {
+        --plan-accent: #f59e0b;
+    }
+
+    .contract-plan-review {
+        --plan-accent: #6366f1;
+    }
+
+    .contract-plan-waiting {
+        --plan-accent: #64748b;
+    }
+
+    .contract-plan-main {
+        display: flex;
+        align-items: center;
+        gap: 0.72rem;
+    }
+
+    .contract-plan-symbol {
+        width: 44px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        border-radius: 14px;
+        color: var(--plan-accent);
+        background: color-mix(in srgb, var(--plan-accent) 10%, white);
+        border: 1px solid color-mix(in srgb, var(--plan-accent) 18%, white);
+        font-size: 1.05rem;
+    }
+
+    .contract-plan-main span,
+    .contract-plan-main h3 {
+        display: block;
+    }
+
+    .contract-plan-main span {
+        color: #94a3b8;
+        font-size: 0.61rem;
         font-weight: 800;
-        letter-spacing: -0.02em;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
     }
 
-    .contract-badge {
+    .contract-plan-main h3 {
+        margin: 0.1rem 0 0;
+        color: #1e293b;
+        font-size: 0.9rem;
+        font-weight: 900;
+    }
+
+    .contract-plan-data {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.8rem;
+    }
+
+    .contract-plan-data-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .contract-plan-data-item > i {
+        color: #818cf8;
+        font-size: 0.82rem;
+    }
+
+    .contract-plan-data-item span,
+    .contract-plan-data-item strong {
+        display: block;
+    }
+
+    .contract-plan-data-item span {
+        color: #94a3b8;
+        font-size: 0.6rem;
+        font-weight: 750;
+    }
+
+    .contract-plan-data-item strong {
+        color: #475569;
+        font-size: 0.74rem;
+        font-weight: 850;
+    }
+
+    .contract-plan-end {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.7rem;
+    }
+
+    .plan-status-approved {
+        color: #15803d;
+        background: #dcfce7;
+    }
+
+    .plan-status-rejected {
+        color: #b91c1c;
+        background: #fee2e2;
+    }
+
+    .plan-status-verification {
+        color: #a16207;
+        background: #fef3c7;
+    }
+
+    .plan-status-review {
+        color: #4338ca;
+        background: #eef2ff;
+    }
+
+    .plan-status-waiting {
+        color: #475569;
+        background: #e2e8f0;
+    }
+
+    .contract-plan-view {
         display: inline-flex;
         align-items: center;
-        justify-content: center;
-        border-radius: 999px;
-        padding: 0.46rem 0.86rem;
-        font-weight: 700;
-        font-size: 0.83rem;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.32);
-    }
-
-    .contract-badge-primary {
-        background: rgba(79, 70, 229, 0.12);
+        gap: 0.38rem;
+        padding: 0.58rem 0.72rem;
+        border-radius: 11px;
         color: #4338ca;
+        background: #eef2ff;
+        border: 1px solid #dbe3ff;
+        text-decoration: none;
+        font-size: 0.72rem;
+        font-weight: 850;
+        white-space: nowrap;
     }
 
-    .contract-badge-warning {
-        background: rgba(245, 158, 11, 0.16);
-        color: #a16207;
+    .contract-plan-view:hover {
+        color: #312e81;
+        background: #e0e7ff;
     }
 
-    .contract-badge-success {
-        background: rgba(34, 197, 94, 0.14);
-        color: #15803d;
+    /* =====================================================
+       EMPTY
+       ===================================================== */
+
+    .contract-plan-empty {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.1rem;
+        border-radius: 17px;
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
     }
 
-    .contract-badge-danger {
-        background: rgba(239, 68, 68, 0.14);
-        color: #b91c1c;
+    .contract-plan-empty-icon {
+        width: 50px;
+        height: 50px;
+        display: grid;
+        place-items: center;
+        border-radius: 15px;
+        color: #64748b;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        font-size: 1.25rem;
     }
 
-    .contract-badge-neutral {
-        background: rgba(100, 116, 139, 0.14);
-        color: #475569;
+    .contract-plan-empty h3 {
+        margin: 0 0 0.15rem;
+        color: #1e293b;
+        font-size: 0.9rem;
+        font-weight: 850;
+    }
+
+    .contract-plan-empty p {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.78rem;
+    }
+
+    .contract-plan-empty > a {
+        color: #4338ca;
+        text-decoration: none;
+        font-size: 0.76rem;
+        font-weight: 850;
+    }
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+
+    @media (max-width: 991.98px) {
+        .contract-folder-overview {
+            grid-template-columns: 1fr;
+        }
+
+        .contract-folder-total {
+            min-width: 0;
+        }
+
+        .contract-folder-stats {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .contract-plan-row {
+            grid-template-columns: 1fr;
+        }
+
+        .contract-plan-end {
+            justify-content: space-between;
+        }
     }
 
     @media (max-width: 767.98px) {
-        .section-chip {
-            font-size: 0.76rem;
+        .contract-folder-hero {
+            align-items: flex-start;
+            flex-direction: column;
         }
 
-        .summary-info-card {
-            min-height: auto;
+        .contract-folder-hero-status {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .contract-overview-heading,
+        .contract-plans-head {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .contract-folder-info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .contract-plan-filter,
+        .contract-plan-filter-select,
+        .contract-plan-filter select {
+            width: 100%;
+        }
+
+        .contract-plan-data {
+            grid-template-columns: 1fr;
+        }
+
+        .contract-plan-empty {
+            grid-template-columns: 1fr;
+            text-align: center;
+        }
+
+        .contract-plan-empty-icon {
+            margin: 0 auto;
         }
     }
+
+    @media (max-width: 575.98px) {
+        .contract-folder-hero-main {
+            align-items: flex-start;
+        }
+
+        .contract-folder-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .contract-plan-end {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+
+    .contract-folder-hero-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.42rem;
+        margin-top: 0.72rem;
+        color: #25344a;
+        text-decoration: none;
+        font-size: 0.72rem;
+        font-weight: 850;
+        transition:
+            color 0.2s ease,
+            transform 0.2s ease;
+    }
+
+    .contract-folder-hero-back:hover {
+        color: #312e81;
+        transform: translateX(-2px);
+    }
+
 </style>
 
 {% endblock %}
