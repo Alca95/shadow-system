@@ -4,7 +4,7 @@
 {% block title %}Reportes{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260709-3">
+<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260710-1">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 {% endblock %}
 
@@ -37,128 +37,159 @@
 
 <div class="reports-dashboard">
 
-    <section class="reports-hero-modern reports-hero-compact">
+    <section class="reports-overview-panel">
 
-        <div class="reports-hero-left">
+        <div class="reports-overview-head">
 
-            <span class="hero-eyebrow">
-                <i class="bi bi-file-earmark-bar-graph"></i>
-                Shadow Reports
-            </span>
+            <div class="reports-overview-title">
+                <span class="reports-overview-eyebrow">
+                    <i class="bi bi-file-earmark-bar-graph"></i>
+                    Shadow Reports
+                </span>
 
-            <h2>Panel institucional de reportes</h2>
+                <h2>Panel institucional de reportes</h2>
 
-            <form method="get" class="hero-general-filters hero-general-filters-inline">
+                <p>
+                    Resumen ejecutivo de planos, NR procesados, efectividad operativa
+                    y tiempos de respuesta del sistema.
+                </p>
+            </div>
 
-                <input type="hidden" name="fecha_desde" class="fecha-desde-input" value="{{ filtros.fecha_desde }}">
-                <input type="hidden" name="fecha_hasta" class="fecha-hasta-input" value="{{ filtros.fecha_hasta }}">
+            <div class="reports-overview-effectiveness">
+                <span>Efectividad general</span>
 
-                <div class="hero-filter-item">
-                    <label>
-                        <i class="bi bi-calendar2-range"></i>
-                        Periodo
-                    </label>
+                <strong>{{ resumen.efectividad_general|floatformat:0 }}%</strong>
 
-                    <input
-                        type="text"
-                        class="form-control report-date-range"
-                        placeholder="Seleccionar rango"
-                        autocomplete="off"
-                        value="{% if filtros.fecha_desde and filtros.fecha_hasta %}{{ filtros.fecha_desde }} a {{ filtros.fecha_hasta }}{% endif %}"
-                    >
-                </div>
+                <small>
+                    {{ resumen.total_aprobados }} concretados de {{ resumen.total_nr }} NR atendidos
+                </small>
+            </div>
 
-                <div class="hero-filter-item">
-                    <label>
-                        <i class="bi bi-buildings"></i>
-                        Empresa
-                    </label>
+        </div>
 
-                    <select name="empresa" class="form-select">
-                        <option value="" {% if not filtros.empresa %}selected{% endif %}>
-                            Todas las empresas
+        <form method="get" class="reports-overview-filters">
+
+            <input type="hidden" name="fecha_desde" class="fecha-desde-input" value="{{ filtros.fecha_desde }}">
+            <input type="hidden" name="fecha_hasta" class="fecha-hasta-input" value="{{ filtros.fecha_hasta }}">
+
+            <div class="reports-overview-filter-item reports-overview-filter-wide">
+                <label>
+                    <i class="bi bi-calendar2-range"></i>
+                    Periodo
+                </label>
+
+                <input
+                    type="text"
+                    class="form-control report-date-range"
+                    placeholder="Seleccionar rango"
+                    autocomplete="off"
+                    value="{% if filtros.fecha_desde and filtros.fecha_hasta %}{{ filtros.fecha_desde }} a {{ filtros.fecha_hasta }}{% endif %}"
+                >
+            </div>
+
+            <div class="reports-overview-filter-item">
+                <label>
+                    <i class="bi bi-buildings"></i>
+                    Empresa
+                </label>
+
+                <select name="empresa" class="form-select">
+                    <option value="" {% if not filtros.empresa %}selected{% endif %}>
+                        Todas las empresas
+                    </option>
+
+                    {% for empresa in empresas %}
+                        <option value="{{ empresa.id }}"
+                            {% if filtros.empresa and filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
+                            {{ empresa.nombre }}
                         </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-                        {% for empresa in empresas %}
-                            <option value="{{ empresa.id }}"
-                                {% if filtros.empresa and filtros.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
-                                {{ empresa.nombre }}
-                            </option>
-                        {% endfor %}
-                    </select>
+            <div class="reports-overview-actions">
+                <button type="submit" class="reports-overview-submit">
+                    <i class="bi bi-funnel"></i>
+                    Aplicar filtros
+                </button>
+
+                <a href="{% url 'reportes' %}" class="reports-overview-reset">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </a>
+            </div>
+
+        </form>
+
+        <div class="reports-kpi-light-grid">
+
+            <article class="reports-kpi-light-card is-blue">
+                <span class="reports-kpi-icon">
+                    <i class="bi bi-clipboard-data"></i>
+                </span>
+
+                <div>
+                    <small>Planos</small>
+                    <strong>{{ resumen.total_planos }}</strong>
                 </div>
+            </article>
 
-                <div class="hero-filter-actions">
-                    <button type="submit" class="btn btn-light">
-                        <i class="bi bi-funnel"></i>
-                        Aplicar
-                    </button>
+            <article class="reports-kpi-light-card is-indigo">
+                <span class="reports-kpi-icon">
+                    <i class="bi bi-diagram-3"></i>
+                </span>
 
-                    <a href="{% url 'reportes' %}" class="btn btn-outline-light hero-reset-btn">
-                        <i class="bi bi-arrow-clockwise"></i>
-                    </a>
+                <div>
+                    <small>NR atendidos</small>
+                    <strong>{{ resumen.total_nr }}</strong>
                 </div>
+            </article>
 
-            </form>
+            <article class="reports-kpi-light-card is-green">
+                <span class="reports-kpi-icon">
+                    <i class="bi bi-check-circle"></i>
+                </span>
+
+                <div>
+                    <small>Concretados</small>
+                    <strong>{{ resumen.total_aprobados }}</strong>
+                </div>
+            </article>
+
+            <article class="reports-kpi-light-card is-red">
+                <span class="reports-kpi-icon">
+                    <i class="bi bi-x-octagon"></i>
+                </span>
+
+                <div>
+                    <small>No concretados</small>
+                    <strong>{{ resumen.total_rechazados }}</strong>
+                </div>
+            </article>
+
+            <article class="reports-kpi-light-card is-amber">
+                <span class="reports-kpi-icon">
+                    <i class="bi bi-search"></i>
+                </span>
+
+                <div>
+                    <small>Verificación</small>
+                    <strong>{{ resumen.total_verificacion }}</strong>
+                </div>
+            </article>
+
+            <article class="reports-kpi-light-card is-orange">
+                <span class="reports-kpi-icon">
+                    <i class="bi bi-clock-history"></i>
+                </span>
+
+                <div>
+                    <small>Respuesta prom.</small>
+                    <strong>{{ resumen.promedio_respuesta|floatformat:0 }} d</strong>
+                </div>
+            </article>
 
         </div>
 
-        <div class="hero-summary-card hero-summary-card-compact">
-            <span class="summary-label">Efectividad general</span>
-            <strong>{{ resumen.efectividad_general|floatformat:0 }}%</strong>
-            <small>{{ resumen.total_aprobados }} concretados de {{ resumen.total_nr }} NR atendidos</small>
-        </div>
-
-    </section>
-
-    <section class="compact-kpi-grid">
-        <article class="compact-kpi is-dark">
-            <span><i class="bi bi-clipboard-data"></i></span>
-            <div>
-                <small>Planos</small>
-                <strong>{{ resumen.total_planos }}</strong>
-            </div>
-        </article>
-
-        <article class="compact-kpi is-indigo">
-            <span><i class="bi bi-diagram-3"></i></span>
-            <div>
-                <small>NR atendidos</small>
-                <strong>{{ resumen.total_nr }}</strong>
-            </div>
-        </article>
-
-        <article class="compact-kpi is-violet">
-            <span><i class="bi bi-check-circle"></i></span>
-            <div>
-                <small>Concretados</small>
-                <strong>{{ resumen.total_aprobados }}</strong>
-            </div>
-        </article>
-
-        <article class="compact-kpi is-soft">
-            <span><i class="bi bi-x-octagon"></i></span>
-            <div>
-                <small>No concretados</small>
-                <strong>{{ resumen.total_rechazados }}</strong>
-            </div>
-        </article>
-
-        <article class="compact-kpi is-glass">
-            <span><i class="bi bi-search"></i></span>
-            <div>
-                <small>Verificación</small>
-                <strong>{{ resumen.total_verificacion }}</strong>
-            </div>
-        </article>
-
-        <article class="compact-kpi is-glass">
-            <span><i class="bi bi-clock-history"></i></span>
-            <div>
-                <small>Respuesta prom.</small>
-                <strong>{{ resumen.promedio_respuesta|floatformat:0 }} d</strong>
-            </div>
-        </article>
     </section>
 
     <section class="report-objectives-panel">
@@ -258,7 +289,7 @@
                 </span>
 
                 <span class="report-card-footer">
-                    <span>{{ tipos_rechazo|length }} categorías detectadas</span>
+                    <span>{{ resumen_rechazos.tipos_detectados }} categorías detectadas</span>
                     <i class="bi bi-arrow-up-right"></i>
                 </span>
             </button>
@@ -1347,8 +1378,8 @@
                         href="{% url 'reporte_rechazos_print' %}?{{ request.GET.urlencode }}"
                         target="_blank"
                         class="report-print-btn report-print-current-form"
-                        data-print-url="{% url 'reporte_rechazos_print' %}"
-                        data-print-form="form-rechazos-report"
+                        data-print-url="{% url 'reporte_efectividad_mensual_print' %}"
+                        data-print-form="form-efectividad-mensual-report"
                         title="Imprimir reporte"
                     >
                         <i class="bi bi-printer"></i>
@@ -2281,6 +2312,8 @@
     </div>
 </div>
 
+
+
 {% endblock %}
 
 {% block extra_js %}
@@ -2669,3 +2702,4 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 {% endblock %}
+
